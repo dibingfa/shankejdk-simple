@@ -1,0 +1,33 @@
+#
+# Copyright (c) 2011, 2012, Oracle and/or its affiliates. All rights reserved.
+#
+
+# makefile for generating a stable set of bridgesupport files that change timestamp
+# only when the bridgesupport data actually changes
+
+FRAMEWORKS_DIR = /System/Library/Frameworks
+GBM = /usr/bin/gen_bridge_metadata
+GEN_HEADERS = $(addsuffix .headers,$(FRAMEWORKS))
+GEN_BRIDGESUPPORT = $(addsuffix .bridgesupport,$(FRAMEWORKS))
+
+%.bridgesupport : %.headers $(FRAMEWORKS_DIR)/%.framework/Headers/*.h
+	@echo "generating bridge support for" $<
+	if [ -f $(FRAMEWORKS_DIR)/$(<:.headers=.framework)/Resources/BridgeSupport/$(<:.headers=Full.bridgesupport) ] ; \
+	  then cp $(FRAMEWORKS_DIR)/$(<:.headers=.framework)/Resources/BridgeSupport/$(<:.headers=Full.bridgesupport) $@ ; \
+	  else $(GBM) -F complete --framework $(<:.headers=.framework) -o $@ ; \
+	fi
+	if cmp -s $@ $(STABLE_GEN_DIR)/$(@:.bridgesupport=Full.bridgesupport) ; \
+	  then : ; \
+	  else cp $@ $(STABLE_GEN_DIR)/$(@:.bridgesupport=Full.bridgesupport) ; \
+	fi
+
+%.headers : $(FRAMEWORKS_DIR)/%.framework/Headers
+	@echo linking $<
+	ln -s $< $@
+
+$(STABLE_GEN_DIR):
+	mkdir -p $(STABLE_GEN_DIR)
+
+$(GEN_BRIDGESUPPORT): $(GEN_HEADERS) $(STABLE_GEN_DIR)
+
+all: $(GEN_BRIDGESUPPORT)

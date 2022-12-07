@@ -1,0 +1,21 @@
+#
+# Copyright (c) 2005, 2013, Oracle and/or its affiliates. All rights reserved.
+#
+
+# Define public interface.
+
+SUNWprivate_1.1 {
+	global:
+		JLI_Launch;
+		JLI_ManifestIterate;
+		JLI_SetTraceLauncher;
+		JLI_ReportErrorMessage;
+		JLI_ReportErrorMessageSys;
+		JLI_ReportMessage;
+		JLI_ReportExceptionDescription;
+		JLI_GetStdArgs;
+		JLI_GetStdArgc;
+
+	local:
+		*;
+};

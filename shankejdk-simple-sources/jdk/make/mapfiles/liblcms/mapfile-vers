@@ -1,0 +1,22 @@
+#
+# Copyright (c) 2007, 2013, Oracle and/or its affiliates. All rights reserved.
+#
+
+# Define public interface.
+
+SUNWprivate_1.1 {
+	global:
+        Java_sun_java2d_cmm_lcms_LCMS_loadProfileNative;
+        Java_sun_java2d_cmm_lcms_LCMS_getProfileSizeNative;
+        Java_sun_java2d_cmm_lcms_LCMS_getProfileDataNative;
+        Java_sun_java2d_cmm_lcms_LCMS_getTagNative;
+        Java_sun_java2d_cmm_lcms_LCMS_setTagDataNative;
+        Java_sun_java2d_cmm_lcms_LCMS_colorConvert;
+        Java_sun_java2d_cmm_lcms_LCMS_getProfileID;
+        Java_sun_java2d_cmm_lcms_LCMS_initLCMS;
+        Java_sun_java2d_cmm_lcms_LCMS_createNativeTransform;
+        JNI_OnLoad;
+
+	local:
+		*;
+};

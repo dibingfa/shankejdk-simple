@@ -1,0 +1,18 @@
+#
+# Copyright (c) 2012, 2013, Oracle and/or its affiliates. All rights reserved.
+#
+
+CLDRVERSION := 21.0.1
+CLDRSRCDIR := $(JDK_TOPDIR)/src/share/classes/sun/util/cldr/resources/$(subst .,_,$(CLDRVERSION))
+
+GENSRC_DIR := $(JDK_OUTPUTDIR)/gensrc
+
+CLDR_METAINFO_FILE := $(GENSRC_DIR)/sun/util/cldr/CLDRLocaleDataMetaInfo.java
+
+$(CLDR_METAINFO_FILE): $(wildcard $(CLDRSRCDIR)/common/dtd/*.dtd) \
+    $(wildcard $(CLDRSRCDIR)/common/main/*.xml) \
+    $(wildcard $(CLDRSRCDIR)/common/supplemental/*.xml)
+	$(MKDIR) -p $(@D)
+	$(TOOL_CLDRCONVERTER) -base $(CLDRSRCDIR) -o $(GENSRC_DIR)
+
+GENSRC_CLDR := $(CLDR_METAINFO_FILE)

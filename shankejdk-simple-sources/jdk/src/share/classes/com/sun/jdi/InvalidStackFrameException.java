@@ -1,0 +1,24 @@
+/*
+ * Copyright (c) 1998, 2013, Oracle and/or its affiliates. All rights reserved.
+ */
+
+package com.sun.jdi;
+
+/**
+ * Thrown to indicate that the requested operation cannot be
+ * completed because the specified stack frame is no longer valid.
+ *
+ * @author Gordon Hirsch
+ * @since  1.3
+ */
+@jdk.Exported
+public class InvalidStackFrameException extends RuntimeException {
+    private static final long serialVersionUID = -1919378296505827922L;
+    public InvalidStackFrameException() {
+        super();
+    }
+
+    public InvalidStackFrameException(String s) {
+        super(s);
+    }
+}

@@ -1,0 +1,13 @@
+#
+# Copyright (c) 2011, 2012, Oracle and/or its affiliates. All rights reserved.
+#
+
+# Define anonymous library interface (i.e. without a version tag) for broken SuSE ld because
+# the linker on older SuSE distros (e.g. on SLES 10) complains with:
+# "Invalid version tag `SUNWprivate_1.1'. Only anonymous version tag is allowed in executable."
+# if feeded with a version script which contains named tags.
+
+{
+	local:
+	    *;
+};

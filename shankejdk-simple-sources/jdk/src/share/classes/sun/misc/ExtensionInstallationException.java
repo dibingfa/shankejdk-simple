@@ -1,0 +1,26 @@
+/*
+ * Copyright (c) 1999, 2011, Oracle and/or its affiliates. All rights reserved.
+ */
+
+package sun.misc;
+
+/*
+ * Exception when installation of an extension has failed for
+ * any reason
+ *
+ * @author  Jerome Dochez
+ */
+
+public class ExtensionInstallationException extends Exception {
+
+    static final long serialVersionUID = 3139688306909345924L;
+
+    /*
+     * <p>
+     * Construct a new exception with an exception reason
+     * </p>
+     */
+    public ExtensionInstallationException(String s) {
+        super(s);
+    }
+}

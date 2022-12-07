@@ -1,0 +1,15 @@
+#
+# Copyright (c) 2011, 2012, Oracle and/or its affiliates. All rights reserved.
+#
+
+CAT="@CAT@"
+CD=cd
+CP="@CP@"
+DIFF="@DIFF@"
+ECHO="@ECHO@"
+FIND="@FIND@"
+GREP="@GREP@"
+RM="@RM@"
+SED="@SED@"
+
+POST_STRIP_CMD="@POST_STRIP_CMD@"

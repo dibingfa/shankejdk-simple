@@ -1,0 +1,12 @@
+#
+# Copyright (c) 2001, 2012, Oracle and/or its affiliates. All rights reserved.
+#
+
+# TODO: implement for AIX
+
+SUNWprivate_1.1 {
+	global:
+
+	local:
+		*;
+};

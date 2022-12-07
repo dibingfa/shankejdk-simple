@@ -1,0 +1,11 @@
+/*
+ * Copyright (c) 2011, 2012, Oracle and/or its affiliates. All rights reserved.
+ */
+
+//
+// Prefix header for all source files of the 'JavaAppLauncher' target in the 'JavaAppLauncher' project
+//
+
+#ifdef __OBJC__
+    #import <Cocoa/Cocoa.h>
+#endif

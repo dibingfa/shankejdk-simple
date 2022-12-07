@@ -1,0 +1,20 @@
+#
+# Copyright (c) 2012, 2013, Oracle and/or its affiliates. All rights reserved.
+#
+
+GENDATA_TZDB :=
+
+#
+# Time zone data file creation
+#
+TZDATA_DIR := $(JDK_TOPDIR)/make/data/tzdata
+TZDATA_TZFILE := africa antarctica asia australasia europe northamerica southamerica backward etcetera gmt jdk11_backward
+TZDATA_TZFILES := $(addprefix $(TZDATA_DIR)/,$(TZDATA_TZFILE))
+
+GENDATA_TZDB_DAT := $(JDK_OUTPUTDIR)/lib/tzdb.dat
+
+$(GENDATA_TZDB_DAT): $(TZDATA_TZFILES)
+	$(RM) $(GENDATA_TZDB_DAT)
+	$(TOOL_TZDB) -srcdir $(TZDATA_DIR) -dstfile $(GENDATA_TZDB_DAT) $(TZDATA_TZFILE)
+
+GENDATA_TZDB += $(GENDATA_TZDB_DAT)

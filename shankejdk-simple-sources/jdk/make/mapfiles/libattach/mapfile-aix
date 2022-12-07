@@ -1,0 +1,18 @@
+#
+# Copyright (c) 2005, 2012, Oracle and/or its affiliates. All rights reserved.
+#
+
+# Define public interface.
+
+SUNWprivate_1.1 {
+	global:
+            Java_sun_tools_attach_AixVirtualMachine_socket
+            Java_sun_tools_attach_AixVirtualMachine_connect
+            Java_sun_tools_attach_AixVirtualMachine_sendQuitTo
+            Java_sun_tools_attach_AixVirtualMachine_checkPermissions
+            Java_sun_tools_attach_AixVirtualMachine_close
+            Java_sun_tools_attach_AixVirtualMachine_read
+            Java_sun_tools_attach_AixVirtualMachine_write
+	local:
+		*;
+};

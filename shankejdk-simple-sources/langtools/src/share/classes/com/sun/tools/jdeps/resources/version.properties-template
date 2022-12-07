@@ -1,0 +1,7 @@
+#
+# Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+#
+
+jdk=$(JDK_VERSION)
+full=$(FULL_VERSION)
+release=$(RELEASE)

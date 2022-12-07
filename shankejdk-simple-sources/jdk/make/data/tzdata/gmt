@@ -1,0 +1,6 @@
+#
+# Copyright (c) 2000, 2013, Oracle and/or its affiliates. All rights reserved.
+#
+
+# Zone	NAME		GMTOFF	RULES	FORMAT	[UNTIL]
+Zone	GMT		0:00	-	GMT
