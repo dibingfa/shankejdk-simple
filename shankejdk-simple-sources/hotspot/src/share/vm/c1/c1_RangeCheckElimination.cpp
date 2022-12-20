@@ -32,15 +32,9 @@
 #include "runtime/deoptimization.hpp"
 
 // Macros for the Trace and the Assertion flag
-#ifdef ASSERT
-#define TRACE_RANGE_CHECK_ELIMINATION(code) if (TraceRangeCheckElimination) { code; }
-#define ASSERT_RANGE_CHECK_ELIMINATION(code) if (AssertRangeCheckElimination) { code; }
-#define TRACE_OR_ASSERT_RANGE_CHECK_ELIMINATION(code) if (TraceRangeCheckElimination || AssertRangeCheckElimination) { code; }
-#else
 #define TRACE_RANGE_CHECK_ELIMINATION(code)
 #define ASSERT_RANGE_CHECK_ELIMINATION(code)
 #define TRACE_OR_ASSERT_RANGE_CHECK_ELIMINATION(code)
-#endif
 
 // Entry point for the optimization
 void RangeCheckElimination::eliminate(IR *ir) {
@@ -72,13 +66,6 @@ RangeCheckEliminator::RangeCheckEliminator(IR *ir) :
     tty->print_cr("optimistic=%d", (int)_optimistic);
   );
 
-#ifdef ASSERT
-  // Verifies several conditions that must be true on the IR-input. Only used for debugging purposes.
-  TRACE_RANGE_CHECK_ELIMINATION(
-    tty->print_cr("Verification of IR . . .");
-  );
-  Verification verification(ir);
-#endif
 
   // Set process block flags
   // Optimization so a blocks is only processed if it contains an access indexed instruction or if
@@ -1442,81 +1429,4 @@ RangeCheckEliminator::Bound *RangeCheckEliminator::Bound::copy() {
   return b;
 }
 
-#ifdef ASSERT
-// Add assertion
-void RangeCheckEliminator::Bound::add_assertion(Instruction *instruction, Instruction *position, int i, Value instr, Instruction::Condition cond) {
-  Instruction *result = position;
-  Instruction *compare_with = NULL;
-  ValueStack *state = position->state_before();
-  if (position->as_BlockEnd() && !position->as_Goto()) {
-    state = position->as_BlockEnd()->state_before();
-  }
-  Instruction *instruction_before = position->prev();
-  if (position->as_Return() && Compilation::current()->method()->is_synchronized() && instruction_before->as_MonitorExit()) {
-    instruction_before = instruction_before->prev();
-  }
-  result = instruction_before;
-  // Load constant only if needed
-  Constant *constant = NULL;
-  if (i != 0 || !instr) {
-    constant = new Constant(new IntConstant(i));
-    NOT_PRODUCT(constant->set_printable_bci(position->printable_bci()));
-    result = result->insert_after(constant);
-    compare_with = constant;
-  }
-
-  if (instr) {
-    assert(instr->type()->as_ObjectType() || instr->type()->as_IntType(), "Type must be array or integer!");
-    compare_with = instr;
-    // Load array length if necessary
-    Instruction *op = instr;
-    if (instr->type()->as_ObjectType()) {
-      assert(state, "must not be null");
-      ArrayLength *length = new ArrayLength(instr, state->copy());
-      NOT_PRODUCT(length->set_printable_bci(position->printable_bci()));
-      length->set_exception_state(length->state_before());
-      result = result->insert_after(length);
-      op = length;
-      compare_with = length;
-    }
-    // Add operation only if necessary
-    if (constant) {
-      ArithmeticOp *ao = new ArithmeticOp(Bytecodes::_iadd, constant, op, false, NULL);
-      NOT_PRODUCT(ao->set_printable_bci(position->printable_bci()));
-      result = result->insert_after(ao);
-      compare_with = ao;
-      // TODO: Check that add operation does not overflow!
-    }
-  }
-  assert(compare_with != NULL, "You have to compare with something!");
-  assert(instruction != NULL, "Instruction must not be null!");
-
-  if (instruction->type()->as_ObjectType()) {
-    // Load array length if necessary
-    Instruction *op = instruction;
-    assert(state, "must not be null");
-    ArrayLength *length = new ArrayLength(instruction, state->copy());
-    length->set_exception_state(length->state_before());
-    NOT_PRODUCT(length->set_printable_bci(position->printable_bci()));
-    result = result->insert_after(length);
-    instruction = length;
-  }
-
-  Assert *assert = new Assert(instruction, cond, false, compare_with);
-  NOT_PRODUCT(assert->set_printable_bci(position->printable_bci()));
-  result->insert_after(assert);
-}
-
-// Add assertions
-void RangeCheckEliminator::add_assertions(Bound *bound, Instruction *instruction, Instruction *position) {
-  // Add lower bound assertion
-  if (bound->has_lower()) {
-    bound->add_assertion(instruction, position, bound->lower(), bound->lower_instr(), Instruction::geq);
-  }
-  // Add upper bound assertion
-  if (bound->has_upper()) {
-    bound->add_assertion(instruction, position, bound->upper(), bound->upper_instr(), Instruction::leq);
-  }
-}
-#endif
 

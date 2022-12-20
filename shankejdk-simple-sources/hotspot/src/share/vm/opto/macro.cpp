@@ -458,10 +458,6 @@ Node *PhaseMacroExpand::value_from_mem_phi(Node *mem, BasicType ft, const Type *
         assert(false, "Object is not scalar replaceable if a LoadStore node access its field");
         return NULL;
       } else {
-#ifdef ASSERT
-        val->dump();
-        assert(false, "unknown node on this path");
-#endif
         return NULL;  // unknown node on this path
       }
     }
@@ -674,12 +670,6 @@ bool PhaseMacroExpand::can_eliminate_allocation(AllocateNode *alloc, GrowableArr
         alloc->dump();
       else
         res->dump();
-#ifdef ASSERT
-      if (disq_node != NULL) {
-          tty->print("  >>>> ");
-          disq_node->dump();
-      }
-#endif /*ASSERT*/
     }
   }
 #endif
@@ -734,9 +724,6 @@ bool PhaseMacroExpand::scalar_replacement(AllocateNode *alloc, GrowableArray <Sa
     // Record relative start index.
     uint first_ind = (sfpt->req() - sfpt->jvms()->scloff());
     SafePointScalarObjectNode* sobj = new (C) SafePointScalarObjectNode(res_type,
-#ifdef ASSERT
-                                                 alloc,
-#endif
                                                  first_ind, nfields);
     sobj->init_req(0, C->root());
     transform_later(sobj);
@@ -871,18 +858,6 @@ void PhaseMacroExpand::process_users_of_allocation(CallNode *alloc) {
           Node *n = use->last_out(k);
           uint oc2 = use->outcnt();
           if (n->is_Store()) {
-#ifdef ASSERT
-            // Verify that there is no dependent MemBarVolatile nodes,
-            // they should be removed during IGVN, see MemBarNode::Ideal().
-            for (DUIterator_Fast pmax, p = n->fast_outs(pmax);
-                                       p < pmax; p++) {
-              Node* mb = n->fast_out(p);
-              assert(mb->is_Initialize() || !mb->is_MemBar() ||
-                     mb->req() <= MemBarNode::Precedent ||
-                     mb->in(MemBarNode::Precedent) != n,
-                     "MemBarVolatile should be eliminated for non-escaping object");
-            }
-#endif
             _igvn.replace_node(n, n->in(MemNode::Memory));
           } else {
             eliminate_card_mark(n);
@@ -928,13 +903,6 @@ void PhaseMacroExpand::process_users_of_allocation(CallNode *alloc) {
         Node *mem_proj = init->proj_out(TypeFunc::Memory);
         if (mem_proj != NULL) {
           Node *mem = init->in(TypeFunc::Memory);
-#ifdef ASSERT
-          if (mem->is_MergeMem()) {
-            assert(mem->in(TypeFunc::Memory) == _memproj_fallthrough, "allocation memory projection");
-          } else {
-            assert(mem == _memproj_fallthrough, "allocation memory projection");
-          }
-#endif
           _igvn.replace_node(mem_proj, mem);
         }
       } else  {
@@ -1906,9 +1874,6 @@ void PhaseMacroExpand::mark_eliminated_box(Node* oldbox, Node* obj) {
         // Check lock's box since box could be referenced by Lock's debug info.
         if (alock->box_node() == oldbox) {
           // Mark eliminated all related locks and unlocks.
-#ifdef ASSERT
-          alock->log_lock_optimization(C, "eliminate_lock_set_non_esc4");
-#endif
           alock->set_non_esc_obj();
         }
       }
@@ -1935,9 +1900,6 @@ void PhaseMacroExpand::mark_eliminated_box(Node* oldbox, Node* obj) {
       AbstractLockNode* alock = u->as_AbstractLock();
       if (alock->box_node() == oldbox && alock->obj_node()->eqv_uncast(obj)) {
         // Replace Box and mark eliminated all related locks and unlocks.
-#ifdef ASSERT
-        alock->log_lock_optimization(C, "eliminate_lock_set_non_esc5");
-#endif
         alock->set_non_esc_obj();
         _igvn.rehash_node_delayed(alock);
         alock->set_box_node(newbox);
@@ -2003,19 +1965,11 @@ void PhaseMacroExpand::mark_eliminated_locking_nodes(AbstractLockNode *alock) {
                 // Verify that this Box is referenced only by related locks.
                 assert(alock->obj_node()->eqv_uncast(obj), "");
                 // Mark all related locks and unlocks.
-#ifdef ASSERT
-                alock->log_lock_optimization(C, "eliminate_lock_set_nested");
-#endif
                 alock->set_nested();
               }
             }
           }
         } else {
-#ifdef ASSERT
-          alock->log_lock_optimization(C, "eliminate_lock_NOT_nested_lock_region");
-          if (C->log() != NULL)
-            alock->as_Lock()->is_nested_lock_region(C); // rerun for debugging output
-#endif
         }
       }
       return;
@@ -2053,13 +2007,6 @@ bool PhaseMacroExpand::eliminate_locking_node(AbstractLockNode *alock) {
   if (!alock->is_eliminated()) {
     return false;
   }
-#ifdef ASSERT
-  if (!alock->is_coarsened()) {
-    // Check that new "eliminated" BoxLock node is created.
-    BoxLockNode* oldbox = alock->box_node()->as_BoxLock();
-    assert(oldbox->is_eliminated(), "should be done already");
-  }
-#endif
 
   alock->log_lock_optimization(C, "eliminate_lock");
 
@@ -2533,16 +2480,6 @@ bool PhaseMacroExpand::expand_macro_nodes() {
         assert(C->profile_rtm(), "should be used only in rtm deoptimization code");
         assert((n->outcnt() == 1) && n->unique_out()->is_Cmp(), "");
         Node* cmp = n->unique_out();
-#ifdef ASSERT
-        // Validate graph.
-        assert((cmp->outcnt() == 1) && cmp->unique_out()->is_Bool(), "");
-        BoolNode* bol = cmp->unique_out()->as_Bool();
-        assert((bol->outcnt() == 1) && bol->unique_out()->is_If() &&
-               (bol->_test._test == BoolTest::ne), "");
-        IfNode* ifn = bol->unique_out()->as_If();
-        assert((ifn->outcnt() == 2) &&
-               ifn->proj_out(1)->is_uncommon_trap_proj(Deoptimization::Reason_rtm_state_change), "");
-#endif
         Node* repl = n->in(1);
         if (!_has_locks) {
           // Remove RTM state check if there are no locks in the code.

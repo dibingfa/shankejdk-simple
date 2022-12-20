@@ -142,13 +142,6 @@ bool FpuStackSim::contains(int rnr) {
 }
 
 bool FpuStackSim::is_empty() {
-#ifdef ASSERT
-  if (stack_size() == 0) {
-    for (int i = 0; i < FrameMap::nof_fpu_regs; i++) {
-      assert(regs_at(i) == EMPTY, "must be empty");
-    }
-  }
-#endif
   return stack_size() == 0;
 }
 

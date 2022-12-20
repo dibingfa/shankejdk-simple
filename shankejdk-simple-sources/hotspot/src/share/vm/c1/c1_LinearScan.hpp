@@ -383,15 +383,6 @@ class LinearScan : public CompilationResourceObj {
   void        print_lir(int level, const char* label, bool hir_valid = true);
 #endif
 
-#ifdef ASSERT
-  // verification functions for allocation
-  // (check that all intervals have a correct register and that no registers are overwritten)
-  void verify();
-  void verify_intervals();
-  void verify_no_oops_in_fixed_intervals();
-  void verify_constants();
-  void verify_registers();
-#endif
 
  public:
   // creation

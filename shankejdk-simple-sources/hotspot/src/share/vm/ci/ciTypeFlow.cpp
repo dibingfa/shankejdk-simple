@@ -442,27 +442,12 @@ bool ciTypeFlow::StateVector::meet(const ciTypeFlow::StateVector* incoming) {
   if (stack_size() == -1) {
     set_stack_size(incoming->stack_size());
     Cell limit = limit_cell();
-    #ifdef ASSERT
-    { for (Cell c = start_cell(); c < limit; c = next_cell(c)) {
-        assert(type_at(c) == top_type(), "");
-    } }
-    #endif
     // Make a simple copy of the incoming state.
     for (Cell c = start_cell(); c < limit; c = next_cell(c)) {
       set_type_at(c, incoming->type_at(c));
     }
     return true;  // it is always different the first time
   }
-#ifdef ASSERT
-  if (stack_size() != incoming->stack_size()) {
-    _outer->method()->print_codes();
-    tty->print_cr("!!!! Stack size conflict");
-    tty->print_cr("Current state:");
-    print_on(tty);
-    tty->print_cr("Incoming state:");
-    ((StateVector*)incoming)->print_on(tty);
-  }
-#endif
   assert(stack_size() == incoming->stack_size(), "sanity");
 
   bool different = false;
@@ -2542,12 +2527,6 @@ void ciTypeFlow::build_loop_tree(Block* blk) {
   } else if (innermost->head() == blk) {
     // If loop header, complete the tree pointers
     if (blk->loop() != innermost) {
-#ifdef ASSERT
-      assert(blk->loop()->head() == innermost->head(), "same head");
-      Loop* dl;
-      for (dl = innermost; dl != NULL && dl != blk->loop(); dl = dl->parent());
-      assert(dl == blk->loop(), "blk->loop() already in innermost list");
-#endif
       blk->set_loop(innermost);
     }
     innermost->def_locals()->add(blk->def_locals());

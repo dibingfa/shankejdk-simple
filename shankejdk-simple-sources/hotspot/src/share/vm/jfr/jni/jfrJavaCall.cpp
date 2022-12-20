@@ -32,11 +32,6 @@
 #include "runtime/javaCalls.hpp"
 #include "utilities/globalDefinitions.hpp"
 
-#ifdef ASSERT
-static bool is_large_value(const JavaValue& value) {
-  return value.get_type() == T_LONG || value.get_type() == T_DOUBLE;
-}
-#endif // ASSERT
 
 static Symbol* resolve(const char* str, TRAPS) {
   assert(str != NULL, "invariant");

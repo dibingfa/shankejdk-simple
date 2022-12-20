@@ -66,10 +66,6 @@ const uint Matcher::_end_rematerialize   = _END_REMATERIALIZE;
 //---------------------------Matcher-------------------------------------------
 Matcher::Matcher()
 : PhaseTransform( Phase::Ins_Select ),
-#ifdef ASSERT
-  _old2new_map(C->comp_arena()),
-  _new2old_map(C->comp_arena()),
-#endif
   _shared_nodes(C->comp_arena()),
   _reduceOp(reduceOp), _leftOp(leftOp), _rightOp(rightOp),
   _swallowed(swallowed),
@@ -154,29 +150,6 @@ OptoReg::Name Compile::compute_old_SP() {
 
 
 
-#ifdef ASSERT
-void Matcher::verify_new_nodes_only(Node* xroot) {
-  // Make sure that the new graph only references new nodes
-  ResourceMark rm;
-  Unique_Node_List worklist;
-  VectorSet visited(Thread::current()->resource_area());
-  worklist.push(xroot);
-  while (worklist.size() > 0) {
-    Node* n = worklist.pop();
-    visited <<= n->_idx;
-    assert(C->node_arena()->contains(n), "dead node");
-    for (uint j = 0; j < n->req(); j++) {
-      Node* in = n->in(j);
-      if (in != NULL) {
-        assert(C->node_arena()->contains(in), "dead node");
-        if (!visited.test(in->_idx)) {
-          worklist.push(in);
-        }
-      }
-    }
-  }
-}
-#endif
 
 
 //---------------------------match---------------------------------------------
@@ -230,31 +203,6 @@ void Matcher::match( ) {
   // that will convert this to an array of register numbers.
   const StartNode *start = C->start();
   start->calling_convention( sig_bt, vm_parm_regs, argcnt );
-#ifdef ASSERT
-  // Sanity check users' calling convention.  Real handy while trying to
-  // get the initial port correct.
-  { for (uint i = 0; i<argcnt; i++) {
-      if( !vm_parm_regs[i].first()->is_valid() && !vm_parm_regs[i].second()->is_valid() ) {
-        assert(domain->field_at(i+TypeFunc::Parms)==Type::HALF, "only allowed on halve" );
-        _parm_regs[i].set_bad();
-        continue;
-      }
-      VMReg parm_reg = vm_parm_regs[i].first();
-      assert(parm_reg->is_valid(), "invalid arg?");
-      if (parm_reg->is_reg()) {
-        OptoReg::Name opto_parm_reg = OptoReg::as_OptoReg(parm_reg);
-        assert(can_be_java_arg(opto_parm_reg) ||
-               C->stub_function() == CAST_FROM_FN_PTR(address, OptoRuntime::rethrow_C) ||
-               opto_parm_reg == inline_cache_reg(),
-               "parameters in register must be preserved by runtime stubs");
-      }
-      for (uint j = 0; j < i; j++) {
-        assert(parm_reg != vm_parm_regs[j].first(),
-               "calling conv. must produce distinct regs");
-      }
-    }
-  }
-#endif
 
   // Do some initial frame layout.
 
@@ -377,9 +325,6 @@ void Matcher::match( ) {
 
       C->set_root(xroot->is_Root() ? xroot->as_Root() : NULL);
 
-#ifdef ASSERT
-      verify_new_nodes_only(xroot);
-#endif
     }
   }
   if (C->top() == NULL || C->root() == NULL) {
@@ -881,80 +826,6 @@ void Matcher::init_spill_mask( Node *ret ) {
   }
 }
 
-#ifdef ASSERT
-static void match_alias_type(Compile* C, Node* n, Node* m) {
-  if (!VerifyAliases)  return;  // do not go looking for trouble by default
-  const TypePtr* nat = n->adr_type();
-  const TypePtr* mat = m->adr_type();
-  int nidx = C->get_alias_index(nat);
-  int midx = C->get_alias_index(mat);
-  // Detune the assert for cases like (AndI 0xFF (LoadB p)).
-  if (nidx == Compile::AliasIdxTop && midx >= Compile::AliasIdxRaw) {
-    for (uint i = 1; i < n->req(); i++) {
-      Node* n1 = n->in(i);
-      const TypePtr* n1at = n1->adr_type();
-      if (n1at != NULL) {
-        nat = n1at;
-        nidx = C->get_alias_index(n1at);
-      }
-    }
-  }
-  // %%% Kludgery.  Instead, fix ideal adr_type methods for all these cases:
-  if (nidx == Compile::AliasIdxTop && midx == Compile::AliasIdxRaw) {
-    switch (n->Opcode()) {
-    case Op_PrefetchRead:
-    case Op_PrefetchWrite:
-    case Op_PrefetchAllocation:
-      nidx = Compile::AliasIdxRaw;
-      nat = TypeRawPtr::BOTTOM;
-      break;
-    }
-  }
-  if (nidx == Compile::AliasIdxRaw && midx == Compile::AliasIdxTop) {
-    switch (n->Opcode()) {
-    case Op_ClearArray:
-      midx = Compile::AliasIdxRaw;
-      mat = TypeRawPtr::BOTTOM;
-      break;
-    }
-  }
-  if (nidx == Compile::AliasIdxTop && midx == Compile::AliasIdxBot) {
-    switch (n->Opcode()) {
-    case Op_Return:
-    case Op_Rethrow:
-    case Op_Halt:
-    case Op_TailCall:
-    case Op_TailJump:
-      nidx = Compile::AliasIdxBot;
-      nat = TypePtr::BOTTOM;
-      break;
-    }
-  }
-  if (nidx == Compile::AliasIdxBot && midx == Compile::AliasIdxTop) {
-    switch (n->Opcode()) {
-    case Op_StrComp:
-    case Op_StrEquals:
-    case Op_StrIndexOf:
-    case Op_AryEq:
-    case Op_MemBarVolatile:
-    case Op_MemBarCPUOrder: // %%% these ideals should have narrower adr_type?
-    case Op_EncodeISOArray:
-      nidx = Compile::AliasIdxTop;
-      nat = NULL;
-      break;
-    }
-  }
-  if (nidx != midx) {
-    if (PrintOpto || (PrintMiscellaneous && (WizardMode || Verbose))) {
-      tty->print_cr("==== Matcher alias shift %d => %d", nidx, midx);
-      n->dump();
-      m->dump();
-    }
-    assert(C->subsume_loads() && C->must_alias(nat, midx),
-           "must not lose alias info when matching");
-  }
-}
-#endif
 
 
 //------------------------------MStack-----------------------------------------
@@ -1028,16 +899,10 @@ Node *Matcher::xform( Node *n, int max_stack ) {
             if (n->is_Proj() && n->in(0) != NULL && n->in(0)->is_Multi()) {       // Projections?
               // Convert to machine-dependent projection
               m = n->in(0)->as_Multi()->match( n->as_Proj(), this );
-#ifdef ASSERT
-              _new2old_map.map(m->_idx, n);
-#endif
               if (m->in(0) != NULL) // m might be top
                 collect_null_checks(m, n);
             } else {                // Else just a regular 'ol guy
               m = n->clone();       // So just clone into new-space
-#ifdef ASSERT
-              _new2old_map.map(m->_idx, n);
-#endif
               // Def-Use edges will be added incrementally as Uses
               // of this node are matched.
               assert(m->outcnt() == 0, "no Uses of this clone yet");
@@ -1086,9 +951,6 @@ Node *Matcher::xform( Node *n, int max_stack ) {
             // || op == Op_BoxLock  // %%%% enable this and remove (+++) in chaitin.cpp
             ) {
           m = m->clone();
-#ifdef ASSERT
-          _new2old_map.map(m->_idx, n);
-#endif
           mstack.push(m, Post_Visit, n, i); // Don't need to visit
           mstack.push(m->in(0), Visit, m, 0);
         } else {
@@ -1247,35 +1109,6 @@ MachNode *Matcher::match_sfpt( SafePointNode *sfpt ) {
     // V-call to pick proper calling convention
     call->calling_convention( sig_bt, parm_regs, argcnt );
 
-#ifdef ASSERT
-    // Sanity check users' calling convention.  Really handy during
-    // the initial porting effort.  Fairly expensive otherwise.
-    { for (int i = 0; i<argcnt; i++) {
-      if( !parm_regs[i].first()->is_valid() &&
-          !parm_regs[i].second()->is_valid() ) continue;
-      VMReg reg1 = parm_regs[i].first();
-      VMReg reg2 = parm_regs[i].second();
-      for (int j = 0; j < i; j++) {
-        if( !parm_regs[j].first()->is_valid() &&
-            !parm_regs[j].second()->is_valid() ) continue;
-        VMReg reg3 = parm_regs[j].first();
-        VMReg reg4 = parm_regs[j].second();
-        if( !reg1->is_valid() ) {
-          assert( !reg2->is_valid(), "valid halvsies" );
-        } else if( !reg3->is_valid() ) {
-          assert( !reg4->is_valid(), "valid halvsies" );
-        } else {
-          assert( reg1 != reg2, "calling conv. must produce distinct regs");
-          assert( reg1 != reg3, "calling conv. must produce distinct regs");
-          assert( reg1 != reg4, "calling conv. must produce distinct regs");
-          assert( reg2 != reg3, "calling conv. must produce distinct regs");
-          assert( reg2 != reg4 || !reg2->is_valid(), "calling conv. must produce distinct regs");
-          assert( reg3 != reg4, "calling conv. must produce distinct regs");
-        }
-      }
-    }
-    }
-#endif
 
     // Visit each argument.  Compute its outgoing register mask.
     // Return results now can have 2 bits returned.
@@ -1375,10 +1208,6 @@ MachNode *Matcher::match_tree( const Node *n ) {
 
   // StoreNodes require their Memory input to match any LoadNodes
   Node *mem = n->is_Store() ? n->in(MemNode::Memory) : (Node*)1 ;
-#ifdef ASSERT
-  Node* save_mem_node = _mem_node;
-  _mem_node = n->is_Store() ? (Node*)n : NULL;
-#endif
   // State object for root node of match tree
   // Allocate it on _states_arena - stack allocation can cause stack overflow.
   State *s = new (&_states_arena) State;
@@ -1409,10 +1238,6 @@ MachNode *Matcher::match_tree( const Node *n ) {
   }
   // Reduce input tree based upon the state labels to machine Nodes
   MachNode *m = ReduceInst( s, s->_rule[mincost], mem );
-#ifdef ASSERT
-  _old2new_map.map(n->_idx, m);
-  _new2old_map.map(m->_idx, (Node*)n);
-#endif
 
   // Add any Matcher-ignored edges
   uint cnt = n->req();
@@ -1580,18 +1405,6 @@ Node *Matcher::Label_Root( const Node *n, State *svec, Node *control, const Node
   // Call DFA to match this node, and return
   svec->DFA( n->Opcode(), n );
 
-#ifdef ASSERT
-  uint x;
-  for( x = 0; x < _LAST_MACH_OPER; x++ )
-    if( svec->valid(x) )
-      break;
-
-  if (x >= _LAST_MACH_OPER) {
-    n->dump();
-    svec->dump();
-    assert( false, "bad AD file" );
-  }
-#endif
   return control;
 }
 
@@ -1683,38 +1496,6 @@ MachNode *Matcher::ReduceInst( State *s, int rule, Node *&mem ) {
   // If a Memory was used, insert a Memory edge
   if( mem != (Node*)1 ) {
     mach->ins_req(MemNode::Memory,mem);
-#ifdef ASSERT
-    // Verify adr type after matching memory operation
-    const MachOper* oper = mach->memory_operand();
-    if (oper != NULL && oper != (MachOper*)-1) {
-      // It has a unique memory operand.  Find corresponding ideal mem node.
-      Node* m = NULL;
-      if (leaf->is_Mem()) {
-        m = leaf;
-      } else {
-        m = _mem_node;
-        assert(m != NULL && m->is_Mem(), "expecting memory node");
-      }
-      const Type* mach_at = mach->adr_type();
-      // DecodeN node consumed by an address may have different type
-      // then its input. Don't compare types for such case.
-      if (m->adr_type() != mach_at &&
-          (m->in(MemNode::Address)->is_DecodeNarrowPtr() ||
-           m->in(MemNode::Address)->is_AddP() &&
-           m->in(MemNode::Address)->in(AddPNode::Address)->is_DecodeNarrowPtr() ||
-           m->in(MemNode::Address)->is_AddP() &&
-           m->in(MemNode::Address)->in(AddPNode::Address)->is_AddP() &&
-           m->in(MemNode::Address)->in(AddPNode::Address)->in(AddPNode::Address)->is_DecodeNarrowPtr())) {
-        mach_at = m->adr_type();
-      }
-      if (m->adr_type() != mach_at) {
-        m->dump();
-        tty->print_cr("mach:");
-        mach->dump(1);
-      }
-      assert(m->adr_type() == mach_at, "matcher should not change adr type");
-    }
-#endif
   }
 
   // If the _leaf is an AddP, insert the base edge
@@ -1734,9 +1515,6 @@ MachNode *Matcher::ReduceInst( State *s, int rule, Node *&mem ) {
     for( uint i=0; i<mach->req(); i++ ) {
       mach->set_req(i,NULL);
     }
-#ifdef ASSERT
-    _new2old_map.map(ex->_idx, s->_leaf);
-#endif
   }
 
   // PhaseChaitin::fixup_spills will sometimes generate spill code
@@ -2334,12 +2112,6 @@ void Matcher::find_shared( Node *n ) {
   } // end of while (mstack.is_nonempty())
 }
 
-#ifdef ASSERT
-// machine-independent root to machine-dependent root
-void Matcher::dump_old2new_map() {
-  _old2new_map.dump();
-}
-#endif
 
 //---------------------------collect_null_checks-------------------------------
 // Find null checks in the ideal graph; write a machine-specific node for
@@ -2576,25 +2348,9 @@ bool Matcher::branches_to_uncommon_trap(const Node *n) {
 //=============================================================================
 //---------------------------State---------------------------------------------
 State::State(void) {
-#ifdef ASSERT
-  _id = 0;
-  _kids[0] = _kids[1] = (State*)(intptr_t) CONST64(0xcafebabecafebabe);
-  _leaf = (Node*)(intptr_t) CONST64(0xbaadf00dbaadf00d);
-  //memset(_cost, -1, sizeof(_cost));
-  //memset(_rule, -1, sizeof(_rule));
-#endif
   memset(_valid, 0, sizeof(_valid));
 }
 
-#ifdef ASSERT
-State::~State() {
-  _id = 99;
-  _kids[0] = _kids[1] = (State*)(intptr_t) CONST64(0xcafebabecafebabe);
-  _leaf = (Node*)(intptr_t) CONST64(0xbaadf00dbaadf00d);
-  memset(_cost, -3, sizeof(_cost));
-  memset(_rule, -3, sizeof(_rule));
-}
-#endif
 
 #ifndef PRODUCT
 //---------------------------dump----------------------------------------------

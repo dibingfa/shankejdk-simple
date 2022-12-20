@@ -490,17 +490,6 @@ void Compile::shorten_branches(uint* blk_starts, int& code_size, int& reloc_size
       int idx = jmp_nidx[i];
       MachNode* mach = (idx == -1) ? NULL: block->get_node(idx)->as_Mach();
       if (mach != NULL && mach->may_be_short_branch()) {
-#ifdef ASSERT
-        assert(jmp_size[i] > 0 && mach->is_MachBranch(), "sanity");
-        int j;
-        // Find the branch; ignore trailing NOPs.
-        for (j = block->number_of_nodes()-1; j>=0; j--) {
-          Node* n = block->get_node(j);
-          if (!n->is_Mach() || n->as_Mach()->ideal_Opcode() != Op_Con)
-            break;
-        }
-        assert(j >= 0 && j == idx && block->get_node(j) == (Node*)mach, "sanity");
-#endif
         int br_size = jmp_size[i];
         int br_offs = blk_starts[i] + jmp_offset[i];
 
@@ -561,18 +550,6 @@ void Compile::shorten_branches(uint* blk_starts, int& code_size, int& reloc_size
     }
   }
 
-#ifdef ASSERT
-  for (uint i = 0; i < nblocks; i++) { // For all blocks
-    if (jmp_target[i] != 0) {
-      int br_size = jmp_size[i];
-      int offset = blk_starts[jmp_target[i]]-(blk_starts[i] + jmp_offset[i]);
-      if (!_matcher->is_short_branch_offset(jmp_rule[i], br_size, offset)) {
-        tty->print_cr("target (%d) - jmp_offset(%d) = offset (%d), jump_size(%d), jmp_block B%d, target_block B%d", blk_starts[jmp_target[i]], blk_starts[i] + jmp_offset[i], offset, br_size, i, jmp_target[i]);
-      }
-      assert(_matcher->is_short_branch_offset(jmp_rule[i], br_size, offset), "Displacement too large for short jmp");
-    }
-  }
-#endif
 
   // Step 3, compute the offsets of all blocks, will be done in fill_buffer()
   // after ScheduleAndBundle().
@@ -1209,12 +1186,6 @@ void Compile::fill_buffer(CodeBuffer* cb, uint* blk_starts) {
   int current_offset  = 0;
   int last_call_offset = -1;
   int last_avoid_back_to_back_offset = -1;
-#ifdef ASSERT
-  uint* jmp_target = NEW_RESOURCE_ARRAY(uint,nblocks);
-  uint* jmp_offset = NEW_RESOURCE_ARRAY(uint,nblocks);
-  uint* jmp_size   = NEW_RESOURCE_ARRAY(uint,nblocks);
-  uint* jmp_rule   = NEW_RESOURCE_ARRAY(uint,nblocks);
-#endif
 
   // Create an array of unused labels, one for each basic block, if printing is enabled
 #ifndef PRODUCT
@@ -1253,17 +1224,6 @@ void Compile::fill_buffer(CodeBuffer* cb, uint* blk_starts) {
       cb->flush_bundle(true);
     }
 
-#ifdef ASSERT
-    if (!block->is_connector()) {
-      stringStream st;
-      block->dump_head(_cfg, &st);
-      MacroAssembler(cb).block_comment(st.as_string());
-    }
-    jmp_target[i] = 0;
-    jmp_offset[i] = 0;
-    jmp_size[i]   = 0;
-    jmp_rule[i]   = 0;
-#endif
     int blk_offset = current_offset;
 
     // Define the label at the beginning of the basic block
@@ -1423,12 +1383,6 @@ void Compile::fill_buffer(CodeBuffer* cb, uint* blk_starts) {
                 cb->flush_bundle(true);
                 current_offset = cb->insts_size();
               }
-#ifdef ASSERT
-              jmp_target[i] = block_num;
-              jmp_offset[i] = current_offset - blk_offset;
-              jmp_size[i]   = new_size;
-              jmp_rule[i]   = mach->rule();
-#endif
               block->map_node(replacement, j);
               mach->subsume_by(replacement, C);
               n    = replacement;
@@ -1449,28 +1403,6 @@ void Compile::fill_buffer(CodeBuffer* cb, uint* blk_starts) {
             }
           }
         }
-#ifdef ASSERT
-        // Check that oop-store precedes the card-mark
-        else if (mach->ideal_Opcode() == Op_StoreCM) {
-          uint storeCM_idx = j;
-          int count = 0;
-          for (uint prec = mach->req(); prec < mach->len(); prec++) {
-            Node *oop_store = mach->in(prec);  // Precedence edge
-            if (oop_store == NULL) continue;
-            count++;
-            uint i4;
-            for (i4 = 0; i4 < last_inst; ++i4) {
-              if (block->get_node(i4) == oop_store) {
-                break;
-              }
-            }
-            // Note: This test can provide a false failure if other precedence
-            // edges have been added to the storeCMNode.
-            assert(i4 == last_inst || i4 < storeCM_idx, "CM card-mark executes before oop-store");
-          }
-          assert(count > 0, "storeCM expects at least one precedence edge");
-        }
-#endif
         else if (!n->is_Proj()) {
           // Remember the beginning of the previous instruction, in case
           // it's followed by a flag-kill and a null-check.  Happens on
@@ -1510,21 +1442,6 @@ void Compile::fill_buffer(CodeBuffer* cb, uint* blk_starts) {
         return;
       }
 
-#ifdef ASSERT
-      uint n_size = n->size(_regalloc);
-      if (n_size < (current_offset-instr_offset)) {
-        MachNode* mach = n->as_Mach();
-        n->dump();
-        mach->dump_format(_regalloc, tty);
-        tty->print_cr(" n_size (%d), current_offset (%d), instr_offset (%d)", n_size, current_offset, instr_offset);
-        Disassembler::decode(cb->insts_begin() + instr_offset, cb->insts_begin() + current_offset + 1, tty);
-        tty->print_cr(" ------------------- ");
-        BufferBlob* blob = this->scratch_buffer_blob();
-        address blob_begin = blob->content_begin();
-        Disassembler::decode(blob_begin, blob_begin + n_size + 1, tty);
-        assert(false, "wrong size of mach node");
-      }
-#endif
       non_safepoints.observe_instruction(n, current_offset);
 
       // mcall is last "call" that can be a safepoint
@@ -1620,18 +1537,6 @@ void Compile::fill_buffer(CodeBuffer* cb, uint* blk_starts) {
 
   assert(cb->insts_size() < 500000, "method is unreasonably large");
 
-#ifdef ASSERT
-  for (uint i = 0; i < nblocks; i++) { // For all blocks
-    if (jmp_target[i] != 0) {
-      int br_size = jmp_size[i];
-      int offset = blk_starts[jmp_target[i]]-(blk_starts[i] + jmp_offset[i]);
-      if (!_matcher->is_short_branch_offset(jmp_rule[i], br_size, offset)) {
-        tty->print_cr("target (%d) - jmp_offset(%d) = offset (%d), jump_size(%d), jmp_block B%d, target_block B%d", blk_starts[jmp_target[i]], blk_starts[i] + jmp_offset[i], offset, br_size, i, jmp_target[i]);
-        assert(false, "Displacement too large for short jmp");
-      }
-    }
-  }
-#endif
 
 #ifndef PRODUCT
   // Information on the size of the method, without the extraneous code
@@ -1723,11 +1628,6 @@ void Compile::FillExceptionTables(uint cnt, uint *call_returns, uint *inct_start
 
       // Get the offset of the return from the call
       uint call_return = call_returns[block->_pre_order];
-#ifdef ASSERT
-      assert( call_return > 0, "no call seen for this basic block" );
-      while (block->get_node(--j)->is_MachProj()) ;
-      assert(block->get_node(j)->is_MachCall(), "CatchProj must follow call");
-#endif
       // last instruction is a CatchNode, find it's CatchProjNodes
       int nof_succs = block->_num_succs;
       // allocate space
@@ -2385,10 +2285,6 @@ void Scheduling::ComputeUseCount(const Block *bb) {
   // No delay slot specified
   _unconditional_delay_slot = NULL;
 
-#ifdef ASSERT
-  for( uint i=0; i < bb->number_of_nodes(); i++ )
-    assert( _uses[bb->get_node(i)->_idx] == 0, "_use array not clean" );
-#endif
 
   // Force the _uses count to never go to zero for unscheduable pieces
   // of the block
@@ -2554,16 +2450,6 @@ void Scheduling::DoScheduling() {
     }
 
     assert( _scheduled.size() == _bb_end - _bb_start, "wrong number of instructions" );
-#ifdef ASSERT
-    for( uint l = _bb_start; l < _bb_end; l++ ) {
-      Node *n = bb->get_node(l);
-      uint m;
-      for( m = 0; m < _bb_end-_bb_start; m++ )
-        if( _scheduled[m] == n )
-          break;
-      assert( m < _bb_end-_bb_start, "instruction missing in schedule" );
-    }
-#endif
 
     // Now copy the instructions (in reverse order) back to the block
     for ( uint k = _bb_start; k < _bb_end; k++ )
@@ -2585,9 +2471,6 @@ void Scheduling::DoScheduling() {
         }
       }
     }
-#endif
-#ifdef ASSERT
-  verify_good_schedule(bb,"after block local scheduling");
 #endif
   }
 
@@ -2612,69 +2495,6 @@ static bool edge_from_to( Node *from, Node *to ) {
   return false;
 }
 
-#ifdef ASSERT
-void Scheduling::verify_do_def( Node *n, OptoReg::Name def, const char *msg ) {
-  // Check for bad kills
-  if( OptoReg::is_valid(def) ) { // Ignore stores & control flow
-    Node *prior_use = _reg_node[def];
-    if( prior_use && !edge_from_to(prior_use,n) ) {
-      tty->print("%s = ",OptoReg::as_VMReg(def)->name());
-      n->dump();
-      tty->print_cr("...");
-      prior_use->dump();
-      assert(edge_from_to(prior_use,n),msg);
-    }
-    _reg_node.map(def,NULL); // Kill live USEs
-  }
-}
-
-void Scheduling::verify_good_schedule( Block *b, const char *msg ) {
-
-  // Zap to something reasonable for the verify code
-  _reg_node.clear();
-
-  // Walk over the block backwards.  Check to make sure each DEF doesn't
-  // kill a live value (other than the one it's supposed to).  Add each
-  // USE to the live set.
-  for( uint i = b->number_of_nodes()-1; i >= _bb_start; i-- ) {
-    Node *n = b->get_node(i);
-    int n_op = n->Opcode();
-    if( n_op == Op_MachProj && n->ideal_reg() == MachProjNode::fat_proj ) {
-      // Fat-proj kills a slew of registers
-      RegMask rm = n->out_RegMask();// Make local copy
-      while( rm.is_NotEmpty() ) {
-        OptoReg::Name kill = rm.find_first_elem();
-        rm.Remove(kill);
-        verify_do_def( n, kill, msg );
-      }
-    } else if( n_op != Op_Node ) { // Avoid brand new antidependence nodes
-      // Get DEF'd registers the normal way
-      verify_do_def( n, _regalloc->get_reg_first(n), msg );
-      verify_do_def( n, _regalloc->get_reg_second(n), msg );
-    }
-
-    // Now make all USEs live
-    for( uint i=1; i<n->req(); i++ ) {
-      Node *def = n->in(i);
-      assert(def != 0, "input edge required");
-      OptoReg::Name reg_lo = _regalloc->get_reg_first(def);
-      OptoReg::Name reg_hi = _regalloc->get_reg_second(def);
-      if( OptoReg::is_valid(reg_lo) ) {
-        assert(!_reg_node[reg_lo] || edge_from_to(_reg_node[reg_lo],def), msg);
-        _reg_node.map(reg_lo,n);
-      }
-      if( OptoReg::is_valid(reg_hi) ) {
-        assert(!_reg_node[reg_hi] || edge_from_to(_reg_node[reg_hi],def), msg);
-        _reg_node.map(reg_hi,n);
-      }
-    }
-
-  }
-
-  // Zap to something reasonable for the Antidependence code
-  _reg_node.clear();
-}
-#endif
 
 // Conditionally add precedence edges.  Avoid putting edges on Projs.
 static void add_prec_edge_from_to( Node *from, Node *to ) {
@@ -2782,9 +2602,6 @@ void Scheduling::anti_do_use( Block *b, Node *use, OptoReg::Name use_reg ) {
 // are only adding references within the current basic block.
 void Scheduling::ComputeRegisterAntidependencies(Block *b) {
 
-#ifdef ASSERT
-  verify_good_schedule(b,"before block local scheduling");
-#endif
 
   // A valid schedule, for each register independently, is an endless cycle
   // of: a def, then some uses (connected to the def by true dependencies),

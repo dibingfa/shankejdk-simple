@@ -206,13 +206,8 @@ class MutexLocker: StackObj {
 };
 
 // for debugging: check that we're already owning this lock (or are at a safepoint)
-#ifdef ASSERT
-void assert_locked_or_safepoint(const Monitor * lock);
-void assert_lock_strong(const Monitor * lock);
-#else
 #define assert_locked_or_safepoint(lock)
 #define assert_lock_strong(lock)
-#endif
 
 // A MutexLockerEx behaves like a MutexLocker when its constructor is
 // called with a Mutex.  Unlike a MutexLocker, its constructor can also be
@@ -260,11 +255,6 @@ class MonitorLockerEx: public MutexLockerEx {
   }
 
   ~MonitorLockerEx() {
-    #ifdef ASSERT
-      if (_monitor != NULL) {
-        assert_lock_strong(_monitor);
-      }
-    #endif  // ASSERT
     // Superclass destructor will do unlocking
   }
 

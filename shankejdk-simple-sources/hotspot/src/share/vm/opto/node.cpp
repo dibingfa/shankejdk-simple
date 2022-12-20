@@ -48,226 +48,6 @@ const uint Node::NotAMachineReg = 0xffff0000;
 extern int nodes_created;
 #endif
 
-#ifdef ASSERT
-
-//-------------------------- construct_node------------------------------------
-// Set a breakpoint here to identify where a particular node index is built.
-void Node::verify_construction() {
-  _debug_orig = NULL;
-  int old_debug_idx = Compile::debug_idx();
-  int new_debug_idx = old_debug_idx+1;
-  if (new_debug_idx > 0) {
-    // Arrange that the lowest five decimal digits of _debug_idx
-    // will repeat those of _idx. In case this is somehow pathological,
-    // we continue to assign negative numbers (!) consecutively.
-    const int mod = 100000;
-    int bump = (int)(_idx - new_debug_idx) % mod;
-    if (bump < 0)  bump += mod;
-    assert(bump >= 0 && bump < mod, "");
-    new_debug_idx += bump;
-  }
-  Compile::set_debug_idx(new_debug_idx);
-  set_debug_idx( new_debug_idx );
-  assert(Compile::current()->unique() < (INT_MAX - 1), "Node limit exceeded INT_MAX");
-  assert(Compile::current()->live_nodes() < Compile::current()->max_node_limit(), "Live Node limit exceeded limit");
-  if (BreakAtNode != 0 && (_debug_idx == BreakAtNode || (int)_idx == BreakAtNode)) {
-    tty->print_cr("BreakAtNode: _idx=%d _debug_idx=%d", _idx, _debug_idx);
-    BREAKPOINT;
-  }
-#if OPTO_DU_ITERATOR_ASSERT
-  _last_del = NULL;
-  _del_tick = 0;
-#endif
-  _hash_lock = 0;
-}
-
-
-// #ifdef ASSERT ...
-
-#if OPTO_DU_ITERATOR_ASSERT
-void DUIterator_Common::sample(const Node* node) {
-  _vdui     = VerifyDUIterators;
-  _node     = node;
-  _outcnt   = node->_outcnt;
-  _del_tick = node->_del_tick;
-  _last     = NULL;
-}
-
-void DUIterator_Common::verify(const Node* node, bool at_end_ok) {
-  assert(_node     == node, "consistent iterator source");
-  assert(_del_tick == node->_del_tick, "no unexpected deletions allowed");
-}
-
-void DUIterator_Common::verify_resync() {
-  // Ensure that the loop body has just deleted the last guy produced.
-  const Node* node = _node;
-  // Ensure that at least one copy of the last-seen edge was deleted.
-  // Note:  It is OK to delete multiple copies of the last-seen edge.
-  // Unfortunately, we have no way to verify that all the deletions delete
-  // that same edge.  On this point we must use the Honor System.
-  assert(node->_del_tick >= _del_tick+1, "must have deleted an edge");
-  assert(node->_last_del == _last, "must have deleted the edge just produced");
-  // We liked this deletion, so accept the resulting outcnt and tick.
-  _outcnt   = node->_outcnt;
-  _del_tick = node->_del_tick;
-}
-
-void DUIterator_Common::reset(const DUIterator_Common& that) {
-  if (this == &that)  return;  // ignore assignment to self
-  if (!_vdui) {
-    // We need to initialize everything, overwriting garbage values.
-    _last = that._last;
-    _vdui = that._vdui;
-  }
-  // Note:  It is legal (though odd) for an iterator over some node x
-  // to be reassigned to iterate over another node y.  Some doubly-nested
-  // progress loops depend on being able to do this.
-  const Node* node = that._node;
-  // Re-initialize everything, except _last.
-  _node     = node;
-  _outcnt   = node->_outcnt;
-  _del_tick = node->_del_tick;
-}
-
-void DUIterator::sample(const Node* node) {
-  DUIterator_Common::sample(node);      // Initialize the assertion data.
-  _refresh_tick = 0;                    // No refreshes have happened, as yet.
-}
-
-void DUIterator::verify(const Node* node, bool at_end_ok) {
-  DUIterator_Common::verify(node, at_end_ok);
-  assert(_idx      <  node->_outcnt + (uint)at_end_ok, "idx in range");
-}
-
-void DUIterator::verify_increment() {
-  if (_refresh_tick & 1) {
-    // We have refreshed the index during this loop.
-    // Fix up _idx to meet asserts.
-    if (_idx > _outcnt)  _idx = _outcnt;
-  }
-  verify(_node, true);
-}
-
-void DUIterator::verify_resync() {
-  // Note:  We do not assert on _outcnt, because insertions are OK here.
-  DUIterator_Common::verify_resync();
-  // Make sure we are still in sync, possibly with no more out-edges:
-  verify(_node, true);
-}
-
-void DUIterator::reset(const DUIterator& that) {
-  if (this == &that)  return;  // self assignment is always a no-op
-  assert(that._refresh_tick == 0, "assign only the result of Node::outs()");
-  assert(that._idx          == 0, "assign only the result of Node::outs()");
-  assert(_idx               == that._idx, "already assigned _idx");
-  if (!_vdui) {
-    // We need to initialize everything, overwriting garbage values.
-    sample(that._node);
-  } else {
-    DUIterator_Common::reset(that);
-    if (_refresh_tick & 1) {
-      _refresh_tick++;                  // Clear the "was refreshed" flag.
-    }
-    assert(_refresh_tick < 2*100000, "DU iteration must converge quickly");
-  }
-}
-
-void DUIterator::refresh() {
-  DUIterator_Common::sample(_node);     // Re-fetch assertion data.
-  _refresh_tick |= 1;                   // Set the "was refreshed" flag.
-}
-
-void DUIterator::verify_finish() {
-  // If the loop has killed the node, do not require it to re-run.
-  if (_node->_outcnt == 0)  _refresh_tick &= ~1;
-  // If this assert triggers, it means that a loop used refresh_out_pos
-  // to re-synch an iteration index, but the loop did not correctly
-  // re-run itself, using a "while (progress)" construct.
-  // This iterator enforces the rule that you must keep trying the loop
-  // until it "runs clean" without any need for refreshing.
-  assert(!(_refresh_tick & 1), "the loop must run once with no refreshing");
-}
-
-
-void DUIterator_Fast::verify(const Node* node, bool at_end_ok) {
-  DUIterator_Common::verify(node, at_end_ok);
-  Node** out    = node->_out;
-  uint   cnt    = node->_outcnt;
-  assert(cnt == _outcnt, "no insertions allowed");
-  assert(_outp >= out && _outp <= out + cnt - !at_end_ok, "outp in range");
-  // This last check is carefully designed to work for NO_OUT_ARRAY.
-}
-
-void DUIterator_Fast::verify_limit() {
-  const Node* node = _node;
-  verify(node, true);
-  assert(_outp == node->_out + node->_outcnt, "limit still correct");
-}
-
-void DUIterator_Fast::verify_resync() {
-  const Node* node = _node;
-  if (_outp == node->_out + _outcnt) {
-    // Note that the limit imax, not the pointer i, gets updated with the
-    // exact count of deletions.  (For the pointer it's always "--i".)
-    assert(node->_outcnt+node->_del_tick == _outcnt+_del_tick, "no insertions allowed with deletion(s)");
-    // This is a limit pointer, with a name like "imax".
-    // Fudge the _last field so that the common assert will be happy.
-    _last = (Node*) node->_last_del;
-    DUIterator_Common::verify_resync();
-  } else {
-    assert(node->_outcnt < _outcnt, "no insertions allowed with deletion(s)");
-    // A normal internal pointer.
-    DUIterator_Common::verify_resync();
-    // Make sure we are still in sync, possibly with no more out-edges:
-    verify(node, true);
-  }
-}
-
-void DUIterator_Fast::verify_relimit(uint n) {
-  const Node* node = _node;
-  assert((int)n > 0, "use imax -= n only with a positive count");
-  // This must be a limit pointer, with a name like "imax".
-  assert(_outp == node->_out + node->_outcnt, "apply -= only to a limit (imax)");
-  // The reported number of deletions must match what the node saw.
-  assert(node->_del_tick == _del_tick + n, "must have deleted n edges");
-  // Fudge the _last field so that the common assert will be happy.
-  _last = (Node*) node->_last_del;
-  DUIterator_Common::verify_resync();
-}
-
-void DUIterator_Fast::reset(const DUIterator_Fast& that) {
-  assert(_outp              == that._outp, "already assigned _outp");
-  DUIterator_Common::reset(that);
-}
-
-void DUIterator_Last::verify(const Node* node, bool at_end_ok) {
-  // at_end_ok means the _outp is allowed to underflow by 1
-  _outp += at_end_ok;
-  DUIterator_Fast::verify(node, at_end_ok);  // check _del_tick, etc.
-  _outp -= at_end_ok;
-  assert(_outp == (node->_out + node->_outcnt) - 1, "pointer must point to end of nodes");
-}
-
-void DUIterator_Last::verify_limit() {
-  // Do not require the limit address to be resynched.
-  //verify(node, true);
-  assert(_outp == _node->_out, "limit still correct");
-}
-
-void DUIterator_Last::verify_step(uint num_edges) {
-  assert((int)num_edges > 0, "need non-zero edge count for loop progress");
-  _outcnt   -= num_edges;
-  _del_tick += num_edges;
-  // Make sure we are still in sync, possibly with no more out-edges:
-  const Node* node = _node;
-  verify(node, true);
-  assert(node->_last_del == _last, "must have deleted the edge just produced");
-}
-
-#endif //OPTO_DU_ITERATOR_ASSERT
-
-
-#endif //ASSERT
 
 
 // This constant used to initialize _out may be any non-null value.
@@ -303,9 +83,6 @@ inline int Node::Init(int req, Compile* C) {
   if (req > 0) {
     // Allocate space for _in array to have double alignment.
     _in = (Node **) ((char *) (C->node_arena()->Amalloc_D(req * sizeof(void*))));
-#ifdef ASSERT
-    _in[req-1] = this; // magic cookie for assertion check
-#endif
   }
   // If there are default notes floating around, capture them:
   Node_Notes* nn = C->default_node_notes();
@@ -326,9 +103,6 @@ inline int Node::Init(int req, Compile* C) {
 // Create a Node, with a given number of required edges.
 Node::Node(uint req)
   : _idx(IDX_INIT(req))
-#ifdef ASSERT
-  , _parse_idx(_idx)
-#endif
 {
   assert( req < Compile::current()->max_node_limit() - NodeLimitFudgeFactor, "Input limit exceeded" );
   debug_only( verify_construction() );
@@ -348,9 +122,6 @@ Node::Node(uint req)
 //------------------------------Node-------------------------------------------
 Node::Node(Node *n0)
   : _idx(IDX_INIT(1))
-#ifdef ASSERT
-  , _parse_idx(_idx)
-#endif
 {
   debug_only( verify_construction() );
   NOT_PRODUCT(nodes_created++);
@@ -363,9 +134,6 @@ Node::Node(Node *n0)
 //------------------------------Node-------------------------------------------
 Node::Node(Node *n0, Node *n1)
   : _idx(IDX_INIT(2))
-#ifdef ASSERT
-  , _parse_idx(_idx)
-#endif
 {
   debug_only( verify_construction() );
   NOT_PRODUCT(nodes_created++);
@@ -380,9 +148,6 @@ Node::Node(Node *n0, Node *n1)
 //------------------------------Node-------------------------------------------
 Node::Node(Node *n0, Node *n1, Node *n2)
   : _idx(IDX_INIT(3))
-#ifdef ASSERT
-  , _parse_idx(_idx)
-#endif
 {
   debug_only( verify_construction() );
   NOT_PRODUCT(nodes_created++);
@@ -399,9 +164,6 @@ Node::Node(Node *n0, Node *n1, Node *n2)
 //------------------------------Node-------------------------------------------
 Node::Node(Node *n0, Node *n1, Node *n2, Node *n3)
   : _idx(IDX_INIT(4))
-#ifdef ASSERT
-  , _parse_idx(_idx)
-#endif
 {
   debug_only( verify_construction() );
   NOT_PRODUCT(nodes_created++);
@@ -420,9 +182,6 @@ Node::Node(Node *n0, Node *n1, Node *n2, Node *n3)
 //------------------------------Node-------------------------------------------
 Node::Node(Node *n0, Node *n1, Node *n2, Node *n3, Node *n4)
   : _idx(IDX_INIT(5))
-#ifdef ASSERT
-  , _parse_idx(_idx)
-#endif
 {
   debug_only( verify_construction() );
   NOT_PRODUCT(nodes_created++);
@@ -444,9 +203,6 @@ Node::Node(Node *n0, Node *n1, Node *n2, Node *n3, Node *n4)
 Node::Node(Node *n0, Node *n1, Node *n2, Node *n3,
                      Node *n4, Node *n5)
   : _idx(IDX_INIT(6))
-#ifdef ASSERT
-  , _parse_idx(_idx)
-#endif
 {
   debug_only( verify_construction() );
   NOT_PRODUCT(nodes_created++);
@@ -470,9 +226,6 @@ Node::Node(Node *n0, Node *n1, Node *n2, Node *n3,
 Node::Node(Node *n0, Node *n1, Node *n2, Node *n3,
                      Node *n4, Node *n5, Node *n6)
   : _idx(IDX_INIT(7))
-#ifdef ASSERT
-  , _parse_idx(_idx)
-#endif
 {
   debug_only( verify_construction() );
   NOT_PRODUCT(nodes_created++);
@@ -593,9 +346,6 @@ void Node::destruct() {
   Compile* compile = Compile::current();
   if ((uint)_idx+1 == compile->unique()) {
     compile->set_unique(compile->unique()-1);
-#ifdef ASSERT
-    reclaim_idx++;
-#endif
   }
   // Clear debug info:
   Node_Notes* nn = compile->node_notes_at(_idx);
@@ -618,40 +368,20 @@ void Node::destruct() {
 
   // Free the output edge array
   if (out_edge_size > 0) {
-#ifdef ASSERT
-    if( out_edge_end == compile->node_arena()->hwm() )
-      reclaim_in  += out_edge_size;  // count reclaimed out edges with in edges
-#endif
     compile->node_arena()->Afree(out_array, out_edge_size);
   }
 
   // Free the input edge array and the node itself
   if( edge_end == (char*)this ) {
-#ifdef ASSERT
-    if( edge_end+node_size == compile->node_arena()->hwm() ) {
-      reclaim_in  += edge_size;
-      reclaim_node+= node_size;
-    }
-#else
     // It was; free the input array and object all in one hit
     compile->node_arena()->Afree(_in,edge_size+node_size);
-#endif
   } else {
 
     // Free just the input array
-#ifdef ASSERT
-    if( edge_end == compile->node_arena()->hwm() )
-      reclaim_in  += edge_size;
-#endif
     compile->node_arena()->Afree(_in,edge_size);
 
     // Free just the object
-#ifdef ASSERT
-    if( ((char*)this) + node_size == compile->node_arena()->hwm() )
-      reclaim_node+= node_size;
-#else
     compile->node_arena()->Afree(this,node_size);
-#endif
   }
   if (is_macro()) {
     compile->remove_macro_node(this);
@@ -667,12 +397,6 @@ void Node::destruct() {
   if (is_SafePoint()) {
     as_SafePoint()->delete_replaced_nodes();
   }
-#ifdef ASSERT
-  // We will not actually delete the storage, but we'll make the node unusable.
-  *(address*)this = badAddress;  // smash the C++ vtbl, probably
-  _in = _out = (Node**) badAddress;
-  _max = _cnt = _outmax = _outcnt = 0;
-#endif
 }
 
 //------------------------------grow-------------------------------------------
@@ -726,19 +450,6 @@ void Node::out_grow( uint len ) {
   assert(_outmax == new_max && _outmax > len, "int width of _outmax is too small");
 }
 
-#ifdef ASSERT
-//------------------------------is_dead----------------------------------------
-bool Node::is_dead() const {
-  // Mach and pinch point nodes may look like dead.
-  if( is_top() || is_Mach() || (Opcode() == Op_Node && _outcnt > 0) )
-    return false;
-  for( uint i = 0; i < _max; i++ )
-    if( _in[i] != NULL )
-      return false;
-  dump();
-  return true;
-}
-#endif
 
 
 //------------------------------is_unreachable---------------------------------
@@ -947,20 +658,8 @@ Node* Node::find_out_with(int opcode) {
 
 //---------------------------uncast_helper-------------------------------------
 Node* Node::uncast_helper(const Node* p) {
-#ifdef ASSERT
-  uint depth_count = 0;
-  const Node* orig_p = p;
-#endif
 
   while (true) {
-#ifdef ASSERT
-    if (depth_count >= K) {
-      orig_p->dump(4);
-      if (p != orig_p)
-        p->dump(1);
-    }
-    assert(depth_count++ < K, "infinite loop in Node::uncast_helper");
-#endif
     if (p == NULL || p->req() != 2) {
       break;
     } else if (p->is_ConstraintCast()) {
@@ -993,9 +692,6 @@ void Node::add_prec( Node *n ) {
   _in[i] = n;                                // Stuff prec edge over NULL
   if ( n != NULL) n->add_out((Node *)this);  // Add mirror edge
 
-#ifdef ASSERT
-  while ((++i)<_max) { assert(_in[i] == NULL, err_msg("spec violation: Gap in prec edges (node %d)", _idx)); }
-#endif
 }
 
 //------------------------------rm_prec----------------------------------------
@@ -1018,21 +714,6 @@ uint Node::ideal_reg() const { return 0; }
 //------------------------------jvms-------------------------------------------
 JVMState* Node::jvms() const { return NULL; }
 
-#ifdef ASSERT
-//------------------------------jvms-------------------------------------------
-bool Node::verify_jvms(const JVMState* using_jvms) const {
-  for (JVMState* jvms = this->jvms(); jvms != NULL; jvms = jvms->caller()) {
-    if (jvms == using_jvms)  return true;
-  }
-  return false;
-}
-
-//------------------------------init_NodeProperty------------------------------
-void Node::init_NodeProperty() {
-  assert(_max_classes <= max_jushort, "too many NodeProperty classes");
-  assert(_max_flags <= max_jushort, "too many NodeProperty flags");
-}
-#endif
 
 //------------------------------format-----------------------------------------
 // Print as assembly
@@ -1512,12 +1193,6 @@ const TypeLong* Node::find_long_type() const {
  */
 const TypePtr* Node::get_ptr_type() const {
   const TypePtr* tp = this->bottom_type()->make_ptr();
-#ifdef ASSERT
-  if (tp == NULL) {
-    this->dump(1);
-    assert((tp != NULL), "unexpected node type");
-  }
-#endif
   return tp;
 }
 
@@ -1575,17 +1250,6 @@ static void find_recur(Compile* C,  Node* &result, Node *n, int idx, bool only_c
       find_recur(C, result, n->raw_out(j), idx, only_ctrl, old_space, new_space );
     }
   }
-#ifdef ASSERT
-  // Search along debug_orig edges last, checking for cycles
-  Node* orig = n->debug_orig();
-  if (orig != NULL) {
-    do {
-      if (NotANode(orig))  break;
-      find_recur(C, result, orig, idx, only_ctrl, old_space, new_space );
-      orig = orig->debug_orig();
-    } while (orig != NULL && orig != n->debug_orig());
-  }
-#endif //ASSERT
 }
 
 // call this from debugger:
@@ -1628,59 +1292,6 @@ static bool is_disconnected(const Node* n) {
   return true;
 }
 
-#ifdef ASSERT
-static void dump_orig(Node* orig, outputStream *st) {
-  Compile* C = Compile::current();
-  if (NotANode(orig)) orig = NULL;
-  if (orig != NULL && !C->node_arena()->contains(orig)) orig = NULL;
-  if (orig == NULL) return;
-  st->print(" !orig=");
-  Node* fast = orig->debug_orig(); // tortoise & hare algorithm to detect loops
-  if (NotANode(fast)) fast = NULL;
-  while (orig != NULL) {
-    bool discon = is_disconnected(orig);  // if discon, print [123] else 123
-    if (discon) st->print("[");
-    if (!Compile::current()->node_arena()->contains(orig))
-      st->print("o");
-    st->print("%d", orig->_idx);
-    if (discon) st->print("]");
-    orig = orig->debug_orig();
-    if (NotANode(orig)) orig = NULL;
-    if (orig != NULL && !C->node_arena()->contains(orig)) orig = NULL;
-    if (orig != NULL) st->print(",");
-    if (fast != NULL) {
-      // Step fast twice for each single step of orig:
-      fast = fast->debug_orig();
-      if (NotANode(fast)) fast = NULL;
-      if (fast != NULL && fast != orig) {
-        fast = fast->debug_orig();
-        if (NotANode(fast)) fast = NULL;
-      }
-      if (fast == orig) {
-        st->print("...");
-        break;
-      }
-    }
-  }
-}
-
-void Node::set_debug_orig(Node* orig) {
-  _debug_orig = orig;
-  if (BreakAtNode == 0)  return;
-  if (NotANode(orig))  orig = NULL;
-  int trip = 10;
-  while (orig != NULL) {
-    if (orig->debug_idx() == BreakAtNode || (int)orig->_idx == BreakAtNode) {
-      tty->print_cr("BreakAtNode: _idx=%d _debug_idx=%d orig._idx=%d orig._debug_idx=%d",
-                    this->_idx, this->debug_idx(), orig->_idx, orig->debug_idx());
-      BREAKPOINT;
-    }
-    orig = orig->debug_orig();
-    if (NotANode(orig))  orig = NULL;
-    if (trip-- <= 0)  break;
-  }
-}
-#endif //ASSERT
 
 //------------------------------dump------------------------------------------
 // Dump a Node
@@ -1697,10 +1308,6 @@ void Node::dump(const char* suffix, outputStream *st) const {
   dump_out(st);
 
   if (is_disconnected(this)) {
-#ifdef ASSERT
-    st->print("  [%d]",debug_idx());
-    dump_orig(debug_orig(), st);
-#endif
     st->cr();
     C->_in_dump_cnt--;
     return;                     // don't process dead nodes
@@ -1708,12 +1315,6 @@ void Node::dump(const char* suffix, outputStream *st) const {
 
   // Dump node-specific info
   dump_spec(st);
-#ifdef ASSERT
-  // Dump the non-reset _debug_idx
-  if (Verbose && WizardMode) {
-    st->print("  [%d]",debug_idx());
-  }
-#endif
 
   const Type *t = bottom_type();
 

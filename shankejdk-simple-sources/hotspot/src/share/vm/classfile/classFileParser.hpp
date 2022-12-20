@@ -328,21 +328,9 @@ class ClassFileParser VALUE_OBJ_CLASS_SPEC {
 PRAGMA_DIAG_PUSH
 PRAGMA_FORMAT_NONLITERAL_IGNORED
 inline void assert_property(bool b, const char* msg, TRAPS) {
-#ifdef ASSERT
-    if (!b) {
-      ResourceMark rm(THREAD);
-      fatal(err_msg(msg, _class_name->as_C_string()));
-    }
-#endif
   }
 
   inline void assert_property(bool b, const char* msg, int index, TRAPS) {
-#ifdef ASSERT
-    if (!b) {
-      ResourceMark rm(THREAD);
-      fatal(err_msg(msg, index, _class_name->as_C_string()));
-    }
-#endif
   }
 PRAGMA_DIAG_POP
 

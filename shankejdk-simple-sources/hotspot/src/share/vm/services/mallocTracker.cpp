@@ -140,13 +140,6 @@ void* MallocTracker::record_malloc(void* malloc_base, size_t size, MEMFLAGS flag
   //                      16 bytes alignment for 64-bit systems.
   assert(((size_t)memblock & (sizeof(size_t) * 2 - 1)) == 0, "Alignment check");
 
-#ifdef ASSERT
-  if (level > NMT_minimal) {
-    // Read back
-    assert(get_size(memblock) == size,   "Wrong size");
-    assert(get_flags(memblock) == flags, "Wrong flags");
-  }
-#endif
 
   return memblock;
 }

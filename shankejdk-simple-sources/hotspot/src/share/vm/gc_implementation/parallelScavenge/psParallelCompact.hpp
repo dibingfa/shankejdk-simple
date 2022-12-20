@@ -350,20 +350,7 @@ public:
     region_sz_t volatile _dc_and_los;
     bool        volatile _blocks_filled;
 
-#ifdef ASSERT
-    size_t               _blocks_filled_count;   // Number of block table fills.
 
-    // These enable optimizations that are only partially implemented.  Use
-    // debug builds to prevent the code fragments from breaking.
-    HeapWord*            _data_location;
-    HeapWord*            _highest_ref;
-#endif  // #ifdef ASSERT
-
-#ifdef ASSERT
-   public:
-    uint                 _pushed;   // 0 until region is pushed onto a stack
-   private:
-#endif
   };
 
   // "Blocks" allow shorter sections of the bitmap to be searched.  Each Block
@@ -458,10 +445,6 @@ public:
     return calc_new_pointer((HeapWord*) p);
   }
 
-#ifdef  ASSERT
-  void verify_clear(const PSVirtualSpace* vspace);
-  void verify_clear();
-#endif  // #ifdef ASSERT
 
 private:
   bool initialize_block_data();
@@ -470,9 +453,6 @@ private:
 
 private:
   HeapWord*       _region_start;
-#ifdef  ASSERT
-  HeapWord*       _region_end;
-#endif  // #ifdef ASSERT
 
   PSVirtualSpace* _region_vspace;
   size_t          _reserved_byte_size;
@@ -504,13 +484,6 @@ ParallelCompactData::RegionData::blocks_filled() const
   return result;
 }
 
-#ifdef ASSERT
-inline size_t
-ParallelCompactData::RegionData::blocks_filled_count() const
-{
-  return _blocks_filled_count;
-}
-#endif // #ifdef ASSERT
 
 inline void
 ParallelCompactData::RegionData::set_blocks_filled()
@@ -584,12 +557,6 @@ inline void ParallelCompactData::RegionData::add_live_obj(size_t words)
 
 inline void ParallelCompactData::RegionData::set_highest_ref(HeapWord* addr)
 {
-#ifdef ASSERT
-  HeapWord* tmp = _highest_ref;
-  while (addr > tmp) {
-    tmp = (HeapWord*)Atomic::cmpxchg_ptr(addr, &_highest_ref, tmp);
-  }
-#endif  // #ifdef ASSERT
 }
 
 inline bool ParallelCompactData::RegionData::claim()
@@ -792,9 +759,6 @@ ParMarkBitMapClosure::ParMarkBitMapClosure(ParMarkBitMap* bitmap,
                                            ParCompactionManager* cm,
                                            size_t words):
   _bitmap(bitmap), _compaction_manager(cm)
-#ifdef  ASSERT
-  , _initial_words_remaining(words)
-#endif
 {
   _words_remaining = words;
   _source = NULL;
@@ -1003,9 +967,6 @@ class PSParallelCompact : AllStatic {
   static double _dwl_std_dev;
   static double _dwl_first_term;
   static double _dwl_adjustment;
-#ifdef  ASSERT
-  static bool   _dwl_initialized;
-#endif  // #ifdef ASSERT
 
 
  public:
@@ -1317,12 +1278,6 @@ class PSParallelCompact : AllStatic {
                                 HeapWord* src_beg, HeapWord* src_end);
 #endif  // #ifndef PRODUCT
 
-#ifdef  ASSERT
-  // Sanity check the new location of a word in the heap.
-  static inline void check_new_location(HeapWord* old_addr, HeapWord* new_addr);
-  // Verify that all the regions have been emptied.
-  static void verify_complete(SpaceId space_id);
-#endif  // #ifdef ASSERT
 };
 
 inline bool PSParallelCompact::mark_obj(oop obj) {
@@ -1450,16 +1405,6 @@ inline ObjectStartArray* PSParallelCompact::start_array(SpaceId id) {
   return _space_info[id].start_array();
 }
 
-#ifdef ASSERT
-inline void
-PSParallelCompact::check_new_location(HeapWord* old_addr, HeapWord* new_addr)
-{
-  assert(old_addr >= new_addr || space_id(old_addr) != space_id(new_addr),
-         "must move left or to a different space");
-  assert(is_object_aligned((intptr_t)old_addr) && is_object_aligned((intptr_t)new_addr),
-         "checking alignment");
-}
-#endif // ASSERT
 
 class MoveAndUpdateClosure: public ParMarkBitMapClosure {
  public:

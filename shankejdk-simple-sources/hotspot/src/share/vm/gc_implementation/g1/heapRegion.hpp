@@ -248,9 +248,6 @@ class HeapRegion: public G1OffsetTableContigSpace {
   // Fields used by the HeapRegionSetBase class and subclasses.
   HeapRegion* _next;
   HeapRegion* _prev;
-#ifdef ASSERT
-  HeapRegionSetBase* _containing_set;
-#endif // ASSERT
 
   // For parallel heapRegion traversal.
   jint _claimed;
@@ -534,24 +531,10 @@ class HeapRegion: public G1OffsetTableContigSpace {
   // set. This is used for doing consistency checking to make sure that
   // the contents of a set are as they should be and it's only
   // available in non-product builds.
-#ifdef ASSERT
-  void set_containing_set(HeapRegionSetBase* containing_set) {
-    assert((containing_set == NULL && _containing_set != NULL) ||
-           (containing_set != NULL && _containing_set == NULL),
-           err_msg("containing_set: " PTR_FORMAT " "
-                   "_containing_set: " PTR_FORMAT,
-                   p2i(containing_set), p2i(_containing_set)));
-
-    _containing_set = containing_set;
-  }
-
-  HeapRegionSetBase* containing_set() { return _containing_set; }
-#else // ASSERT
   void set_containing_set(HeapRegionSetBase* containing_set) { }
 
   // containing_set() is only used in asserts so there's no reason
   // to provide a dummy version of it.
-#endif // ASSERT
 
   HeapRegion* get_next_young_region() { return _next_young_region; }
   void set_next_young_region(HeapRegion* hr) {

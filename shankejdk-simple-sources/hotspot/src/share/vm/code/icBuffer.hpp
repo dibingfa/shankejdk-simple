@@ -85,9 +85,6 @@ class ICStub: public Stub {
 // ICStub Creation
 inline ICStub* ICStub_from_destination_address(address destination_address) {
   ICStub* stub = (ICStub*) (destination_address - round_to(sizeof(ICStub), CodeEntryAlignment));
-  #ifdef ASSERT
-  stub->verify();
-  #endif
   return stub;
 }
 

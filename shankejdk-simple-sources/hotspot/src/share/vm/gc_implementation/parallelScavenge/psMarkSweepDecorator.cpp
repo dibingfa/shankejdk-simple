@@ -349,19 +349,6 @@ void PSMarkSweepDecorator::compact(bool mangle_free_space ) {
 
   if (q < t && _first_dead > q &&
       !oop(q)->is_gc_marked()) {
-#ifdef ASSERT
-    // we have a chunk of the space which hasn't moved and we've reinitialized the
-    // mark word during the previous pass, so we can't use is_gc_marked for the
-    // traversal.
-    HeapWord* const end = _first_dead;
-
-    while (q < end) {
-      size_t size = oop(q)->size();
-      assert(!oop(q)->is_gc_marked(), "should be unmarked (special dense prefix handling)");
-      debug_only(prev_q = q);
-      q += size;
-    }
-#endif
 
     if (_first_dead == t) {
       q = t;

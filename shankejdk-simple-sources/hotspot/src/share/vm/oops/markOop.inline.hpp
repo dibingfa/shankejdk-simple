@@ -103,10 +103,6 @@ inline bool markOopDesc::must_be_preserved_for_cms_scavenge(Klass* klass_of_obj_
 }
 
 inline markOop markOopDesc::prototype_for_object(oop obj) {
-#ifdef ASSERT
-  markOop prototype_header = obj->klass()->prototype_header();
-  assert(prototype_header == prototype() || prototype_header->has_bias_pattern(), "corrupt prototype header");
-#endif
   return obj->klass()->prototype_header();
 }
 

@@ -149,12 +149,6 @@ Node *PhaseIdealLoop::get_early_ctrl_for_expensive(Node *n, Node* earliest) {
   Node* ctl = n->in(0);
   assert(ctl->is_CFG(), "expensive input 0 must be cfg");
   uint min_dom_depth = dom_depth(earliest);
-#ifdef ASSERT
-  if (!is_dominator(ctl, earliest) && !is_dominator(earliest, ctl)) {
-    dump_bad_graph("Bad graph detected in get_early_ctrl_for_expensive", n, earliest, ctl);
-    assert(false, "Bad graph detected in get_early_ctrl_for_expensive");
-  }
-#endif
   if (dom_depth(ctl) < min_dom_depth) {
     return earliest;
   }
@@ -511,13 +505,6 @@ bool PhaseIdealLoop::is_counted_loop( Node *x, IdealLoopTree *loop ) {
     ProjNode *limit_check_proj = find_predicate_insertion_point(init_control, Deoptimization::Reason_loop_limit_check);
     if (!limit_check_proj) {
       // The limit check predicate is not generated if this method trapped here before.
-#ifdef ASSERT
-      if (TraceLoopLimitCheck) {
-        tty->print("missing loop limit check:");
-        loop->dump_head();
-        x->dump(1);
-      }
-#endif
       return false;
     }
 
@@ -805,10 +792,6 @@ bool PhaseIdealLoop::is_counted_loop( Node *x, IdealLoopTree *loop ) {
   // Free up intermediate goo
   _igvn.remove_dead_node(hook);
 
-#ifdef ASSERT
-  assert(l->is_valid_counted_loop(), "counted loop shape is messed up");
-  assert(l == loop->_head && l->phi() == phi && l->loopexit() == lex, "" );
-#endif
 #ifndef PRODUCT
   if (TraceLoopOpts) {
     tty->print("Counted      ");
@@ -834,10 +817,6 @@ Node* PhaseIdealLoop::exact_limit( IdealLoopTree *loop ) {
     return cl->limit();
   }
   Node *limit = NULL;
-#ifdef ASSERT
-  BoolTest::mask bt = cl->loopexit()->test_trip();
-  assert(bt == BoolTest::lt || bt == BoolTest::gt, "canonical test is expected");
-#endif
   if (cl->has_exact_trip_count()) {
     // Simple case: loop has constant boundaries.
     // Use jlongs to avoid integer overflow.
@@ -3235,21 +3214,6 @@ Node *PhaseIdealLoop::compute_idom( Node *region ) const {
 
 bool PhaseIdealLoop::verify_dominance(Node* n, Node* use, Node* LCA, Node* early) {
   bool had_error = false;
-#ifdef ASSERT
-  if (early != C->root()) {
-    // Make sure that there's a dominance path from LCA to early
-    Node* d = LCA;
-    while (d != early) {
-      if (d == C->root()) {
-        dump_bad_graph("Bad graph detected in compute_lca_of_uses", n, early, LCA);
-        tty->print_cr("*** Use %d isn't dominated by def %d ***", use->_idx, n->_idx);
-        had_error = true;
-        break;
-      }
-      d = idom(d);
-    }
-  }
-#endif
   return had_error;
 }
 
@@ -3323,12 +3287,6 @@ Node *PhaseIdealLoop::get_late_ctrl( Node *n, Node *early ) {
   assert(early != NULL, "early control should not be NULL");
 
   Node* LCA = compute_lca_of_uses(n, early);
-#ifdef ASSERT
-  if (LCA == C->root() && LCA != early) {
-    // def doesn't dominate uses so print some useful debugging output
-    compute_lca_of_uses(n, early, true);
-  }
-#endif
 
   // if this is a load, check for anti-dependent stores
   // We use a conservative algorithm to identify potential interfering
@@ -3448,11 +3406,6 @@ Node *PhaseIdealLoop::dom_lca_for_get_late_ctrl_internal( Node *n1, Node *n2, No
 void PhaseIdealLoop::init_dom_lca_tags() {
   uint limit = C->unique() + 1;
   _dom_lca_tags.map( limit, NULL );
-#ifdef ASSERT
-  for( uint i = 0; i < limit; ++i ) {
-    assert(_dom_lca_tags[i] == NULL, "Must be distinct from each node pointer");
-  }
-#endif // ASSERT
 }
 
 //------------------------------clear_dom_lca_tags------------------------------
@@ -3463,11 +3416,6 @@ void PhaseIdealLoop::clear_dom_lca_tags() {
   uint limit = C->unique() + 1;
   _dom_lca_tags.map( limit, NULL );
   _dom_lca_tags.clear();
-#ifdef ASSERT
-  for( uint i = 0; i < limit; ++i ) {
-    assert(_dom_lca_tags[i] == NULL, "Must be distinct from each node pointer");
-  }
-#endif // ASSERT
 }
 
 //------------------------------build_loop_late--------------------------------
@@ -3534,12 +3482,6 @@ void PhaseIdealLoop::build_loop_late_post( Node *n ) {
     _igvn._worklist.push(n);  // Maybe we'll normalize it, if no more loops.
   }
 
-#ifdef ASSERT
-  if (_verify_only && !n->is_CFG()) {
-    // Check def-use domination.
-    compute_lca_of_uses(n, get_ctrl(n), true /* verify */);
-  }
-#endif
 
   // CFG and pinned nodes already handled
   if( n->in(0) ) {
@@ -3599,11 +3541,6 @@ void PhaseIdealLoop::build_loop_late_post( Node *n ) {
   Node *LCA = get_late_ctrl( n, early );
   // LCA is NULL due to uses being dead
   if( LCA == NULL ) {
-#ifdef ASSERT
-    for (DUIterator i1 = n->outs(); n->has_out(i1); i1++) {
-      assert( _nodes[n->out(i1)->_idx] == NULL, "all uses must also be dead");
-    }
-#endif
     _nodes.map(n->_idx, 0);     // This node is useless
     _deadlist.push(n);
     return;
@@ -3613,13 +3550,6 @@ void PhaseIdealLoop::build_loop_late_post( Node *n ) {
   Node *legal = LCA;            // Walk 'legal' up the IDOM chain
   Node *least = legal;          // Best legal position so far
   while( early != legal ) {     // While not at earliest legal
-#ifdef ASSERT
-    if (legal->is_Start() && !early->is_Root()) {
-      // Bad graph. Print idom path and fail.
-      dump_bad_graph("Bad graph detected in build_loop_late", n, early, LCA);
-      assert(false, "Bad graph detected in build_loop_late");
-    }
-#endif
     // Find least loop nesting depth
     legal = idom(legal);        // Bump up the IDOM tree
     // Check for lower nesting depth
@@ -3641,20 +3571,6 @@ void PhaseIdealLoop::build_loop_late_post( Node *n ) {
     }
   }
 
-#ifdef ASSERT
-  // If verifying, verify that 'verify_me' has a legal location
-  // and choose it as our location.
-  if( _verify_me ) {
-    Node *v_ctrl = _verify_me->get_ctrl_no_update(n);
-    Node *legal = LCA;
-    while( early != legal ) {   // While not at earliest legal
-      if( legal == v_ctrl ) break;  // Check for prior good location
-      legal = idom(legal)      ;// Bump up the IDOM tree
-    }
-    // Check for prior good location
-    if( legal == v_ctrl ) least = legal; // Keep prior if found
-  }
-#endif
 
   // Assign discovered "here or above" point
   least = find_non_split_ctrl(least);
@@ -3666,87 +3582,6 @@ void PhaseIdealLoop::build_loop_late_post( Node *n ) {
     chosen_loop->_body.push(n);// Collect inner loops
 }
 
-#ifdef ASSERT
-void PhaseIdealLoop::dump_bad_graph(const char* msg, Node* n, Node* early, Node* LCA) {
-  tty->print_cr("%s", msg);
-  tty->print("n: "); n->dump();
-  tty->print("early(n): "); early->dump();
-  if (n->in(0) != NULL  && !n->in(0)->is_top() &&
-      n->in(0) != early && !n->in(0)->is_Root()) {
-    tty->print("n->in(0): "); n->in(0)->dump();
-  }
-  for (uint i = 1; i < n->req(); i++) {
-    Node* in1 = n->in(i);
-    if (in1 != NULL && in1 != n && !in1->is_top()) {
-      tty->print("n->in(%d): ", i); in1->dump();
-      Node* in1_early = get_ctrl(in1);
-      tty->print("early(n->in(%d)): ", i); in1_early->dump();
-      if (in1->in(0) != NULL     && !in1->in(0)->is_top() &&
-          in1->in(0) != in1_early && !in1->in(0)->is_Root()) {
-        tty->print("n->in(%d)->in(0): ", i); in1->in(0)->dump();
-      }
-      for (uint j = 1; j < in1->req(); j++) {
-        Node* in2 = in1->in(j);
-        if (in2 != NULL && in2 != n && in2 != in1 && !in2->is_top()) {
-          tty->print("n->in(%d)->in(%d): ", i, j); in2->dump();
-          Node* in2_early = get_ctrl(in2);
-          tty->print("early(n->in(%d)->in(%d)): ", i, j); in2_early->dump();
-          if (in2->in(0) != NULL     && !in2->in(0)->is_top() &&
-              in2->in(0) != in2_early && !in2->in(0)->is_Root()) {
-            tty->print("n->in(%d)->in(%d)->in(0): ", i, j); in2->in(0)->dump();
-          }
-        }
-      }
-    }
-  }
-  tty->cr();
-  tty->print("LCA(n): "); LCA->dump();
-  for (uint i = 0; i < n->outcnt(); i++) {
-    Node* u1 = n->raw_out(i);
-    if (u1 == n)
-      continue;
-    tty->print("n->out(%d): ", i); u1->dump();
-    if (u1->is_CFG()) {
-      for (uint j = 0; j < u1->outcnt(); j++) {
-        Node* u2 = u1->raw_out(j);
-        if (u2 != u1 && u2 != n && u2->is_CFG()) {
-          tty->print("n->out(%d)->out(%d): ", i, j); u2->dump();
-        }
-      }
-    } else {
-      Node* u1_later = get_ctrl(u1);
-      tty->print("later(n->out(%d)): ", i); u1_later->dump();
-      if (u1->in(0) != NULL     && !u1->in(0)->is_top() &&
-          u1->in(0) != u1_later && !u1->in(0)->is_Root()) {
-        tty->print("n->out(%d)->in(0): ", i); u1->in(0)->dump();
-      }
-      for (uint j = 0; j < u1->outcnt(); j++) {
-        Node* u2 = u1->raw_out(j);
-        if (u2 == n || u2 == u1)
-          continue;
-        tty->print("n->out(%d)->out(%d): ", i, j); u2->dump();
-        if (!u2->is_CFG()) {
-          Node* u2_later = get_ctrl(u2);
-          tty->print("later(n->out(%d)->out(%d)): ", i, j); u2_later->dump();
-          if (u2->in(0) != NULL     && !u2->in(0)->is_top() &&
-              u2->in(0) != u2_later && !u2->in(0)->is_Root()) {
-            tty->print("n->out(%d)->in(0): ", i); u2->in(0)->dump();
-          }
-        }
-      }
-    }
-  }
-  tty->cr();
-  int ct = 0;
-  Node *dbg_legal = LCA;
-  while(!dbg_legal->is_Start() && ct < 100) {
-    tty->print("idom[%d] ",ct); dbg_legal->dump();
-    ct++;
-    dbg_legal = idom(dbg_legal);
-  }
-  tty->cr();
-}
-#endif
 
 #ifndef PRODUCT
 //------------------------------dump-------------------------------------------

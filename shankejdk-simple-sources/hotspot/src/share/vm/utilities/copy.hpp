@@ -286,49 +286,20 @@ class Copy : AllStatic {
   // These methods raise a fatal if they detect a problem.
 
   static void assert_disjoint(HeapWord* from, HeapWord* to, size_t count) {
-#ifdef ASSERT
-    if (!params_disjoint(from, to, count))
-      basic_fatal("source and dest overlap");
-#endif
   }
 
   static void assert_params_ok(void* from, void* to, intptr_t log_align) {
-#ifdef ASSERT
-    if (mask_bits((uintptr_t)from, right_n_bits(log_align)) != 0)
-      basic_fatal("not aligned");
-    if (mask_bits((uintptr_t)to, right_n_bits(log_align)) != 0)
-      basic_fatal("not aligned");
-#endif
   }
 
   static void assert_params_ok(HeapWord* to, intptr_t log_align) {
-#ifdef ASSERT
-    if (mask_bits((uintptr_t)to, right_n_bits(log_align)) != 0)
-      basic_fatal("not word aligned");
-#endif
   }
   static void assert_params_aligned(HeapWord* from, HeapWord* to) {
-#ifdef ASSERT
-    if (mask_bits((uintptr_t)from, BytesPerLong-1) != 0)
-      basic_fatal("not long aligned");
-    if (mask_bits((uintptr_t)to, BytesPerLong-1) != 0)
-      basic_fatal("not long aligned");
-#endif
   }
 
   static void assert_params_aligned(HeapWord* to) {
-#ifdef ASSERT
-    if (mask_bits((uintptr_t)to, BytesPerLong-1) != 0)
-      basic_fatal("not long aligned");
-#endif
   }
 
   static void assert_byte_count_ok(size_t byte_count, size_t unit_size) {
-#ifdef ASSERT
-    if ((size_t)round_to(byte_count, unit_size) != byte_count) {
-      basic_fatal("byte count must be aligned");
-    }
-#endif
   }
 
   // Platform dependent implementations of the above methods.

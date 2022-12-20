@@ -45,9 +45,6 @@
 template <class Chunk>
 FreeList<Chunk>::FreeList() :
   _head(NULL), _tail(NULL)
-#ifdef ASSERT
-  , _protecting_lock(NULL)
-#endif
 {
   _size         = 0;
   _count        = 0;
@@ -79,10 +76,6 @@ void FreeList<Chunk>::reset() {
 
 template <class Chunk>
 void FreeList<Chunk>::initialize() {
-#ifdef ASSERT
-  // Needed early because it might be checked in other initializing code.
-  set_protecting_lock(NULL);
-#endif
   reset();
   set_size(0);
 }

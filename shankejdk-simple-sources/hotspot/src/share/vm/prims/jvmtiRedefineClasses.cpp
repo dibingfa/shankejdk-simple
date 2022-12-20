@@ -2833,9 +2833,6 @@ bool VM_RedefineClasses::skip_type_annotation_target(
     default:
       RC_TRACE_WITH_THREAD(0x02000000, THREAD,
         ("unknown target_type"));
-#ifdef ASSERT
-      ShouldNotReachHere();
-#endif
       return false;
   }
 

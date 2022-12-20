@@ -146,9 +146,6 @@ int klassVtable::initialize_from_super(KlassHandle super) {
     InstanceKlass* sk = (InstanceKlass*)super();
     klassVtable* superVtable = sk->vtable();
     assert(superVtable->length() <= _length, "vtable too short");
-#ifdef ASSERT
-    superVtable->verify(tty, true);
-#endif
     superVtable->copy_vtable_to(table());
 #ifndef PRODUCT
     if (PrintVtables && Verbose) {
@@ -175,11 +172,6 @@ void klassVtable::initialize_vtable(bool checkconstraints, TRAPS) {
     tty->print_cr("Initializing: %s", _klass->name()->as_C_string());
   }
 
-#ifdef ASSERT
-  oop* end_of_obj = (oop*)_klass() + _klass()->size();
-  oop* end_of_vtable = (oop*)&table()[_length];
-  assert(end_of_vtable <= end_of_obj, "vtable extends beyond end");
-#endif
 
   if (Universe::is_bootstrapping()) {
     assert(!is_shared, "sanity");
@@ -1213,13 +1205,6 @@ int klassItable::method_count_for_interface(Klass* interf) {
     }
     nof_methods -= 1;
   }
-#ifdef ASSERT
-  int nof_methods_copy = nof_methods;
-  while (nof_methods_copy > 0) {
-    Method* mm = methods->at(--nof_methods_copy);
-    assert(!mm->has_itable_index() || mm->itable_index() < length, "");
-  }
-#endif //ASSERT
   // return the rightmost itable index, plus one; or 0 if no methods have
   // itable indices
   return length;
@@ -1499,11 +1484,6 @@ void klassItable::setup_itable_offset_table(instanceKlassHandle klass) {
   SetupItableClosure sic((address)klass(), ioe, ime);
   visit_all_interfaces(klass->transitive_interfaces(), &sic);
 
-#ifdef ASSERT
-  ime  = sic.method_entry();
-  oop* v = (oop*) klass->end_of_itable();
-  assert( (oop*)(ime) == v, "wrong offset calculation (2)");
-#endif
 }
 
 

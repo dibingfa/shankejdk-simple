@@ -55,31 +55,6 @@
 #include "utilities/accessFlags.hpp"
 #include "utilities/globalDefinitions.hpp"
 #ifdef COMPILER1
-#ifdef ASSERT
-
-/*
- * To avoid the most part of potential link errors
- * we link this program with -z nodefs .
- *
- * But for 'debug1' and 'fastdebug1' we still have to provide
- * a particular workaround for the following symbols below.
- * It will be good to find out a generic way in the future.
- */
-
-#pragma weak tty
-#pragma weak CMSExpAvgFactor
-
-#if defined(i386) || defined(__i386) || defined(__amd64)
-#pragma weak noreg
-#endif /* i386 */
-
-LIR_Opr LIR_OprFact::illegalOpr = (LIR_Opr) 0;
-
-address StubRoutines::_call_stub_return_address = NULL;
-
-StubQueue* AbstractInterpreter::_code = NULL;
-
-#endif /* ASSERT */
 #endif /* COMPILER1 */
 
 #define GEN_OFFS(Type,Name)                             \

@@ -28,11 +28,6 @@
 #include "utilities/array.hpp"
 
 
-#ifdef ASSERT
-void ResourceArray::init_nesting() {
-  _nesting = Thread::current()->resource_area()->nesting();
-}
-#endif
 
 
 void ResourceArray::sort(size_t esize, ftype f) {

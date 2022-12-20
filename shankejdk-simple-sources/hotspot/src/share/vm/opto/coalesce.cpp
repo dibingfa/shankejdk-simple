@@ -486,9 +486,6 @@ PhaseConservativeCoalesce::PhaseConservativeCoalesce(PhaseChaitin &chaitin) : Ph
 }
 
 void PhaseConservativeCoalesce::verify() {
-#ifdef ASSERT
-  _phc.set_was_low();
-#endif
 }
 
 void PhaseConservativeCoalesce::union_helper( Node *lr1_node, Node *lr2_node, uint lr1, uint lr2, Node *src_def, Node *dst_copy, Node *src_copy, Block *b, uint bindex ) {

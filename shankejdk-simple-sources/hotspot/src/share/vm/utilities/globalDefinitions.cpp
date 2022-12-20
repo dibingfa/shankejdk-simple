@@ -56,86 +56,6 @@ void basic_fatal(const char* msg) {
 // Something to help porters sleep at night
 
 void basic_types_init() {
-#ifdef ASSERT
-#ifdef _LP64
-  assert(min_intx ==  (intx)CONST64(0x8000000000000000), "correct constant");
-  assert(max_intx ==  CONST64(0x7FFFFFFFFFFFFFFF), "correct constant");
-  assert(max_uintx == CONST64(0xFFFFFFFFFFFFFFFF), "correct constant");
-  assert( 8 == sizeof( intx),      "wrong size for basic type");
-  assert( 8 == sizeof( jobject),   "wrong size for basic type");
-#else
-  assert(min_intx ==  (intx)0x80000000,  "correct constant");
-  assert(max_intx ==  0x7FFFFFFF,  "correct constant");
-  assert(max_uintx == 0xFFFFFFFF,  "correct constant");
-  assert( 4 == sizeof( intx),      "wrong size for basic type");
-  assert( 4 == sizeof( jobject),   "wrong size for basic type");
-#endif
-  assert( (~max_juint) == 0,  "max_juint has all its bits");
-  assert( (~max_uintx) == 0,  "max_uintx has all its bits");
-  assert( (~max_julong) == 0, "max_julong has all its bits");
-  assert( 1 == sizeof( jbyte),     "wrong size for basic type");
-  assert( 2 == sizeof( jchar),     "wrong size for basic type");
-  assert( 2 == sizeof( jshort),    "wrong size for basic type");
-  assert( 4 == sizeof( juint),     "wrong size for basic type");
-  assert( 4 == sizeof( jint),      "wrong size for basic type");
-  assert( 1 == sizeof( jboolean),  "wrong size for basic type");
-  assert( 8 == sizeof( jlong),     "wrong size for basic type");
-  assert( 4 == sizeof( jfloat),    "wrong size for basic type");
-  assert( 8 == sizeof( jdouble),   "wrong size for basic type");
-  assert( 1 == sizeof( u1),        "wrong size for basic type");
-  assert( 2 == sizeof( u2),        "wrong size for basic type");
-  assert( 4 == sizeof( u4),        "wrong size for basic type");
-
-  int num_type_chars = 0;
-  for (int i = 0; i < 99; i++) {
-    if (type2char((BasicType)i) != 0) {
-      assert(char2type(type2char((BasicType)i)) == i, "proper inverses");
-      num_type_chars++;
-    }
-  }
-  assert(num_type_chars == 11, "must have tested the right number of mappings");
-  assert(char2type(0) == T_ILLEGAL, "correct illegality");
-
-  {
-    for (int i = T_BOOLEAN; i <= T_CONFLICT; i++) {
-      BasicType vt = (BasicType)i;
-      BasicType ft = type2field[vt];
-      switch (vt) {
-      // the following types might plausibly show up in memory layouts:
-      case T_BOOLEAN:
-      case T_BYTE:
-      case T_CHAR:
-      case T_SHORT:
-      case T_INT:
-      case T_FLOAT:
-      case T_DOUBLE:
-      case T_LONG:
-      case T_OBJECT:
-      case T_ADDRESS:     // random raw pointer
-      case T_METADATA:    // metadata pointer
-      case T_NARROWOOP:   // compressed pointer
-      case T_NARROWKLASS: // compressed klass pointer
-      case T_CONFLICT:    // might as well support a bottom type
-      case T_VOID:        // padding or other unaddressed word
-        // layout type must map to itself
-        assert(vt == ft, "");
-        break;
-      default:
-        // non-layout type must map to a (different) layout type
-        assert(vt != ft, "");
-        assert(ft == type2field[ft], "");
-      }
-      // every type must map to same-sized layout type:
-      assert(type2size[vt] == type2size[ft], "");
-    }
-  }
-  // These are assumed, e.g., when filling HeapWords with juints.
-  assert(is_power_of_2(sizeof(juint)), "juint must be power of 2");
-  assert(is_power_of_2(HeapWordSize), "HeapWordSize must be power of 2");
-  assert((size_t)HeapWordSize >= sizeof(juint),
-         "HeapWord should be at least as large as juint");
-  assert(sizeof(NULL) == sizeof(char*), "NULL must be same size as pointer");
-#endif
 
   if( JavaPriority1_To_OSPriority != -1 )
     os::java_to_os_priority[1] = JavaPriority1_To_OSPriority;
@@ -288,12 +208,6 @@ int _type2aelembytes[T_CONFLICT+1] = {
   0                          // T_CONFLICT = 19,
 };
 
-#ifdef ASSERT
-int type2aelembytes(BasicType t, bool allow_address) {
-  assert(allow_address || t != T_ADDRESS, " ");
-  return _type2aelembytes[t];
-}
-#endif
 
 // Support for 64-bit integer arithmetic
 

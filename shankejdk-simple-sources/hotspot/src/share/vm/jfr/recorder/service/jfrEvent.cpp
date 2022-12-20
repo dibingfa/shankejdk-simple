@@ -27,37 +27,3 @@
 #include "utilities/bitMap.inline.hpp"
 #include "utilities/macros.hpp"
 
-#ifdef ASSERT
-JfrEventVerifier::JfrEventVerifier() : _committed(false) {
-  memset(_verification_storage, 0, (sizeof(_verification_storage)));
-  _verification_bit_map = BitMap(_verification_storage, (BitMap::idx_t)(sizeof(_verification_storage) * BitsPerByte));
-}
-
-void JfrEventVerifier::check(BitMap::idx_t field_idx) const {
-  assert(field_idx < _verification_bit_map.size(), "too many fields to verify, please resize _verification_storage");
-}
-
-void JfrEventVerifier::set_field_bit(size_t field_idx) {
-  check((BitMap::idx_t)field_idx);
-  _verification_bit_map.set_bit((BitMap::idx_t)field_idx);
-}
-
-bool JfrEventVerifier::verify_field_bit(size_t field_idx) const {
-  check((BitMap::idx_t)field_idx);
-  return _verification_bit_map.at((BitMap::idx_t)field_idx);
-}
-
-void JfrEventVerifier::set_committed() {
-  assert(!_committed, "invariant");
-  _committed = true;
-}
-
-void JfrEventVerifier::clear_committed() {
-  _committed = false;
-}
-
-bool JfrEventVerifier::committed() const {
-  return _committed;
-}
-
-#endif // ASSERT

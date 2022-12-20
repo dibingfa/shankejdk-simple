@@ -367,18 +367,6 @@ template <MEMFLAGS F> void BasicHashtable<F>::verify() {
 #endif // PRODUCT
 
 
-#ifdef ASSERT
-
-template <MEMFLAGS F> void BasicHashtable<F>::verify_lookup_length(double load) {
-  if ((double)_lookup_length / (double)_lookup_count > load * 2.0) {
-    warning("Performance bug: SystemDictionary lookup_count=%d "
-            "lookup_length=%d average=%lf load=%f",
-            _lookup_count, _lookup_length,
-            (double) _lookup_length / _lookup_count, load);
-  }
-}
-
-#endif
 // Explicitly instantiate these types
 #if INCLUDE_ALL_GCS
 template class Hashtable<nmethod*, mtGC>;

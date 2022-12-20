@@ -137,14 +137,6 @@ CodeBuffer::~CodeBuffer() {
   // This is resource clean up, let's hope that all were properly copied out.
   free_strings();
 
-#ifdef ASSERT
-  // Save allocation type to execute assert in ~ResourceObj()
-  // which is called after this destructor.
-  assert(_default_oop_recorder.allocated_on_stack(), "should be embedded object");
-  ResourceObj::allocation_type at = _default_oop_recorder.get_allocation_type();
-  Copy::fill_to_bytes(this, sizeof(*this), badResourceValue);
-  ResourceObj::set_allocation_type((address)(&_default_oop_recorder), at);
-#endif
 }
 
 void CodeBuffer::initialize_oop_recorder(OopRecorder* r) {
@@ -204,13 +196,6 @@ void CodeBuffer::set_blob(BufferBlob* blob) {
     _total_start = start;
     _total_size  = end - start;
   } else {
-#ifdef ASSERT
-    // Clean out dangling pointers.
-    _total_start    = badAddress;
-    _consts._start  = _consts._end  = badAddress;
-    _insts._start   = _insts._end   = badAddress;
-    _stubs._start   = _stubs._end   = badAddress;
-#endif //ASSERT
   }
 }
 
@@ -470,18 +455,6 @@ void CodeBuffer::compute_final_layout(CodeBuffer* dest) const {
         assert(prev_dest_cs != NULL, "sanity");
         prev_dest_cs->_limit += padding;
       }
-      #ifdef ASSERT
-      if (prev_cs != NULL && prev_cs->is_frozen() && n < (SECT_LIMIT - 1)) {
-        // Make sure the ends still match up.
-        // This is important because a branch in a frozen section
-        // might target code in a following section, via a Label,
-        // and without a relocation record.  See Label::patch_instructions.
-        address dest_start = buf+buf_offset;
-        csize_t start2start = cs->start() - prev_cs->start();
-        csize_t dest_start2start = dest_start - prev_dest_cs->start();
-        assert(start2start == dest_start2start, "cannot stretch frozen sect");
-      }
-      #endif //ASSERT
       prev_dest_cs = dest_cs;
       prev_cs      = cs;
     }
@@ -925,9 +898,6 @@ void CodeBuffer::expand(CodeSection* which_cs, csize_t amount) {
 void CodeBuffer::take_over_code_from(CodeBuffer* cb) {
   // Must already have disposed of the old blob somehow.
   assert(blob() == NULL, "must be empty");
-#ifdef ASSERT
-
-#endif
   // Take the new blob away from cb.
   set_blob(cb->blob());
   // Take over all the section pointers.

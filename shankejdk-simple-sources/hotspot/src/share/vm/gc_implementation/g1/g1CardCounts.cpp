@@ -115,12 +115,6 @@ void G1CardCounts::clear_range(MemRegion mr) {
     // OOB access to the card table.
     const jbyte* last_card_ptr = _ct_bs->byte_for_const(mr.last());
 
-#ifdef ASSERT
-    HeapWord* start_addr = _ct_bs->addr_for(from_card_ptr);
-    assert(start_addr == mr.start(), "MemRegion start must be aligned to a card.");
-    HeapWord* last_addr = _ct_bs->addr_for(last_card_ptr);
-    assert((last_addr + CardTableModRefBS::card_size_in_words) == mr.end(), "MemRegion end must be aligned to a card.");
-#endif // ASSERT
 
     // Clear the counts for the (exclusive) card range.
     size_t from_card_num = ptr_2_card_num(from_card_ptr);

@@ -409,9 +409,6 @@ void IdealGraphPrinter::visit_node(Node *n, bool edges, VectorSet* temp_set) {
     const Type *t = node->bottom_type();
     print_prop("type", t->msg());
     print_prop("idx", node->_idx);
-#ifdef ASSERT
-    print_prop("debug_idx", node->_debug_idx);
-#endif
 
     if (C->cfg() != NULL) {
       Block* block = C->cfg()->get_block_for_node(node);
@@ -463,12 +460,6 @@ void IdealGraphPrinter::visit_node(Node *n, bool edges, VectorSet* temp_set) {
         print_prop("is_dontcare", "false");
       }
 
-#ifdef ASSERT
-      Node* old = C->matcher()->find_old_node(node);
-      if (old != NULL) {
-        print_prop("old_node_idx", old->_idx);
-      }
-#endif
     }
 
     if (node->is_Proj()) {
@@ -600,17 +591,6 @@ void IdealGraphPrinter::visit_node(Node *n, bool edges, VectorSet* temp_set) {
       }
     }
 
-#ifdef ASSERT
-    if (node->debug_orig() != NULL) {
-      temp_set->Clear();
-      stringStream dorigStream;
-      Node* dorig = node->debug_orig();
-      while (dorig && temp_set->test_set(dorig->_idx)) {
-        dorigStream.print("%d ", dorig->_idx);
-      }
-      print_prop("debug_orig", dorigStream.as_string());
-    }
-#endif
 
     if (_chaitin && _chaitin != (PhaseChaitin *)((intptr_t)0xdeadbeef)) {
       buffer[0] = 0;

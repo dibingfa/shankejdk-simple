@@ -84,13 +84,6 @@ class xmlStream : public outputStream {
   virtual void see_tag(const char* tag, bool push) NOT_DEBUG({});
   virtual void pop_tag(const char* tag) NOT_DEBUG({});
 
-#ifdef ASSERT
-  // in debug mode, we verify matching of opening and closing tags
-  int   _element_depth;              // number of unfinished elements
-  char* _element_close_stack_high;   // upper limit of down-growing stack
-  char* _element_close_stack_low;    // upper limit of down-growing stack
-  char* _element_close_stack_ptr;    // pointer of down-growing stack
-#endif
 
  public:
   // creation

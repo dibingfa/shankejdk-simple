@@ -145,24 +145,6 @@ bool JfrBuffer::acquired_by_self() const {
   return acquired_by(Thread::current());
 }
 
-#ifdef ASSERT
-static bool validate_to(const JfrBuffer* const to, size_t size) {
-  assert(to != NULL, "invariant");
-  if (!JfrRecorder::is_shutting_down()) assert(to->acquired_by_self(), "invariant");
-  assert(to->free_size() >= size, "invariant");
-  return true;
-}
-
-static bool validate_concurrent_this(const JfrBuffer* const t, size_t size) {
-  assert(t->top() == MUTEX_CLAIM, "invariant");
-  return true;
-}
-
-static bool validate_this(const JfrBuffer* const t, size_t size) {
-  assert(t->top() + size <= t->pos(), "invariant");
-  return true;
-}
-#endif // ASSERT
 
 void JfrBuffer::move(JfrBuffer* const to, size_t size) {
   assert(validate_to(to, size), "invariant");

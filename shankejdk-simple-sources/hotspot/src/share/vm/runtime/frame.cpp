@@ -163,11 +163,6 @@ address frame::raw_pc() const {
 // actual frame. To do that use patch_pc.
 //
 void frame::set_pc(address   newpc ) {
-#ifdef ASSERT
-  if (_cb != NULL && _cb->is_nmethod()) {
-    assert(!((nmethod*)_cb)->is_deopt_pc(_pc), "invariant violation");
-  }
-#endif // ASSERT
 
   // Unsafe to use the is_deoptimzed tester after changing pc
   _deopt_state = unknown;
@@ -354,16 +349,6 @@ void frame::deoptimize(JavaThread* thread) {
   nm->set_original_pc(this, pc());
   patch_pc(thread, deopt);
 
-#ifdef ASSERT
-  {
-    RegisterMap map(thread, false);
-    frame check = thread->last_frame();
-    while (id() != check.id()) {
-      check = check.sender(&map);
-    }
-    assert(check.is_deoptimized_frame(), "missed deopt");
-  }
-#endif // ASSERT
 }
 
 frame frame::java_sender() const {
@@ -515,19 +500,12 @@ void frame::interpreter_frame_set_mdp(address mdp) {
 
 BasicObjectLock* frame::next_monitor_in_interpreter_frame(BasicObjectLock* current) const {
   assert(is_interpreted_frame(), "Not an interpreted frame");
-#ifdef ASSERT
-  interpreter_frame_verify_monitor(current);
-#endif
   BasicObjectLock* next = (BasicObjectLock*) (((intptr_t*) current) + interpreter_frame_monitor_size());
   return next;
 }
 
 BasicObjectLock* frame::previous_monitor_in_interpreter_frame(BasicObjectLock* current) const {
   assert(is_interpreted_frame(), "Not an interpreted frame");
-#ifdef ASSERT
-//   // This verification needs to be checked before being enabled
-//   interpreter_frame_verify_monitor(current);
-#endif
   BasicObjectLock* previous = (BasicObjectLock*) (((intptr_t*) current) - interpreter_frame_monitor_size());
   return previous;
 }
@@ -937,9 +915,6 @@ void frame::oops_interpreted_do(OopClosure* f, CLDClosure* cld_f,
     current < interpreter_frame_monitor_begin();
     current = next_monitor_in_interpreter_frame(current)
   ) {
-#ifdef ASSERT
-    interpreter_frame_verify_monitor(current);
-#endif
     current->oops_do(f);
   }
 
@@ -1328,37 +1303,7 @@ void frame::verify(const RegisterMap* map) {
 }
 
 
-#ifdef ASSERT
-bool frame::verify_return_pc(address x) {
-  if (StubRoutines::returns_to_call_stub(x)) {
-    return true;
-  }
-  if (CodeCache::contains(x)) {
-    return true;
-  }
-  if (Interpreter::contains(x)) {
-    return true;
-  }
-  return false;
-}
-#endif
 
-#ifdef ASSERT
-void frame::interpreter_frame_verify_monitor(BasicObjectLock* value) const {
-  assert(is_interpreted_frame(), "Not an interpreted frame");
-  // verify that the value is in the right part of the frame
-  address low_mark  = (address) interpreter_frame_monitor_end();
-  address high_mark = (address) interpreter_frame_monitor_begin();
-  address current   = (address) value;
-
-  const int monitor_size = frame::interpreter_frame_monitor_size();
-  guarantee((high_mark - current) % monitor_size  ==  0         , "Misaligned top of BasicObjectLock*");
-  guarantee( high_mark > current                                , "Current BasicObjectLock* higher than high_mark");
-
-  guarantee((current - low_mark) % monitor_size  ==  0         , "Misaligned bottom of BasicObjectLock*");
-  guarantee( current >= low_mark                               , "Current BasicObjectLock* below than low_mark");
-}
-#endif
 
 #ifndef PRODUCT
 void frame::describe(FrameValues& values, int frame_no) {
@@ -1475,33 +1420,6 @@ void FrameValues::describe(int owner, intptr_t* location, const char* descriptio
 }
 
 
-#ifdef ASSERT
-void FrameValues::validate() {
-  _values.sort(compare);
-  bool error = false;
-  FrameValue prev;
-  prev.owner = -1;
-  for (int i = _values.length() - 1; i >= 0; i--) {
-    FrameValue fv = _values.at(i);
-    if (fv.owner == -1) continue;
-    if (prev.owner == -1) {
-      prev = fv;
-      continue;
-    }
-    if (prev.location == fv.location) {
-      if (fv.owner != prev.owner) {
-        tty->print_cr("overlapping storage");
-        tty->print_cr(" " INTPTR_FORMAT ": " INTPTR_FORMAT " %s", prev.location, *prev.location, prev.description);
-        tty->print_cr(" " INTPTR_FORMAT ": " INTPTR_FORMAT " %s", fv.location, *fv.location, fv.description);
-        error = true;
-      }
-    } else {
-      prev = fv;
-    }
-  }
-  assert(!error, "invalid layout");
-}
-#endif // ASSERT
 
 void FrameValues::print(JavaThread* thread) {
   _values.sort(compare);

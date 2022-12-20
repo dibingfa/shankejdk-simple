@@ -247,21 +247,5 @@ address SharkStackWithNativeFrame::interpreter_entry_point() const {
 
 #ifndef PRODUCT
 void SharkStack::CreateAssertLastJavaSPIsNull() const {
-#ifdef ASSERT
-  BasicBlock *fail = CreateBlock("assert_failed");
-  BasicBlock *pass = CreateBlock("assert_ok");
-
-  builder()->CreateCondBr(
-    builder()->CreateICmpEQ(
-      builder()->CreateLoad(last_Java_sp_addr()),
-      LLVMValue::intptr_constant(0)),
-    pass, fail);
-
-  builder()->SetInsertPoint(fail);
-  builder()->CreateShouldNotReachHere(__FILE__, __LINE__);
-  builder()->CreateUnreachable();
-
-  builder()->SetInsertPoint(pass);
-#endif // ASSERT
 }
 #endif // !PRODUCT

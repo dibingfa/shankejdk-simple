@@ -191,15 +191,6 @@ bool PromotionInfo::ensure_spooling_space_work() {
       assert(_splice_point != NULL && _splice_point->nextSpoolBlock == NULL,
              "Splice point invariant");
       // Extra check that _splice_point is connected to list
-      #ifdef ASSERT
-      {
-        SpoolBlock* blk = _spoolHead;
-        for (; blk->nextSpoolBlock != NULL;
-             blk = blk->nextSpoolBlock);
-        assert(blk != NULL && blk == _splice_point,
-               "Splice point incorrect");
-      }
-      #endif // ASSERT
       _splice_point->nextSpoolBlock = newSpool;
     }
   } else {

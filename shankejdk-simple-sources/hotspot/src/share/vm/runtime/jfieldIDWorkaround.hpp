@@ -113,10 +113,8 @@ class jfieldIDWorkaround: AllStatic {
       as_uint |= encode_klass_hash(k, offset);
     }
     jfieldID result = (jfieldID) as_uint;
-#ifndef ASSERT
     // always verify in debug mode; switchable in anything else
     if (VerifyJNIFields)
-#endif // ASSERT
     {
       verify_instance_jfieldID(k, result);
     }
@@ -125,10 +123,8 @@ class jfieldIDWorkaround: AllStatic {
   }
 
   static intptr_t from_instance_jfieldID(Klass* k, jfieldID id) {
-#ifndef ASSERT
     // always verify in debug mode; switchable in anything else
     if (VerifyJNIFields)
-#endif // ASSERT
     {
       verify_instance_jfieldID(k, id);
     }

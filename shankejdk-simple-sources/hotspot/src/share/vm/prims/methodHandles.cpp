@@ -212,14 +212,6 @@ oop MethodHandles::init_method_MemberName(Handle mname, CallInfo& info, bool int
       KlassHandle m_klass_non_interface = info.resolved_klass();
       if (m_klass_non_interface->is_interface()) {
         m_klass_non_interface = SystemDictionary::Object_klass();
-#ifdef ASSERT
-        { ResourceMark rm;
-          Method* m2 = m_klass_non_interface->vtable()->method_at(vmindex);
-          assert(m->name() == m2->name() && m->signature() == m2->signature(),
-                 err_msg("at %d, %s != %s", vmindex,
-                         m->name_and_sig_as_C_string(), m2->name_and_sig_as_C_string()));
-        }
-#endif //ASSERT
       }
       if (!m->is_public()) {
         assert(m->is_public(), "virtual call must be to public interface method");

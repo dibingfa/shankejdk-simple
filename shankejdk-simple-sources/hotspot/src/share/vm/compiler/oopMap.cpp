@@ -87,11 +87,6 @@ OopMap::OopMap(int frame_size, int arg_count) {
   set_omv_data(NULL);
   set_omv_count(0);
 
-#ifdef ASSERT
-  _locs_length = VMRegImpl::stack2reg(0)->value() + frame_size + arg_count;
-  _locs_used   = NEW_RESOURCE_ARRAY(OopMapValue::oop_types, _locs_length);
-  for(int i = 0; i < _locs_length; i++) _locs_used[i] = OopMapValue::unused_value;
-#endif
 }
 
 
@@ -103,11 +98,6 @@ OopMap::OopMap(OopMap::DeepCopyToken, OopMap* source) {
   set_omv_count(0);
   set_offset(source->offset());
 
-#ifdef ASSERT
-  _locs_length = source->_locs_length;
-  _locs_used = NEW_RESOURCE_ARRAY(OopMapValue::oop_types, _locs_length);
-  for(int i = 0; i < _locs_length; i++) _locs_used[i] = OopMapValue::unused_value;
-#endif
 
   // We need to copy the entries too.
   for (OopMapStream oms(source); !oms.is_done(); oms.next()) {
@@ -251,18 +241,6 @@ void OopMapSet::add_gc_map(int pc_offset, OopMap *map ) {
   }
   map->set_offset(pc_offset);
 
-#ifdef ASSERT
-  if(om_count() > 0) {
-    OopMap* last = at(om_count()-1);
-    if (last->offset() == map->offset() ) {
-      fatal("OopMap inserted twice");
-    }
-    if(last->offset() > map->offset()) {
-      tty->print_cr( "WARNING, maps not sorted: pc[%d]=%d, pc[%d]=%d",
-                      om_count(),last->offset(),om_count()+1,map->offset());
-    }
-  }
-#endif // ASSERT
 
   set(om_count(),map);
   increment_count();
@@ -422,20 +400,6 @@ void OopMapSet::all_do(const frame *fr, const RegisterMap *reg_map,
             // of the page below heap depending on compressed oops mode.
             continue;
           }
-#ifdef ASSERT
-          if ((((uintptr_t)loc & (sizeof(*loc)-1)) != 0) ||
-             !Universe::heap()->is_in_or_null(*loc)) {
-            tty->print_cr("# Found non oop pointer.  Dumping state at failure");
-            // try to dump out some helpful debugging information
-            trace_codeblob_maps(fr, reg_map);
-            omv.print();
-            tty->print_cr("register r");
-            omv.reg()->print();
-            tty->print_cr("loc = %p *loc = %p\n", loc, (address)*loc);
-            // do the real assert.
-            assert(Universe::heap()->is_in_or_null(*loc), "found non oop pointer");
-          }
-#endif // ASSERT
           oop_fn->do_oop(loc);
         } else if ( omv.type() == OopMapValue::value_value ) {
           assert((*loc) == (oop)NULL || !Universe::is_narrow_oop_base(*loc),

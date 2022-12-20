@@ -421,10 +421,6 @@ class PatchingStub: public CodeStub {
       n_move->set_offset(field_offset);
     } else if (_id == load_klass_id || _id == load_mirror_id || _id == load_appendix_id) {
       assert(_obj != noreg, "must have register object for load_klass/load_mirror");
-#ifdef ASSERT
-      // verify that we're pointing at a NativeMovConstReg
-      nativeMovConstReg_at(pc_start());
-#endif
     } else {
       ShouldNotReachHere();
     }

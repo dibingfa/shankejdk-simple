@@ -39,9 +39,6 @@ class ResourceArray: public ResourceObj {
  protected:
   int   _length;                                 // the number of array elements
   void* _data;                                   // the array memory
-#ifdef ASSERT
-  int   _nesting;                                // the resource area nesting level
-#endif
 
   // creation
   ResourceArray() {
@@ -65,9 +62,6 @@ class ResourceArray: public ResourceObj {
     DEBUG_ONLY(init_nesting();)
   }
 
-#ifdef ASSERT
-  void init_nesting();
-#endif
 
   // helper functions
   void sort     (size_t esize, ftype f);         // sort the array
@@ -103,9 +97,6 @@ template <MEMFLAGS F>class CHeapArray: public CHeapObj<F> {
     // In debug set array to 0?
   }
 
-#ifdef ASSERT
-  void init_nesting();
-#endif
 
   // helper functions
   void sort     (size_t esize, ftype f);         // sort the array

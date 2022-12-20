@@ -182,16 +182,6 @@ class StubGenerator: public StubCodeGenerator {
     // make sure the control word is correct.
     __ fldcw(ExternalAddress(StubRoutines::addr_fpu_cntrl_wrd_std()));
 
-#ifdef ASSERT
-    // make sure we have no pending exceptions
-    { Label L;
-      __ movptr(rcx, thread);
-      __ cmpptr(Address(rcx, Thread::pending_exception_offset()), (int32_t)NULL_WORD);
-      __ jcc(Assembler::equal, L);
-      __ stop("StubRoutines::call_stub: entered with pending exception");
-      __ bind(L);
-    }
-#endif
 
     // pass parameters if any
     BLOCK_COMMENT("pass parameters if any");
@@ -341,16 +331,6 @@ class StubGenerator: public StubCodeGenerator {
 
     // get thread directly
     __ movptr(rcx, thread);
-#ifdef ASSERT
-    // verify that threads correspond
-    { Label L;
-      __ get_thread(rbx);
-      __ cmpptr(rbx, rcx);
-      __ jcc(Assembler::equal, L);
-      __ stop("StubRoutines::catch_exception: threads must correspond");
-      __ bind(L);
-    }
-#endif
     // set pending exception
     __ verify_oop(rax);
     __ movptr(Address(rcx, Thread::pending_exception_offset()), rax          );
@@ -394,16 +374,6 @@ class StubGenerator: public StubCodeGenerator {
     // the exception handler will reset the stack pointer -> ignore them.
     // A potential result in registers can be ignored as well.
 
-#ifdef ASSERT
-    // make sure this code is only executed if there is a pending exception
-    { Label L;
-      __ get_thread(thread);
-      __ cmpptr(Address(thread, Thread::pending_exception_offset()), (int32_t)NULL_WORD);
-      __ jcc(Assembler::notEqual, L);
-      __ stop("StubRoutines::forward exception: no pending exception (1)");
-      __ bind(L);
-    }
-#endif
 
     // compute exception handler into rbx,
     __ get_thread(thread);
@@ -418,15 +388,6 @@ class StubGenerator: public StubCodeGenerator {
     __ movptr(exception_oop, Address(thread, Thread::pending_exception_offset()));
     __ movptr(Address(thread, Thread::pending_exception_offset()), NULL_WORD);
 
-#ifdef ASSERT
-    // make sure exception is set
-    { Label L;
-      __ testptr(exception_oop, exception_oop);
-      __ jcc(Assembler::notEqual, L);
-      __ stop("StubRoutines::forward exception: no pending exception (2)");
-      __ bind(L);
-    }
-#endif
 
     // Verify that there is really a valid exception in RAX.
     __ verify_oop(exception_oop);
@@ -1747,20 +1708,6 @@ class StubGenerator: public StubCodeGenerator {
     const Register rcx_src_klass = rcx;    // array klass
     __ movptr(rcx_src_klass, Address(src, oopDesc::klass_offset_in_bytes()));
 
-#ifdef ASSERT
-    //  assert(src->klass() != NULL);
-    BLOCK_COMMENT("assert klasses not null");
-    { Label L1, L2;
-      __ testptr(rcx_src_klass, rcx_src_klass);
-      __ jccb(Assembler::notZero, L2);   // it is broken if klass is NULL
-      __ bind(L1);
-      __ stop("broken null klass");
-      __ bind(L2);
-      __ cmpptr(dst_klass_addr, (int32_t)NULL_WORD);
-      __ jccb(Assembler::equal, L1);      // this would be broken also
-      BLOCK_COMMENT("assert done");
-    }
-#endif //ASSERT
 
     // Load layout helper (32-bits)
     //
@@ -1791,14 +1738,6 @@ class StubGenerator: public StubCodeGenerator {
     __ jcc(Assembler::greaterEqual, L_failed_0); // signed cmp
 
     // At this point, it is known to be a typeArray (array_tag 0x3).
-#ifdef ASSERT
-    { Label L;
-      __ cmpl(rcx_lh, (Klass::_lh_array_tag_type_value << Klass::_lh_array_tag_shift));
-      __ jcc(Assembler::greaterEqual, L); // signed cmp
-      __ stop("must be a primitive array");
-      __ bind(L);
-    }
-#endif
 
     assert_different_registers(src, src_pos, dst, dst_pos, rcx_lh);
     arraycopy_range_checks(src, src_pos, dst, dst_pos, LENGTH, L_failed);
@@ -1850,10 +1789,6 @@ class StubGenerator: public StubCodeGenerator {
     __ jump_cc(Assembler::equal, RuntimeAddress(entry_jshort_arraycopy));
     __ cmpl(rdi_elsize, LogBytesPerInt);
     __ jump_cc(Assembler::equal, RuntimeAddress(entry_jint_arraycopy));
-#ifdef ASSERT
-    __ cmpl(rdi_elsize, LogBytesPerLong);
-    __ jccb(Assembler::notEqual, L_failed);
-#endif
     __ pop(rdi); // Do pops here since jlong_arraycopy stub does not do it.
     __ pop(rsi);
     __ jump(RuntimeAddress(entry_jlong_arraycopy));
@@ -3069,13 +3004,6 @@ class StubGenerator: public StubCodeGenerator {
     __ leave(); // required for proper stackwalking of RuntimeStub frame
 
     // check for pending exceptions
-#ifdef ASSERT
-    Label L;
-    __ cmpptr(Address(java_thread, Thread::pending_exception_offset()), (int32_t)NULL_WORD);
-    __ jcc(Assembler::notEqual, L);
-    __ should_not_reach_here();
-    __ bind(L);
-#endif /* ASSERT */
     __ jump(RuntimeAddress(StubRoutines::forward_exception_entry()));
 
 

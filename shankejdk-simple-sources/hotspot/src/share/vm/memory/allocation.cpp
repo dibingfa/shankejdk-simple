@@ -137,82 +137,6 @@ void ResourceObj::operator delete [](void* p) {
   operator delete(p);
 }
 
-#ifdef ASSERT
-void ResourceObj::set_allocation_type(address res, allocation_type type) {
-    // Set allocation type in the resource object
-    uintptr_t allocation = (uintptr_t)res;
-    assert((allocation & allocation_mask) == 0, err_msg("address should be aligned to 4 bytes at least: " INTPTR_FORMAT, p2i(res)));
-    assert(type <= allocation_mask, "incorrect allocation type");
-    ResourceObj* resobj = (ResourceObj *)res;
-    resobj->_allocation_t[0] = ~(allocation + type);
-    if (type != STACK_OR_EMBEDDED) {
-      // Called from operator new() and CollectionSetChooser(),
-      // set verification value.
-      resobj->_allocation_t[1] = (uintptr_t)&(resobj->_allocation_t[1]) + type;
-    }
-}
-
-ResourceObj::allocation_type ResourceObj::get_allocation_type() const {
-    assert(~(_allocation_t[0] | allocation_mask) == (uintptr_t)this, "lost resource object");
-    return (allocation_type)((~_allocation_t[0]) & allocation_mask);
-}
-
-bool ResourceObj::is_type_set() const {
-    allocation_type type = (allocation_type)(_allocation_t[1] & allocation_mask);
-    return get_allocation_type()  == type &&
-           (_allocation_t[1] - type) == (uintptr_t)(&_allocation_t[1]);
-}
-
-ResourceObj::ResourceObj() { // default constructor
-    if (~(_allocation_t[0] | allocation_mask) != (uintptr_t)this) {
-      // Operator new() is not called for allocations
-      // on stack and for embedded objects.
-      set_allocation_type((address)this, STACK_OR_EMBEDDED);
-    } else if (allocated_on_stack()) { // STACK_OR_EMBEDDED
-      // For some reason we got a value which resembles
-      // an embedded or stack object (operator new() does not
-      // set such type). Keep it since it is valid value
-      // (even if it was garbage).
-      // Ignore garbage in other fields.
-    } else if (is_type_set()) {
-      // Operator new() was called and type was set.
-      assert(!allocated_on_stack(),
-             err_msg("not embedded or stack, this(" PTR_FORMAT ") type %d a[0]=(" PTR_FORMAT ") a[1]=(" PTR_FORMAT ")",
-                     p2i(this), get_allocation_type(), _allocation_t[0], _allocation_t[1]));
-    } else {
-      // Operator new() was not called.
-      // Assume that it is embedded or stack object.
-      set_allocation_type((address)this, STACK_OR_EMBEDDED);
-    }
-    _allocation_t[1] = 0; // Zap verification value
-}
-
-ResourceObj::ResourceObj(const ResourceObj& r) { // default copy constructor
-    // Used in ClassFileParser::parse_constant_pool_entries() for ClassFileStream.
-    // Note: garbage may resembles valid value.
-    assert(~(_allocation_t[0] | allocation_mask) != (uintptr_t)this || !is_type_set(),
-           err_msg("embedded or stack only, this(" PTR_FORMAT ") type %d a[0]=(" PTR_FORMAT ") a[1]=(" PTR_FORMAT ")",
-                   p2i(this), get_allocation_type(), _allocation_t[0], _allocation_t[1]));
-    set_allocation_type((address)this, STACK_OR_EMBEDDED);
-    _allocation_t[1] = 0; // Zap verification value
-}
-
-ResourceObj& ResourceObj::operator=(const ResourceObj& r) { // default copy assignment
-    // Used in InlineTree::ok_to_inline() for WarmCallInfo.
-    assert(allocated_on_stack(),
-           err_msg("copy only into local, this(" PTR_FORMAT ") type %d a[0]=(" PTR_FORMAT ") a[1]=(" PTR_FORMAT ")",
-                   p2i(this), get_allocation_type(), _allocation_t[0], _allocation_t[1]));
-    // Keep current _allocation_t value;
-    return *this;
-}
-
-ResourceObj::~ResourceObj() {
-    // allocated_on_C_heap() also checks that encoded (in _allocation) address == this.
-    if (!allocated_on_C_heap()) { // ResourceObj::delete() will zap _allocation for C_heap.
-      _allocation_t[0] = (uintptr_t)badHeapOopVal; // zap type
-    }
-}
-#endif // ASSERT
 
 
 void trace_heap_malloc(size_t size, const char* name, void* p) {
@@ -427,11 +351,6 @@ void Chunk::next_chop() {
 
 
 void Chunk::start_chunk_pool_cleaner_task() {
-#ifdef ASSERT
-  static bool task_created = false;
-  assert(!task_created, "should not start chuck pool cleaner twice");
-  task_created = true;
-#endif
   ChunkPoolCleaner* cleaner = new ChunkPoolCleaner();
   cleaner->enroll();
 }
@@ -489,23 +408,11 @@ void* Arena::operator new (size_t size, const std::nothrow_t&  nothrow_constant)
 
   // dynamic memory type binding
 void* Arena::operator new(size_t size, MEMFLAGS flags) throw() {
-#ifdef ASSERT
-  void* p = (void*)AllocateHeap(size, flags, CALLER_PC);
-  if (PrintMallocFree) trace_heap_malloc(size, "Arena-new", p);
-  return p;
-#else
   return (void *) AllocateHeap(size, flags, CALLER_PC);
-#endif
 }
 
 void* Arena::operator new(size_t size, const std::nothrow_t& nothrow_constant, MEMFLAGS flags) throw() {
-#ifdef ASSERT
-  void* p = os::malloc(size, flags, CALLER_PC);
-  if (PrintMallocFree) trace_heap_malloc(size, "Arena-new", p);
-  return p;
-#else
   return os::malloc(size, flags, CALLER_PC);
-#endif
 }
 
 void Arena::operator delete(void* p) {
@@ -578,19 +485,6 @@ void* Arena::grow(size_t x, AllocFailType alloc_failmode) {
 void *Arena::Arealloc(void* old_ptr, size_t old_size, size_t new_size, AllocFailType alloc_failmode) {
   assert(new_size >= 0, "bad size");
   if (new_size == 0) return NULL;
-#ifdef ASSERT
-  if (UseMallocOnly) {
-    // always allocate a new object  (otherwise we'll free this one twice)
-    char* copy = (char*)Amalloc(new_size, alloc_failmode);
-    if (copy == NULL) {
-      return NULL;
-    }
-    size_t n = MIN2(old_size, new_size);
-    if (n > 0) memcpy(copy, old_ptr, n);
-    Afree(old_ptr,old_size);    // Mostly done to keep stats accurate
-    return copy;
-  }
-#endif
   char *c_old = (char*)old_ptr; // Handy name
   // Stupid fast special case
   if( new_size <= old_size ) {  // Shrink in-place
@@ -622,24 +516,6 @@ void *Arena::Arealloc(void* old_ptr, size_t old_size, size_t new_size, AllocFail
 
 // Determine if pointer belongs to this Arena or not.
 bool Arena::contains( const void *ptr ) const {
-#ifdef ASSERT
-  if (UseMallocOnly) {
-    // really slow, but not easy to make fast
-    if (_chunk == NULL) return false;
-    char** bottom = (char**)_chunk->bottom();
-    for (char** p = (char**)_hwm - 1; p >= bottom; p--) {
-      if (*p == ptr) return true;
-    }
-    for (Chunk *c = _first; c != NULL; c = c->next()) {
-      if (c == _chunk) continue;  // current chunk has been processed
-      char** bottom = (char**)c->bottom();
-      for (char** p = (char**)c->top() - 1; p >= bottom; p--) {
-        if (*p == ptr) return true;
-      }
-    }
-    return false;
-  }
-#endif
   if( (void*)_chunk->bottom() <= ptr && ptr < (void*)_hwm )
     return true;                // Check for in this chunk
   for (Chunk *c = _first; c; c = c->next()) {
@@ -652,27 +528,6 @@ bool Arena::contains( const void *ptr ) const {
 }
 
 
-#ifdef ASSERT
-void* Arena::malloc(size_t size) {
-  assert(UseMallocOnly, "shouldn't call");
-  // use malloc, but save pointer in res. area for later freeing
-  char** save = (char**)internal_malloc_4(sizeof(char*));
-  return (*save = (char*)os::malloc(size, mtChunk));
-}
-
-// for debugging with UseMallocOnly
-void* Arena::internal_malloc_4(size_t x) {
-  assert( (x&(sizeof(char*)-1)) == 0, "misaligned size" );
-  check_for_overflow(x, "Arena::internal_malloc_4");
-  if (_hwm + x > _max) {
-    return grow(x);
-  } else {
-    char *old = _hwm;
-    _hwm += x;
-    return old;
-  }
-}
-#endif
 
 
 //--------------------------------------------------------------------------------------
@@ -785,18 +640,9 @@ void Arena::free_malloced_objects(Chunk* chunk, char* hwm, char* max, char* hwm2
 
 
 ReallocMark::ReallocMark() {
-#ifdef ASSERT
-  Thread *thread = ThreadLocalStorage::get_thread_slow();
-  _nesting = thread->resource_area()->nesting();
-#endif
 }
 
 void ReallocMark::check() {
-#ifdef ASSERT
-  if (_nesting != Thread::current()->resource_area()->nesting()) {
-    fatal("allocation bug: array could grow within nested ResourceMark");
-  }
-#endif
 }
 
 #endif // Non-product

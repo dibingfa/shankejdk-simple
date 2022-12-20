@@ -2086,22 +2086,6 @@ void CMSCollector::do_compaction_work(bool clear_all_soft_refs) {
 
   GenMarkSweep::invoke_at_safepoint(_cmsGen->level(),
     ref_processor(), clear_all_soft_refs);
-  #ifdef ASSERT
-    CompactibleFreeListSpace* cms_space = _cmsGen->cmsSpace();
-    size_t free_size = cms_space->free();
-    assert(free_size ==
-           pointer_delta(cms_space->end(), cms_space->compaction_top())
-           * HeapWordSize,
-      "All the free space should be compacted into one chunk at top");
-    assert(cms_space->dictionary()->total_chunk_size(
-                                      debug_only(cms_space->freelistLock())) == 0 ||
-           cms_space->totalSizeInIndexedFreeLists() == 0,
-      "All the free space should be in a single chunk");
-    size_t num = cms_space->totalCount();
-    assert((free_size == 0 && num == 0) ||
-           (free_size > 0  && (num == 1 || num == 2)),
-         "There should be at most 2 free chunks after compaction");
-  #endif // ASSERT
   _collectorState = Resetting;
   assert(_restart_addr == NULL,
          "Should have been NULL'd before baton was passed");
@@ -5788,25 +5772,6 @@ void CMSCollector::merge_survivor_plab_arrays(ContiguousSpace* surv,
     gclog_or_tty->print(" (Survivor:" SIZE_FORMAT "chunks) ", i);
   }
   // Verify that we used up all the recorded entries
-  #ifdef ASSERT
-    size_t total = 0;
-    for (int j = 0; j < no_of_gc_threads; j++) {
-      assert(_cursor[j] == _survivor_plab_array[j].end(), "Ctl pt invariant");
-      total += _cursor[j];
-    }
-    assert(total == _survivor_chunk_index, "Ctl Pt Invariant");
-    // Check that the merged array is in sorted order
-    if (total > 0) {
-      for (size_t i = 0; i < total - 1; i++) {
-        if (PrintCMSStatistics > 0) {
-          gclog_or_tty->print(" (chunk" SIZE_FORMAT ":" INTPTR_FORMAT ") ",
-                              i, _survivor_chunk_array[i]);
-        }
-        assert(_survivor_chunk_array[i] < _survivor_chunk_array[i+1],
-               "Not sorted");
-      }
-    }
-  #endif // ASSERT
 }
 
 // Set up the space's par_seq_tasks structure for work claiming
@@ -7201,19 +7166,6 @@ size_t ScanMarkedObjectsAgainCarefullyClosure::do_object_careful_m(
           size = CompactibleFreeListSpace::adjustObjectSize(
                    p->oop_iterate(_scanningClosure));
         }
-        #ifdef ASSERT
-          size_t direct_size =
-            CompactibleFreeListSpace::adjustObjectSize(p->size());
-          assert(size == direct_size, "Inconsistency in size");
-          assert(size >= 3, "Necessary for Printezis marks to work");
-          if (!_bitMap->isMarked(addr+1)) {
-            _bitMap->verifyNoOneBitsInRange(addr+2, addr+size);
-          } else {
-            _bitMap->verifyNoOneBitsInRange(addr+2, addr+size-1);
-            assert(_bitMap->isMarked(addr+size-1),
-                   "inconsistent Printezis mark");
-          }
-        #endif // ASSERT
     } else {
       // an unitialized object
       assert(_bitMap->isMarked(addr+1), "missing Printezis mark?");
@@ -7355,14 +7307,6 @@ bool ScanMarkedObjectsAgainClosure::do_object_bm(oop p, MemRegion mr) {
   HeapWord* addr = (HeapWord*)p;
   assert(_span.contains(addr), "we are scanning the CMS generation");
   bool is_obj_array = false;
-  #ifdef ASSERT
-    if (!_parallel) {
-      assert(_mark_stack->isEmpty(), "pre-condition (eager drainage)");
-      assert(_collector->overflow_list_is_empty(),
-             "overflow list should be empty");
-
-    }
-  #endif // ASSERT
   if (_bit_map->isMarked(addr)) {
     // Obj arrays are precisely marked, non-arrays are not;
     // so we scan objArrays precisely and non-arrays in their
@@ -7382,14 +7326,6 @@ bool ScanMarkedObjectsAgainClosure::do_object_bm(oop p, MemRegion mr) {
       }
     }
   }
-  #ifdef ASSERT
-    if (!_parallel) {
-      assert(_mark_stack->isEmpty(), "post-condition (eager drainage)");
-      assert(_collector->overflow_list_is_empty(),
-             "overflow list should be empty");
-
-    }
-  #endif // ASSERT
   return is_obj_array;
 }
 
@@ -8595,15 +8531,6 @@ size_t SweepClosure::do_live_chunk(FreeChunk* fc) {
     assert(size == CompactibleFreeListSpace::adjustObjectSize(size),
            "alignment problem");
 
-#ifdef ASSERT
-      if (oop(addr)->klass_or_null_acquire() != NULL) {
-        // Ignore mark word because we are running concurrent with mutators
-        assert(oop(addr)->is_oop(true), "live block should be an oop");
-        assert(size ==
-               CompactibleFreeListSpace::adjustObjectSize(oop(addr)->size()),
-               "P-mark and computed size do not agree");
-      }
-#endif
 
   } else {
     // This should be an initialized object that's alive.

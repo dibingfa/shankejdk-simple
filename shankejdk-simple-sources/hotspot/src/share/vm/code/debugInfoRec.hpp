@@ -165,10 +165,6 @@ class DebugInformationRecorder: public ResourceObj {
   DIR_Chunk* _next_chunk;
   DIR_Chunk* _next_chunk_limit;
 
-#ifdef ASSERT
-  enum { rs_null, rs_safepoint, rs_non_safepoint };
-  int _recording_state;
-#endif
 
   PcDesc* _pcs;
   int     _pcs_size;

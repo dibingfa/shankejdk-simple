@@ -59,19 +59,6 @@ const int locals_offset = frame::interpreter_frame_locals_offset * wordSize;
 address TemplateInterpreterGenerator::generate_StackOverflowError_handler() {
   address entry = __ pc();
 
-#ifdef ASSERT
-  {
-    Label L;
-    __ lea(rax, Address(rbp,
-                        frame::interpreter_frame_monitor_block_top_offset *
-                        wordSize));
-    __ cmpptr(rax, rsp); // rax = maximal rsp for current rbp (stack
-                         // grows negative)
-    __ jcc(Assembler::aboveEqual, L); // check if frame is complete
-    __ stop ("interpreter frame not set up");
-    __ bind(L);
-  }
-#endif // ASSERT
   // Restore bcp under the assumption that the current frame is still
   // interpreted
   __ restore_bcp();
@@ -441,19 +428,6 @@ void InterpreterGenerator::generate_stack_overflow_check(void) {
   __ shlptr(rax, Interpreter::logStackElementSize);  // 2 slots per parameter.
   __ addptr(rax, overhead_size);
 
-#ifdef ASSERT
-  Label stack_base_okay, stack_size_okay;
-  // verify that thread stack base is non-zero
-  __ cmpptr(stack_base, (int32_t)NULL_WORD);
-  __ jcc(Assembler::notEqual, stack_base_okay);
-  __ stop("stack base is zero");
-  __ bind(stack_base_okay);
-  // verify that thread stack size is non-zero
-  __ cmpptr(stack_size, 0);
-  __ jcc(Assembler::notEqual, stack_size_okay);
-  __ stop("stack size is zero");
-  __ bind(stack_size_okay);
-#endif
 
   // Add stack base to locals and subtract stack size
   __ addptr(rax, stack_base);
@@ -505,16 +479,6 @@ void InterpreterGenerator::lock_method(void) {
         frame::interpreter_frame_monitor_block_top_offset * wordSize);
   const int entry_size = frame::interpreter_frame_monitor_size() * wordSize;
 
-#ifdef ASSERT
-  {
-    Label L;
-    __ movl(rax, access_flags);
-    __ testl(rax, JVM_ACC_SYNCHRONIZED);
-    __ jcc(Assembler::notZero, L);
-    __ stop("method doesn't need synchronization");
-    __ bind(L);
-  }
-#endif // ASSERT
 
   // get synchronization object
   {
@@ -531,15 +495,6 @@ void InterpreterGenerator::lock_method(void) {
                            ConstantPool::pool_holder_offset_in_bytes()));
     __ movptr(rax, Address(rax, mirror_offset));
 
-#ifdef ASSERT
-    {
-      Label L;
-      __ testptr(rax, rax);
-      __ jcc(Assembler::notZero, L);
-      __ stop("synchronization object is NULL");
-      __ bind(L);
-    }
-#endif // ASSERT
 
     __ bind(done);
   }
@@ -725,13 +680,6 @@ address InterpreterGenerator::generate_accessor_entry(void) {
     __ jmp(xreturn_path);
 
     __ bind(notShort);
-#ifdef ASSERT
-    Label okay;
-    __ cmpl(rdx, ctos);
-    __ jcc(Assembler::equal, okay);
-    __ stop("what type is this?");
-    __ bind(okay);
-#endif
     // ctos
     __ load_unsigned_short(rax, field_address);
 
@@ -1004,23 +952,6 @@ address InterpreterGenerator::generate_native_entry(bool synchronized) {
   generate_fixed_frame(true);
 
   // make sure method is native & not abstract
-#ifdef ASSERT
-  __ movl(rax, access_flags);
-  {
-    Label L;
-    __ testl(rax, JVM_ACC_NATIVE);
-    __ jcc(Assembler::notZero, L);
-    __ stop("tried to execute non-native method as native");
-    __ bind(L);
-  }
-  {
-    Label L;
-    __ testl(rax, JVM_ACC_ABSTRACT);
-    __ jcc(Assembler::zero, L);
-    __ stop("tried to execute abstract method in interpreter");
-    __ bind(L);
-  }
-#endif
 
   // Since at this point in the method invocation the exception handler
   // would try to exit the monitor of synchronized methods which hasn't
@@ -1053,31 +984,9 @@ address InterpreterGenerator::generate_native_entry(bool synchronized) {
     lock_method();
   } else {
     // no synchronization necessary
-#ifdef ASSERT
-    {
-      Label L;
-      __ movl(rax, access_flags);
-      __ testl(rax, JVM_ACC_SYNCHRONIZED);
-      __ jcc(Assembler::zero, L);
-      __ stop("method needs synchronization");
-      __ bind(L);
-    }
-#endif
   }
 
   // start execution
-#ifdef ASSERT
-  {
-    Label L;
-    const Address monitor_block_top(rbp,
-                 frame::interpreter_frame_monitor_block_top_offset * wordSize);
-    __ movptr(rax, monitor_block_top);
-    __ cmpptr(rax, rsp);
-    __ jcc(Assembler::equal, L);
-    __ stop("broken stack frame setup in interpreter");
-    __ bind(L);
-  }
-#endif
 
   // jvmti support
   __ notify_method_entry();
@@ -1179,16 +1088,6 @@ address InterpreterGenerator::generate_native_entry(bool synchronized) {
   __ set_last_Java_frame(rsp, rbp, (address) __ pc());
 
   // change thread state
-#ifdef ASSERT
-  {
-    Label L;
-    __ movl(t, Address(r15_thread, JavaThread::thread_state_offset()));
-    __ cmpl(t, _thread_in_Java);
-    __ jcc(Assembler::equal, L);
-    __ stop("Wrong thread state in native stub");
-    __ bind(L);
-  }
-#endif
 
   // Change state to native
 
@@ -1464,23 +1363,6 @@ address InterpreterGenerator::generate_normal_entry(bool synchronized) {
   generate_fixed_frame(false);
 
   // make sure method is not native & not abstract
-#ifdef ASSERT
-  __ movl(rax, access_flags);
-  {
-    Label L;
-    __ testl(rax, JVM_ACC_NATIVE);
-    __ jcc(Assembler::zero, L);
-    __ stop("tried to execute native method as non-native");
-    __ bind(L);
-  }
-  {
-    Label L;
-    __ testl(rax, JVM_ACC_ABSTRACT);
-    __ jcc(Assembler::zero, L);
-    __ stop("tried to execute abstract method in interpreter");
-    __ bind(L);
-  }
-#endif
 
   // Since at this point in the method invocation the exception
   // handler would try to exit the monitor of synchronized methods
@@ -1523,31 +1405,9 @@ address InterpreterGenerator::generate_normal_entry(bool synchronized) {
     lock_method();
   } else {
     // no synchronization necessary
-#ifdef ASSERT
-    {
-      Label L;
-      __ movl(rax, access_flags);
-      __ testl(rax, JVM_ACC_SYNCHRONIZED);
-      __ jcc(Assembler::zero, L);
-      __ stop("method needs synchronization");
-      __ bind(L);
-    }
-#endif
   }
 
   // start execution
-#ifdef ASSERT
-  {
-    Label L;
-     const Address monitor_block_top (rbp,
-                 frame::interpreter_frame_monitor_block_top_offset * wordSize);
-    __ movptr(rax, monitor_block_top);
-    __ cmpptr(rax, rsp);
-    __ jcc(Assembler::equal, L);
-    __ stop("broken stack frame setup in interpreter");
-    __ bind(L);
-  }
-#endif
 
   // jvmti support
   __ notify_method_entry();

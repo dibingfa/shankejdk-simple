@@ -43,9 +43,6 @@ private:
   bool _unaligned_access; // Unaligned access from unsafe
   bool _mismatched_access; // Mismatched access from unsafe: byte read in integer array for instance
 protected:
-#ifdef ASSERT
-  const TypePtr* _adr_type;     // What kind of memory is being addressed?
-#endif
   virtual uint size_of() const;
 public:
   enum { Control,               // When is it safe to do this load?
@@ -104,11 +101,7 @@ public:
   // Raw access function, to allow copying of adr_type efficiently in
   // product builds and retain the debug info for debug builds.
   const TypePtr *raw_adr_type() const {
-#ifdef ASSERT
-    return _adr_type;
-#else
     return 0;
-#endif
   }
 
   // Map a load or store opcode to its corresponding store opcode.
@@ -118,11 +111,7 @@ public:
   // What is the type of the value in memory?  (T_VOID mean "unspecified".)
   virtual BasicType memory_type() const = 0;
   virtual int memory_size() const {
-#ifdef ASSERT
-    return type2aelembytes(memory_type(), true);
-#else
     return type2aelembytes(memory_type());
-#endif
   }
 
   // Search through memory states which precede this node (load or store).
@@ -253,10 +242,6 @@ public:
 
 #ifndef PRODUCT
   virtual void dump_spec(outputStream *st) const;
-#endif
-#ifdef ASSERT
-  // Helper function to allow a raw load without control edge for some cases
-  static bool is_immutable_value(Node* adr);
 #endif
 protected:
   const Type* load_array_final_field(const TypeKlassPtr *tkls,
@@ -1057,9 +1042,6 @@ class MemBarNode: public MultiNode {
     LeadingLoadStore
   } _kind;
 
-#ifdef ASSERT
-  uint _pair_idx;
-#endif
 
 public:
   enum {
@@ -1245,10 +1227,6 @@ public:
   bool does_not_escape() { return _does_not_escape; }
   void set_does_not_escape() { _does_not_escape = true; }
 
-#ifdef ASSERT
-  // ensure all non-degenerate stores are ordered and non-overlapping
-  bool stores_are_sane(PhaseTransform* phase);
-#endif //ASSERT
 
   // See if this store can be captured; return offset where it initializes.
   // Return 0 if the store cannot be moved (any sort of problem).
@@ -1369,19 +1347,6 @@ class MergeMemStream : public StackObj {
     _mem2 = NULL;
   }
 
-#ifdef ASSERT
-  Node* check_memory() const {
-    if (at_base_memory())
-      return _mm->base_memory();
-    else if ((uint)_idx < _mm->req() && !_mm->in(_idx)->is_top())
-      return _mm->memory_at(_idx);
-    else
-      return _mm_base;
-  }
-  Node* check_memory2() const {
-    return at_base_memory()? _mm2->base_memory(): _mm2->memory_at(_idx);
-  }
-#endif
 
   static bool match_memory(Node* mem, const MergeMemNode* mm, int idx) PRODUCT_RETURN0;
   void assert_synch() const {
@@ -1410,11 +1375,6 @@ class MergeMemStream : public StackObj {
     init(mm, mm2);
     _cnt2 = mm2->req();
   }
-#ifdef ASSERT
-  ~MergeMemStream() {
-    assert_synch();
-  }
-#endif
 
   MergeMemNode* all_memory() const {
     return _mm;

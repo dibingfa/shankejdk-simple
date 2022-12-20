@@ -196,17 +196,6 @@ VtableStub* VtableStubs::create_itable_stub(int itable_index) {
   // method (rbx): Method*
   // rcx: receiver
 
-#ifdef ASSERT
-  if (DebugVtables) {
-      Label L1;
-      __ cmpptr(method, (int32_t)NULL_WORD);
-      __ jcc(Assembler::equal, L1);
-      __ cmpptr(Address(method, Method::from_compiled_offset()), (int32_t)NULL_WORD);
-      __ jcc(Assembler::notZero, L1);
-      __ stop("Method* is null");
-      __ bind(L1);
-    }
-#endif // ASSERT
 
   address ame_addr = __ pc();
   __ jmp(Address(method, Method::from_compiled_offset()));

@@ -56,9 +56,6 @@ class OopMapCacheEntry: private InterpreterOopMap {
 
  public:
   OopMapCacheEntry() : InterpreterOopMap() {
-#ifdef ASSERT
-     _resource_allocate_bit_mask = false;
-#endif
   }
 };
 
@@ -163,9 +160,6 @@ class VerifyClosure : public OffsetClosure {
 
 InterpreterOopMap::InterpreterOopMap() {
   initialize();
-#ifdef ASSERT
-  _resource_allocate_bit_mask = true;
-#endif
 }
 
 InterpreterOopMap::~InterpreterOopMap() {

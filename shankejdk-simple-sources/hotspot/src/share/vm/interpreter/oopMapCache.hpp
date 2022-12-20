@@ -91,9 +91,6 @@ class InterpreterOopMap: ResourceObj {
                                   // "protected" so that sub classes can
                                   // access it without using trickery in
                                   // methd bit_mask().
-#ifdef ASSERT
-  bool _resource_allocate_bit_mask;
-#endif
 
   // access methods
   Method*        method() const                  { return _method; }

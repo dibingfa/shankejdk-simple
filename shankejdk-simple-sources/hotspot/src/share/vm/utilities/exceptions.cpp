@@ -73,17 +73,6 @@ bool Exceptions::special_exception(Thread* thread, const char* file, int line, H
    ShouldNotReachHere();
   }
 
-#ifdef ASSERT
-  // Check for trying to throw stack overflow before initialization is complete
-  // to prevent infinite recursion trying to initialize stack overflow without
-  // adequate stack space.
-  // This can happen with stress testing a large value of StackShadowPages
-  if (h_exception()->klass() == SystemDictionary::StackOverflowError_klass()) {
-    InstanceKlass* ik = InstanceKlass::cast(h_exception->klass());
-    assert(ik->is_initialized(),
-           "need to increase min_stack_allowed calculation");
-  }
-#endif // ASSERT
 
   if (thread->is_VM_thread()
       || thread->is_Compiler_thread()

@@ -100,9 +100,6 @@ class NativeInstruction VALUE_OBJ_CLASS_SPEC {
 
 inline NativeInstruction* nativeInstruction_at(address address) {
   NativeInstruction* inst = (NativeInstruction*)address;
-#ifdef ASSERT
-  //inst->verify();
-#endif
   return inst;
 }
 
@@ -167,17 +164,11 @@ class NativeCall: public NativeInstruction {
 
 inline NativeCall* nativeCall_at(address address) {
   NativeCall* call = (NativeCall*)(address - NativeCall::instruction_offset);
-#ifdef ASSERT
-  call->verify();
-#endif
   return call;
 }
 
 inline NativeCall* nativeCall_before(address return_address) {
   NativeCall* call = (NativeCall*)(return_address - NativeCall::return_address_offset);
-#ifdef ASSERT
-  call->verify();
-#endif
   return call;
 }
 
@@ -219,17 +210,11 @@ class NativeMovConstReg: public NativeInstruction {
 
 inline NativeMovConstReg* nativeMovConstReg_at(address address) {
   NativeMovConstReg* test = (NativeMovConstReg*)(address - NativeMovConstReg::instruction_offset);
-#ifdef ASSERT
-  test->verify();
-#endif
   return test;
 }
 
 inline NativeMovConstReg* nativeMovConstReg_before(address address) {
   NativeMovConstReg* test = (NativeMovConstReg*)(address - NativeMovConstReg::instruction_size - NativeMovConstReg::instruction_offset);
-#ifdef ASSERT
-  test->verify();
-#endif
   return test;
 }
 
@@ -237,9 +222,6 @@ class NativeMovConstRegPatching: public NativeMovConstReg {
  private:
     friend NativeMovConstRegPatching* nativeMovConstRegPatching_at(address address) {
     NativeMovConstRegPatching* test = (NativeMovConstRegPatching*)(address - instruction_offset);
-    #ifdef ASSERT
-      test->verify();
-    #endif
     return test;
   }
 };
@@ -321,9 +303,6 @@ class NativeMovRegMem: public NativeInstruction {
 
 inline NativeMovRegMem* nativeMovRegMem_at (address address) {
   NativeMovRegMem* test = (NativeMovRegMem*)(address - NativeMovRegMem::instruction_offset);
-#ifdef ASSERT
-  test->verify();
-#endif
   return test;
 }
 
@@ -331,9 +310,6 @@ class NativeMovRegMemPatching: public NativeMovRegMem {
  private:
   friend NativeMovRegMemPatching* nativeMovRegMemPatching_at (address address) {
     NativeMovRegMemPatching* test = (NativeMovRegMemPatching*)(address - instruction_offset);
-    #ifdef ASSERT
-      test->verify();
-    #endif
     return test;
   }
 };
@@ -368,9 +344,6 @@ class NativeLoadAddress: public NativeMovRegMem {
  private:
   friend NativeLoadAddress* nativeLoadAddress_at (address address) {
     NativeLoadAddress* test = (NativeLoadAddress*)(address - instruction_offset);
-    #ifdef ASSERT
-      test->verify();
-    #endif
     return test;
   }
 };
@@ -429,9 +402,6 @@ class NativeJump: public NativeInstruction {
 
 inline NativeJump* nativeJump_at(address address) {
   NativeJump* jump = (NativeJump*)(address - NativeJump::instruction_offset);
-#ifdef ASSERT
-  jump->verify();
-#endif
   return jump;
 }
 

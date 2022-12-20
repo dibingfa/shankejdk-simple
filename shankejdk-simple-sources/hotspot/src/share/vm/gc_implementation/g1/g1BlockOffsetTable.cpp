@@ -341,33 +341,6 @@ void G1BlockOffsetArray::alloc_block_work2(HeapWord** threshold_, size_t* index_
   *threshold_ = threshold;
   *index_ = index;
 
-#ifdef ASSERT
-  // The offset can be 0 if the block starts on a boundary.  That
-  // is checked by an assertion above.
-  size_t start_index = _array->index_for(blk_start);
-  HeapWord* boundary = _array->address_for_index(start_index);
-  assert((_array->offset_array(orig_index) == 0 &&
-          blk_start == boundary) ||
-          (_array->offset_array(orig_index) > 0 &&
-         _array->offset_array(orig_index) <= N_words),
-         err_msg("offset array should have been set - "
-                  "orig_index offset: " UINT32_FORMAT ", "
-                  "blk_start: " PTR_FORMAT ", "
-                  "boundary: " PTR_FORMAT,
-                  _array->offset_array(orig_index),
-                  blk_start, boundary));
-  for (size_t j = orig_index + 1; j <= end_index; j++) {
-    assert(_array->offset_array(j) > 0 &&
-           _array->offset_array(j) <=
-             (u_char) (N_words+BlockOffsetArray::N_powers-1),
-           err_msg("offset array should have been set - "
-                   UINT32_FORMAT " not > 0 OR "
-                   UINT32_FORMAT " not <= " UINT32_FORMAT,
-                   _array->offset_array(j),
-                   _array->offset_array(j),
-                   (u_char) (N_words+BlockOffsetArray::N_powers-1)));
-  }
-#endif
 }
 
 bool

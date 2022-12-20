@@ -89,14 +89,8 @@ class GenericGrowableArray : public ResourceObj {
 
   MEMFLAGS   _memflags;   // memory type if allocation in C heap
 
-#ifdef ASSERT
-  int    _nesting;      // resource area nesting at creation
-  void   set_nesting();
-  void   check_nesting();
-#else
 #define  set_nesting();
 #define  check_nesting();
-#endif
 
   // Where are we going to allocate memory?
   bool on_C_heap() { return _arena == (Arena*)1; }

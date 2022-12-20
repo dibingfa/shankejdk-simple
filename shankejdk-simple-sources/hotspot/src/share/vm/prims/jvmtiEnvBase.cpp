@@ -652,9 +652,6 @@ JvmtiEnvBase::count_locked_objects(JavaThread *java_thread, Handle hobj) {
 
 jvmtiError
 JvmtiEnvBase::get_current_contended_monitor(JavaThread *calling_thread, JavaThread *java_thread, jobject *monitor_ptr) {
-#ifdef ASSERT
-  uint32_t debug_bits = 0;
-#endif
   assert((SafepointSynchronize::is_at_safepoint() ||
           is_thread_fully_suspended(java_thread, false, &debug_bits)),
          "at safepoint or target thread is suspended");
@@ -691,9 +688,6 @@ jvmtiError
 JvmtiEnvBase::get_owned_monitors(JavaThread *calling_thread, JavaThread* java_thread,
                                  GrowableArray<jvmtiMonitorStackDepthInfo*> *owned_monitors_list) {
   jvmtiError err = JVMTI_ERROR_NONE;
-#ifdef ASSERT
-  uint32_t debug_bits = 0;
-#endif
   assert((SafepointSynchronize::is_at_safepoint() ||
           is_thread_fully_suspended(java_thread, false, &debug_bits)),
          "at safepoint or target thread is suspended");
@@ -813,9 +807,6 @@ jvmtiError
 JvmtiEnvBase::get_stack_trace(JavaThread *java_thread,
                               jint start_depth, jint max_count,
                               jvmtiFrameInfo* frame_buffer, jint* count_ptr) {
-#ifdef ASSERT
-  uint32_t debug_bits = 0;
-#endif
   assert((SafepointSynchronize::is_at_safepoint() ||
           is_thread_fully_suspended(java_thread, false, &debug_bits)),
          "at safepoint or target thread is suspended");
@@ -896,9 +887,6 @@ JvmtiEnvBase::get_frame_count(JvmtiThreadState *state, jint *count_ptr) {
 jvmtiError
 JvmtiEnvBase::get_frame_location(JavaThread *java_thread, jint depth,
                                  jmethodID* method_ptr, jlocation* location_ptr) {
-#ifdef ASSERT
-  uint32_t debug_bits = 0;
-#endif
   assert((SafepointSynchronize::is_at_safepoint() ||
           is_thread_fully_suspended(java_thread, false, &debug_bits)),
          "at safepoint or target thread is suspended");

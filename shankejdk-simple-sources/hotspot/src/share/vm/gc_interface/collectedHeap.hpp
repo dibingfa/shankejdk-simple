@@ -85,9 +85,6 @@ class CollectedHeap : public CHeapObj<mtInternal> {
   friend class VMStructs;
   friend class IsGCActiveMark; // Block structured external access to _is_gc_active
 
-#ifdef ASSERT
-  static int       _fire_out_of_memory_count;
-#endif
 
   // Used for filler objects (static, but initialized in ctor).
   static size_t _filler_array_max_size;
@@ -289,11 +286,6 @@ class CollectedHeap : public CHeapObj<mtInternal> {
     return p == NULL || is_in_closed_subset(p);
   }
 
-#ifdef ASSERT
-  // Returns true if "p" is in the part of the
-  // heap being collected.
-  virtual bool is_in_partial_collection(const void *p) = 0;
-#endif
 
   // An object is scavengable if its location may move during a scavenge.
   // (A scavenge is a GC which is not a full GC.)
@@ -620,11 +612,6 @@ class CollectedHeap : public CHeapObj<mtInternal> {
   inline void reset_promotion_should_fail();
 #endif  // #ifndef PRODUCT
 
-#ifdef ASSERT
-  static int fired_fake_oom() {
-    return (CIFireOOMAt > 1 && _fire_out_of_memory_count >= CIFireOOMAt);
-  }
-#endif
 
  public:
   // This is a convenience method that is used in cases where

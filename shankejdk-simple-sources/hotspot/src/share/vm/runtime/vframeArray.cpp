@@ -64,9 +64,6 @@ void vframeArrayElement::fill_in(compiledVFrame* vf, bool realloc_failures) {
   _method = vf->method();
   _bci    = vf->raw_bci();
   _reexecute = vf->should_reexecute();
-#ifdef ASSERT
-  _removed_monitors = false;
-#endif
 
   int index;
 
@@ -373,11 +370,6 @@ void vframeArrayElement::unpack_on_stack(int caller_actual_parameters,
     if (popframe_preserved_args_size_in_words != 0) {
       void* saved_args = thread->popframe_preserved_args();
       assert(saved_args != NULL, "must have been saved by interpreter");
-#ifdef ASSERT
-      assert(popframe_preserved_args_size_in_words <=
-             iframe()->interpreter_frame_expression_stack_size()*Interpreter::stackElementWords,
-             "expression stack size should have been extended");
-#endif // ASSERT
       int top_element = iframe()->interpreter_frame_expression_stack_size()-1;
       intptr_t* base;
       if (frame::interpreter_frame_expression_stack_direction() < 0) {

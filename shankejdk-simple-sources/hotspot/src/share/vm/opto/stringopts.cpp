@@ -788,58 +788,6 @@ bool StringConcat::validate_mem_flow() {
         // the constructor will have to be control-dependent on Initialize.
         // So we actually don't have to do anything, since it's going to be caught by the control flow
         // analysis.
-#ifdef ASSERT
-        // Do a quick verification of the control pattern between the constructor and the initialize node
-        assert(curr->is_Call(), "constructor should be a call");
-        // Go up the control starting from the constructor call
-        Node* ctrl = curr->in(0);
-        IfNode* iff = NULL;
-        RegionNode* copy = NULL;
-
-        while (true) {
-          // skip known check patterns
-          if (ctrl->is_Region()) {
-            if (ctrl->as_Region()->is_copy()) {
-              copy = ctrl->as_Region();
-              ctrl = copy->is_copy();
-            } else { // a cast
-              assert(ctrl->req() == 3 &&
-                     ctrl->in(1) != NULL && ctrl->in(1)->is_Proj() &&
-                     ctrl->in(2) != NULL && ctrl->in(2)->is_Proj() &&
-                     ctrl->in(1)->in(0) == ctrl->in(2)->in(0) &&
-                     ctrl->in(1)->in(0) != NULL && ctrl->in(1)->in(0)->is_If(),
-                     "must be a simple diamond");
-              Node* true_proj = ctrl->in(1)->is_IfTrue() ? ctrl->in(1) : ctrl->in(2);
-              for (SimpleDUIterator i(true_proj); i.has_next(); i.next()) {
-                Node* use = i.get();
-                assert(use == ctrl || use->is_ConstraintCast(),
-                       err_msg_res("unexpected user: %s", use->Name()));
-              }
-
-              iff = ctrl->in(1)->in(0)->as_If();
-              ctrl = iff->in(0);
-            }
-          } else if (ctrl->is_IfTrue()) { // null checks, class checks
-            iff = ctrl->in(0)->as_If();
-            assert(iff->is_If(), "must be if");
-            // Verify that the other arm is an uncommon trap
-            Node* otherproj = iff->proj_out(1 - ctrl->as_Proj()->_con);
-            CallStaticJavaNode* call = otherproj->unique_out()->isa_CallStaticJava();
-            assert(strcmp(call->_name, "uncommon_trap") == 0, "must be uncommond trap");
-            ctrl = iff->in(0);
-          } else {
-            break;
-          }
-        }
-
-        assert(ctrl->is_Proj(), "must be a projection");
-        assert(ctrl->in(0)->is_Initialize(), "should be initialize");
-        for (SimpleDUIterator i(ctrl); i.has_next(); i.next()) {
-          Node* use = i.get();
-          assert(use == copy || use == iff || use == curr || use->is_CheckCastPP() || use->is_Load(),
-                 err_msg_res("unexpected user: %s", use->Name()));
-        }
-#endif // ASSERT
       }
     }
   }

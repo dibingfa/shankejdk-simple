@@ -190,9 +190,6 @@ void JvmtiEnvThreadState::compare_and_set_current_location(Method* new_method,
 
 
 JvmtiFramePops* JvmtiEnvThreadState::get_frame_pops() {
-#ifdef ASSERT
-  uint32_t debug_bits = 0;
-#endif
   assert(get_thread() == Thread::current() || JvmtiEnv::is_thread_fully_suspended(get_thread(), false, &debug_bits),
          "frame pop data only accessible from same thread or while suspended");
 
@@ -209,9 +206,6 @@ bool JvmtiEnvThreadState::has_frame_pops() {
 }
 
 void JvmtiEnvThreadState::set_frame_pop(int frame_number) {
-#ifdef ASSERT
-  uint32_t debug_bits = 0;
-#endif
   assert(get_thread() == Thread::current() || JvmtiEnv::is_thread_fully_suspended(get_thread(), false, &debug_bits),
          "frame pop data only accessible from same thread or while suspended");
   JvmtiFramePop fpop(frame_number);
@@ -220,9 +214,6 @@ void JvmtiEnvThreadState::set_frame_pop(int frame_number) {
 
 
 void JvmtiEnvThreadState::clear_frame_pop(int frame_number) {
-#ifdef ASSERT
-  uint32_t debug_bits = 0;
-#endif
   assert(get_thread() == Thread::current() || JvmtiEnv::is_thread_fully_suspended(get_thread(), false, &debug_bits),
          "frame pop data only accessible from same thread or while suspended");
   JvmtiFramePop fpop(frame_number);
@@ -231,9 +222,6 @@ void JvmtiEnvThreadState::clear_frame_pop(int frame_number) {
 
 
 void JvmtiEnvThreadState::clear_to_frame_pop(int frame_number)  {
-#ifdef ASSERT
-  uint32_t debug_bits = 0;
-#endif
   assert(get_thread() == Thread::current() || JvmtiEnv::is_thread_fully_suspended(get_thread(), false, &debug_bits),
          "frame pop data only accessible from same thread or while suspended");
   JvmtiFramePop fpop(frame_number);
@@ -242,9 +230,6 @@ void JvmtiEnvThreadState::clear_to_frame_pop(int frame_number)  {
 
 
 bool JvmtiEnvThreadState::is_frame_pop(int cur_frame_number) {
-#ifdef ASSERT
-  uint32_t debug_bits = 0;
-#endif
   assert(get_thread() == Thread::current() || JvmtiEnv::is_thread_fully_suspended(get_thread(), false, &debug_bits),
          "frame pop data only accessible from same thread or while suspended");
   if (!get_thread()->is_interp_only_mode() || _frame_pops == NULL) {

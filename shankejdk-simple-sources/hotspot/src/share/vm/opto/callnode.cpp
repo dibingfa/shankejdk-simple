@@ -1191,15 +1191,9 @@ void SafePointNode::disconnect_from_root(PhaseIterGVN *igvn) {
 //==============  SafePointScalarObjectNode  ==============
 
 SafePointScalarObjectNode::SafePointScalarObjectNode(const TypeOopPtr* tp,
-#ifdef ASSERT
-                                                     AllocateNode* alloc,
-#endif
                                                      uint first_index,
                                                      uint n_fields) :
   TypeNode(tp, 1), // 1 control input -- seems required.  Get from root.
-#ifdef ASSERT
-  _alloc(alloc),
-#endif
   _first_index(first_index),
   _n_fields(n_fields)
 {
@@ -1679,9 +1673,6 @@ Node *LockNode::Ideal(PhaseGVN *phase, bool can_reshape) {
       // The lock could be marked eliminated by lock coarsening
       // code during first IGVN before EA. Replace coarsened flag
       // to eliminate all associated locks/unlocks.
-#ifdef ASSERT
-      this->log_lock_optimization(phase->C,"eliminate_lock_set_non_esc1");
-#endif
       this->set_non_esc_obj();
       return result;
     }
@@ -1743,9 +1734,6 @@ Node *LockNode::Ideal(PhaseGVN *phase, bool can_reshape) {
           AbstractLockNode* lock = lock_ops.at(i);
 
           // Mark it eliminated by coarsening and update any counters
-#ifdef ASSERT
-          lock->log_lock_optimization(phase->C, "eliminate_lock_set_coarsened");
-#endif
           lock->set_coarsened();
         }
       } else if (ctrl->is_Region() &&
@@ -1772,9 +1760,6 @@ bool LockNode::is_nested_lock_region(Compile * c) {
   BoxLockNode* box = box_node()->as_BoxLock();
   int stk_slot = box->stack_slot();
   if (stk_slot <= 0) {
-#ifdef ASSERT
-    this->log_lock_optimization(c, "eliminate_lock_INLR_1");
-#endif
     return false; // External lock or it is not Box (Phi node).
   }
 
@@ -1782,15 +1767,9 @@ bool LockNode::is_nested_lock_region(Compile * c) {
   Node* obj = obj_node();
   LockNode* unique_lock = NULL;
   if (!box->is_simple_lock_region(&unique_lock, obj)) {
-#ifdef ASSERT
-    this->log_lock_optimization(c, "eliminate_lock_INLR_2a");
-#endif
     return false;
   }
   if (unique_lock != this) {
-#ifdef ASSERT
-    this->log_lock_optimization(c, "eliminate_lock_INLR_2b");
-#endif
     return false;
   }
 
@@ -1810,9 +1789,6 @@ bool LockNode::is_nested_lock_region(Compile * c) {
       }
     }
   }
-#ifdef ASSERT
-  this->log_lock_optimization(c, "eliminate_lock_INLR_3");
-#endif
   return false;
 }
 
@@ -1844,9 +1820,6 @@ Node *UnlockNode::Ideal(PhaseGVN *phase, bool can_reshape) {
       // The lock could be marked eliminated by lock coarsening
       // code during first IGVN before EA. Replace coarsened flag
       // to eliminate all associated locks/unlocks.
-#ifdef ASSERT
-      this->log_lock_optimization(phase->C, "eliminate_lock_set_non_esc2");
-#endif
       this->set_non_esc_obj();
     }
   }

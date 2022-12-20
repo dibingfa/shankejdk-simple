@@ -163,17 +163,6 @@ CallInfo::CallInfo(Method* resolved_method, Klass* resolved_klass) {
   } else if (resolved_method->has_vtable_index()) {
     // Can occur if an interface redeclares a method of Object.
 
-#ifdef ASSERT
-    // Ensure that this is really the case.
-    KlassHandle object_klass = SystemDictionary::Object_klass();
-    Method * object_resolved_method = object_klass()->vtable()->method_at(index);
-    assert(object_resolved_method->name() == resolved_method->name(),
-      err_msg("Object and interface method names should match at vtable index %d, %s != %s",
-      index, object_resolved_method->name()->as_C_string(), resolved_method->name()->as_C_string()));
-    assert(object_resolved_method->signature() == resolved_method->signature(),
-      err_msg("Object and interface method signatures should match at vtable index %d, %s != %s",
-      index, object_resolved_method->signature()->as_C_string(), resolved_method->signature()->as_C_string()));
-#endif // ASSERT
 
     kind = CallInfo::vtable_call;
   } else {
@@ -188,26 +177,6 @@ CallInfo::CallInfo(Method* resolved_method, Klass* resolved_klass) {
   DEBUG_ONLY(verify());
 }
 
-#ifdef ASSERT
-void CallInfo::verify() {
-  switch (call_kind()) {  // the meaning and allowed value of index depends on kind
-  case CallInfo::direct_call:
-    if (_call_index == Method::nonvirtual_vtable_index)  break;
-    // else fall through to check vtable index:
-  case CallInfo::vtable_call:
-    assert(resolved_klass()->verify_vtable_index(_call_index), "");
-    break;
-  case CallInfo::itable_call:
-    assert(resolved_method()->method_holder()->verify_itable_index(_call_index), "");
-    break;
-  case CallInfo::unknown_kind:
-    assert(call_kind() != CallInfo::unknown_kind, "CallInfo must be set");
-    break;
-  default:
-    fatal(err_msg_res("Unexpected call kind %d", call_kind()));
-  }
-}
-#endif //ASSERT
 
 
 
@@ -420,24 +389,6 @@ void LinkResolver::lookup_polymorphic_method(methodHandle& result,
         else                     appendix->print_on(tty);
       }
       if (result.not_null()) {
-#ifdef ASSERT
-        ResourceMark rm(THREAD);
-
-        TempNewSymbol basic_signature =
-          MethodHandles::lookup_basic_type_signature(full_signature, CHECK);
-        int actual_size_of_params = result->size_of_parameters();
-        int expected_size_of_params = ArgumentSizeComputer(basic_signature).size();
-        // +1 for MethodHandle.this, +1 for trailing MethodType
-        if (!MethodHandles::is_signature_polymorphic_static(iid))  expected_size_of_params += 1;
-        if (appendix.not_null())                                   expected_size_of_params += 1;
-        if (actual_size_of_params != expected_size_of_params) {
-          tty->print_cr("*** basic_signature=%s", basic_signature->as_C_string());
-          tty->print_cr("*** result for %s: ", vmIntrinsics::name_at(iid));
-          result->print();
-        }
-        assert(actual_size_of_params == expected_size_of_params,
-               err_msg("%d != %d", actual_size_of_params, expected_size_of_params));
-#endif //ASSERT
 
         assert(appendix_result_or_null != NULL, "");
         (*appendix_result_or_null) = appendix;

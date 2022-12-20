@@ -37,11 +37,7 @@
 #include "runtime/stubRoutines.hpp"
 #include "vmreg_x86.inline.hpp"
 
-#ifdef ASSERT
-#define __ gen()->lir(__FILE__, __LINE__)->
-#else
 #define __ gen()->lir()->
-#endif
 
 // Item will be loaded into a byte register; Intel only
 void LIRItem::load_byte_item() {

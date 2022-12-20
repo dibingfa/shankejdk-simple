@@ -105,10 +105,6 @@ class CallInfo VALUE_OBJ_CLASS_SPEC {
   }
 
   // debugging
-#ifdef ASSERT
-  bool         has_vtable_index() const          { return _call_index >= 0 && _call_kind != CallInfo::itable_call; }
-  bool         is_statically_bound() const       { return _call_index == Method::nonvirtual_vtable_index; }
-#endif //ASSERT
   void         verify() PRODUCT_RETURN;
   void         print()  PRODUCT_RETURN;
 };

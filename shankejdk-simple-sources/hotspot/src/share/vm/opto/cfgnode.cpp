@@ -607,11 +607,6 @@ Node *RegionNode::Ideal(PhaseGVN *phase, bool can_reshape) {
           assert( igvn->eqv(n->in(0), this), "Expect RegionNode to be control parent");
           n->set_req(0, parent_ctrl);
         }
-#ifdef ASSERT
-        for( uint k=0; k < n->req(); k++ ) {
-          assert( !igvn->eqv(n->in(k), this), "All uses of RegionNode should be gone");
-        }
-#endif
       }
       // Remove the RegionNode itself from DefUse info
       igvn->remove_dead_node(this);
@@ -827,55 +822,6 @@ PhiNode* PhiNode::split_out_instance(const TypePtr* at, PhaseIterGVN *igvn) cons
 }
 
 //------------------------verify_adr_type--------------------------------------
-#ifdef ASSERT
-void PhiNode::verify_adr_type(VectorSet& visited, const TypePtr* at) const {
-  if (visited.test_set(_idx))  return;  //already visited
-
-  // recheck constructor invariants:
-  verify_adr_type(false);
-
-  // recheck local phi/phi consistency:
-  assert(_adr_type == at || _adr_type == TypePtr::BOTTOM,
-         "adr_type must be consistent across phi nest");
-
-  // walk around
-  for (uint i = 1; i < req(); i++) {
-    Node* n = in(i);
-    if (n == NULL)  continue;
-    const Node* np = in(i);
-    if (np->is_Phi()) {
-      np->as_Phi()->verify_adr_type(visited, at);
-    } else if (n->bottom_type() == Type::TOP
-               || (n->is_Mem() && n->in(MemNode::Address)->bottom_type() == Type::TOP)) {
-      // ignore top inputs
-    } else {
-      const TypePtr* nat = flatten_phi_adr_type(n->adr_type());
-      // recheck phi/non-phi consistency at leaves:
-      assert((nat != NULL) == (at != NULL), "");
-      assert(nat == at || nat == TypePtr::BOTTOM,
-             "adr_type must be consistent at leaves of phi nest");
-    }
-  }
-}
-
-// Verify a whole nest of phis rooted at this one.
-void PhiNode::verify_adr_type(bool recursive) const {
-  if (is_error_reported())  return;  // muzzle asserts when debugging an error
-  if (Node::in_dump())      return;  // muzzle asserts when printing
-
-  assert((_type == Type::MEMORY) == (_adr_type != NULL), "adr_type for memory phis only");
-
-  if (!VerifyAliases)       return;  // verify thoroughly only if requested
-
-  assert(_adr_type == flatten_phi_adr_type(_adr_type),
-         "Phi::adr_type must be pre-normalized");
-
-  if (recursive) {
-    VectorSet visited(Thread::current()->resource_area());
-    verify_adr_type(visited, _adr_type);
-  }
-}
-#endif
 
 
 //------------------------------Value------------------------------------------
@@ -970,84 +916,6 @@ const Type *PhiNode::Value( PhaseTransform *phase ) const {
   // because the ciTypeFlow pre-pass produces verifier-quality types.
   const Type* ft = t->filter_speculative(_type);  // Worst case type
 
-#ifdef ASSERT
-  // The following logic has been moved into TypeOopPtr::filter.
-  const Type* jt = t->join_speculative(_type);
-  if (jt->empty()) {           // Emptied out???
-
-    // Check for evil case of 't' being a class and '_type' expecting an
-    // interface.  This can happen because the bytecodes do not contain
-    // enough type info to distinguish a Java-level interface variable
-    // from a Java-level object variable.  If we meet 2 classes which
-    // both implement interface I, but their meet is at 'j/l/O' which
-    // doesn't implement I, we have no way to tell if the result should
-    // be 'I' or 'j/l/O'.  Thus we'll pick 'j/l/O'.  If this then flows
-    // into a Phi which "knows" it's an Interface type we'll have to
-    // uplift the type.
-    if (!t->empty() && ttip && ttip->is_loaded() && ttip->klass()->is_interface()) {
-      assert(ft == _type, ""); // Uplift to interface
-    } else if (!t->empty() && ttkp && ttkp->is_loaded() && ttkp->klass()->is_interface()) {
-      assert(ft == _type, ""); // Uplift to interface
-    } else {
-      // We also have to handle 'evil cases' of interface- vs. class-arrays
-      Type::get_arrays_base_elements(jt, _type, NULL, &ttip);
-      if (!t->empty() && ttip != NULL && ttip->is_loaded() && ttip->klass()->is_interface()) {
-          assert(ft == _type, "");   // Uplift to array of interface
-      } else {
-        // Otherwise it's something stupid like non-overlapping int ranges
-        // found on dying counted loops.
-        assert(ft == Type::TOP, ""); // Canonical empty value
-      }
-    }
-  }
-
-  else {
-
-    // If we have an interface-typed Phi and we narrow to a class type, the join
-    // should report back the class.  However, if we have a J/L/Object
-    // class-typed Phi and an interface flows in, it's possible that the meet &
-    // join report an interface back out.  This isn't possible but happens
-    // because the type system doesn't interact well with interfaces.
-    const TypePtr *jtp = jt->make_ptr();
-    const TypeInstPtr *jtip = (jtp != NULL) ? jtp->isa_instptr() : NULL;
-    const TypeKlassPtr *jtkp = (jtp != NULL) ? jtp->isa_klassptr() : NULL;
-    if( jtip && ttip ) {
-      if( jtip->is_loaded() &&  jtip->klass()->is_interface() &&
-          ttip->is_loaded() && !ttip->klass()->is_interface() ) {
-        // Happens in a CTW of rt.jar, 320-341, no extra flags
-        assert(ft == ttip->cast_to_ptr_type(jtip->ptr()) ||
-               ft->isa_narrowoop() && ft->make_ptr() == ttip->cast_to_ptr_type(jtip->ptr()), "");
-        jt = ft;
-      }
-    }
-    if( jtkp && ttkp ) {
-      if( jtkp->is_loaded() &&  jtkp->klass()->is_interface() &&
-          !jtkp->klass_is_exact() && // Keep exact interface klass (6894807)
-          ttkp->is_loaded() && !ttkp->klass()->is_interface() ) {
-        assert(ft == ttkp->cast_to_ptr_type(jtkp->ptr()) ||
-               ft->isa_narrowklass() && ft->make_ptr() == ttkp->cast_to_ptr_type(jtkp->ptr()), "");
-        jt = ft;
-      }
-    }
-    if (jt != ft && jt->base() == ft->base()) {
-      if (jt->isa_int() &&
-          jt->is_int()->_lo == ft->is_int()->_lo &&
-          jt->is_int()->_hi == ft->is_int()->_hi)
-        jt = ft;
-      if (jt->isa_long() &&
-          jt->is_long()->_lo == ft->is_long()->_lo &&
-          jt->is_long()->_hi == ft->is_long()->_hi)
-        jt = ft;
-    }
-    if (jt != ft) {
-      tty->print("merge type:  "); t->dump(); tty->cr();
-      tty->print("kill type:   "); _type->dump(); tty->cr();
-      tty->print("join type:   "); jt->dump(); tty->cr();
-      tty->print("filter type: "); ft->dump(); tty->cr();
-    }
-    assert(jt == ft, "");
-  }
-#endif //ASSERT
 
   // Deal with conversion problems found in data loops.
   ft = phase->saturate(ft, phase->type_or_null(this), _type);
@@ -1676,15 +1544,6 @@ Node *PhiNode::Ideal(PhaseGVN *phase, bool can_reshape) {
     // One unique input.
     debug_only(Node* ident = Identity(phase));
     // The unique input must eventually be detected by the Identity call.
-#ifdef ASSERT
-    if (ident != uin && !ident->is_top()) {
-      // print this output before failing assert
-      r->dump(3);
-      this->dump(3);
-      ident->dump();
-      uin->dump();
-    }
-#endif
     assert(ident == uin || ident->is_top(), "Identity must clean this up");
     return NULL;
   }

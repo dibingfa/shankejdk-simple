@@ -335,10 +335,6 @@ void CodeCache::blobs_do(CodeBlobClosure* f) {
   FOR_ALL_ALIVE_BLOBS(cb) {
     f->do_code_blob(cb);
 
-#ifdef ASSERT
-    if (cb->is_nmethod())
-      ((nmethod*)cb)->verify_scavenge_root_oops();
-#endif //ASSERT
   }
 }
 
@@ -518,32 +514,9 @@ void CodeCache::verify_perm_nmethods(CodeBlobClosure* f_or_null) {
 #endif //PRODUCT
 
 void CodeCache::verify_clean_inline_caches() {
-#ifdef ASSERT
-  FOR_ALL_ALIVE_BLOBS(cb) {
-    if (cb->is_nmethod()) {
-      nmethod* nm = (nmethod*)cb;
-      assert(!nm->is_unloaded(), "Tautology");
-      nm->verify_clean_inline_caches();
-      nm->verify();
-    }
-  }
-#endif
 }
 
 void CodeCache::verify_icholder_relocations() {
-#ifdef ASSERT
-  // make sure that we aren't leaking icholders
-  int count = 0;
-  FOR_ALL_BLOBS(cb) {
-    if (cb->is_nmethod()) {
-      nmethod* nm = (nmethod*)cb;
-      count += nm->verify_icholder_relocations();
-    }
-  }
-
-  assert(count + InlineCacheBuffer::pending_icholder_count() + CompiledICHolder::live_not_claimed_count() ==
-         CompiledICHolder::live_count(), "must agree");
-#endif
 }
 
 void CodeCache::gc_prologue() {

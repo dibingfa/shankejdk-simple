@@ -270,17 +270,6 @@ bool BytecodePrinter::check_cp_cache_index(int i, int& cp_index, outputStream* s
   size /= sizeof(ConstantPoolCacheEntry);
   climit = (int) size;
 
-#ifdef ASSERT
-  {
-    const int CPCACHE_INDEX_TAG = ConstantPool::CPCACHE_INDEX_TAG;
-    if (i >= CPCACHE_INDEX_TAG && i < climit + CPCACHE_INDEX_TAG) {
-      i -= CPCACHE_INDEX_TAG;
-    } else {
-      st->print_cr(" CP[%d] missing bias?", i);
-      return false;
-    }
-  }
-#endif //ASSERT
   if (i >= 0 && i < climit) {
     cp_index = cache->entry_at(i)->constant_pool_index();
   } else {

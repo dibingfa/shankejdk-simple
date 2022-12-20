@@ -537,9 +537,6 @@ class FrameValues {
   // Used by frame functions to describe locations.
   void describe(int owner, intptr_t* location, const char* description, int priority = 0);
 
-#ifdef ASSERT
-  void validate();
-#endif
   void print(JavaThread* thread);
 };
 

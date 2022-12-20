@@ -253,24 +253,10 @@ void TemplateTable::patch_bytecode(Bytecodes::Code bc, Register bc_reg,
     __ get_method(temp_reg);
     // Let breakpoint table handling rewrite to quicker bytecode
     __ call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::set_original_bytecode_at), temp_reg, r13, bc_reg);
-#ifndef ASSERT
     __ jmpb(L_patch_done);
-#else
-    __ jmp(L_patch_done);
-#endif
     __ bind(L_fast_patch);
   }
 
-#ifdef ASSERT
-  Label L_okay;
-  __ load_unsigned_byte(temp_reg, at_bcp(0));
-  __ cmpl(temp_reg, (int) Bytecodes::java_code(bc));
-  __ jcc(Assembler::equal, L_okay);
-  __ cmpl(temp_reg, bc_reg);
-  __ jcc(Assembler::equal, L_okay);
-  __ stop("patching the wrong bytecode");
-  __ bind(L_okay);
-#endif
 
   // patch bytecode
   __ movb(at_bcp(0), bc_reg);
@@ -406,16 +392,6 @@ void TemplateTable::ldc(bool wide) {
   __ jmp(Done);
 
   __ bind(notFloat);
-#ifdef ASSERT
-  {
-    Label L;
-    __ cmpl(rdx, JVM_CONSTANT_Integer);
-    __ jcc(Assembler::equal, L);
-    // String and Object are rewritten to fast_aldc
-    __ stop("unexpected tag type in ldc");
-    __ bind(L);
-  }
-#endif
   // itos JVM_CONSTANT_Integer only
   __ movl(rax, Address(rcx, rbx, Address::times_8, base_offset));
   __ push_i(rax);
@@ -1403,49 +1379,6 @@ void TemplateTable::wide_iinc() {
 
 void TemplateTable::convert() {
   // Checking
-#ifdef ASSERT
-  {
-    TosState tos_in  = ilgl;
-    TosState tos_out = ilgl;
-    switch (bytecode()) {
-    case Bytecodes::_i2l: // fall through
-    case Bytecodes::_i2f: // fall through
-    case Bytecodes::_i2d: // fall through
-    case Bytecodes::_i2b: // fall through
-    case Bytecodes::_i2c: // fall through
-    case Bytecodes::_i2s: tos_in = itos; break;
-    case Bytecodes::_l2i: // fall through
-    case Bytecodes::_l2f: // fall through
-    case Bytecodes::_l2d: tos_in = ltos; break;
-    case Bytecodes::_f2i: // fall through
-    case Bytecodes::_f2l: // fall through
-    case Bytecodes::_f2d: tos_in = ftos; break;
-    case Bytecodes::_d2i: // fall through
-    case Bytecodes::_d2l: // fall through
-    case Bytecodes::_d2f: tos_in = dtos; break;
-    default             : ShouldNotReachHere();
-    }
-    switch (bytecode()) {
-    case Bytecodes::_l2i: // fall through
-    case Bytecodes::_f2i: // fall through
-    case Bytecodes::_d2i: // fall through
-    case Bytecodes::_i2b: // fall through
-    case Bytecodes::_i2c: // fall through
-    case Bytecodes::_i2s: tos_out = itos; break;
-    case Bytecodes::_i2l: // fall through
-    case Bytecodes::_f2l: // fall through
-    case Bytecodes::_d2l: tos_out = ltos; break;
-    case Bytecodes::_i2f: // fall through
-    case Bytecodes::_l2f: // fall through
-    case Bytecodes::_d2f: tos_out = ftos; break;
-    case Bytecodes::_i2d: // fall through
-    case Bytecodes::_l2d: // fall through
-    case Bytecodes::_f2d: tos_out = dtos; break;
-    default             : ShouldNotReachHere();
-    }
-    transition(tos_in, tos_out);
-  }
-#endif // ASSERT
 
   static const int64_t is_nan = 0x8000000000000000L;
 
@@ -2408,10 +2341,6 @@ void TemplateTable::getfield_or_static(int byte_no, bool is_static) {
   __ jmp(Done);
 
   __ bind(notFloat);
-#ifdef ASSERT
-  __ cmpl(flags, dtos);
-  __ jcc(Assembler::notEqual, notDouble);
-#endif
   // dtos
   __ movdbl(xmm0, field);
   __ push(dtos);
@@ -2419,12 +2348,6 @@ void TemplateTable::getfield_or_static(int byte_no, bool is_static) {
   if (!is_static) {
     patch_bytecode(Bytecodes::_fast_dgetfield, bc, rbx);
   }
-#ifdef ASSERT
-  __ jmp(Done);
-
-  __ bind(notDouble);
-  __ stop("Bad state");
-#endif
 
   __ bind(Done);
   // [jk] not needed currently
@@ -2654,10 +2577,6 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   }
 
   __ bind(notFloat);
-#ifdef ASSERT
-  __ cmpl(flags, dtos);
-  __ jcc(Assembler::notEqual, notDouble);
-#endif
 
   // dtos
   {
@@ -2669,12 +2588,6 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
     }
   }
 
-#ifdef ASSERT
-  __ jmp(Done);
-
-  __ bind(notDouble);
-  __ stop("Bad state");
-#endif
 
   __ bind(Done);
 

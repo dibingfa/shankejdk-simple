@@ -94,16 +94,6 @@ void specialized_oop_follow_contents(InstanceRefKlass* ref, oop obj) {
       MarkSweep::mark_and_push(discovered_addr);
     }
   } else {
-#ifdef ASSERT
-    // In the case of older JDKs which do not use the discovered
-    // field for the pending list, an inactive ref (next != NULL)
-    // must always have a NULL discovered field.
-    oop next = oopDesc::load_decode_heap_oop(next_addr);
-    oop discovered = java_lang_ref_Reference::discovered(obj);
-    assert(oopDesc::is_null(next) || oopDesc::is_null(discovered),
-           err_msg("Found an inactive reference " PTR_FORMAT " with a non-NULL discovered field",
-                   (oopDesc*)obj));
-#endif
   }
   // treat next as normal oop.  next is a link in the reference queue.
   debug_only(
@@ -174,16 +164,6 @@ void specialized_oop_follow_contents(InstanceRefKlass* ref,
       PSParallelCompact::mark_and_push(cm, discovered_addr);
     }
   } else {
-#ifdef ASSERT
-    // In the case of older JDKs which do not use the discovered
-    // field for the pending list, an inactive ref (next != NULL)
-    // must always have a NULL discovered field.
-    T next = oopDesc::load_heap_oop(next_addr);
-    oop discovered = java_lang_ref_Reference::discovered(obj);
-    assert(oopDesc::is_null(next) || oopDesc::is_null(discovered),
-           err_msg("Found an inactive reference " PTR_FORMAT " with a non-NULL discovered field",
-                   (oopDesc*)obj));
-#endif
   }
   PSParallelCompact::mark_and_push(cm, next_addr);
   ref->InstanceKlass::oop_follow_contents(cm, obj);
@@ -199,27 +179,6 @@ void InstanceRefKlass::oop_follow_contents(ParCompactionManager* cm,
 }
 #endif // INCLUDE_ALL_GCS
 
-#ifdef ASSERT
-template <class T> void trace_reference_gc(const char *s, oop obj,
-                                           T* referent_addr,
-                                           T* next_addr,
-                                           T* discovered_addr) {
-  if(TraceReferenceGC && PrintGCDetails) {
-    gclog_or_tty->print_cr("%s obj " INTPTR_FORMAT, s, (address)obj);
-    gclog_or_tty->print_cr("     referent_addr/* " INTPTR_FORMAT " / "
-         INTPTR_FORMAT, referent_addr,
-         referent_addr ?
-           (address)oopDesc::load_decode_heap_oop(referent_addr) : NULL);
-    gclog_or_tty->print_cr("     next_addr/* " INTPTR_FORMAT " / "
-         INTPTR_FORMAT, next_addr,
-         next_addr ? (address)oopDesc::load_decode_heap_oop(next_addr) : NULL);
-    gclog_or_tty->print_cr("     discovered_addr/* " INTPTR_FORMAT " / "
-         INTPTR_FORMAT, discovered_addr,
-         discovered_addr ?
-           (address)oopDesc::load_decode_heap_oop(discovered_addr) : NULL);
-  }
-}
-#endif
 
 template <class T> void specialized_oop_adjust_pointers(InstanceRefKlass *ref, oop obj) {
   T* referent_addr = (T*)java_lang_ref_Reference::referent_addr(obj);
@@ -398,16 +357,6 @@ void specialized_oop_push_contents(InstanceRefKlass *ref,
       }
     }
   } else {
-#ifdef ASSERT
-    // In the case of older JDKs which do not use the discovered
-    // field for the pending list, an inactive ref (next != NULL)
-    // must always have a NULL discovered field.
-    oop next = oopDesc::load_decode_heap_oop(next_addr);
-    oop discovered = java_lang_ref_Reference::discovered(obj);
-    assert(oopDesc::is_null(next) || oopDesc::is_null(discovered),
-           err_msg("Found an inactive reference " PTR_FORMAT " with a non-NULL discovered field",
-                   (oopDesc*)obj));
-#endif
   }
 
   // Treat next as normal oop;  next is a link in the reference queue.

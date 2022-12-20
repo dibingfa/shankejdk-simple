@@ -119,11 +119,6 @@ void ValueStack::apply(Values list, ValueVisitor* f) {
     Value v0 = *va;
     if (v0 != NULL && !v0->type()->is_illegal()) {
       f->visit(va);
-#ifdef ASSERT
-      Value v1 = *va;
-      assert(v1->type()->is_illegal() || v0->type()->tag() == v1->type()->tag(), "types must match");
-      assert(!v1->type()->is_double_word() || list.at(i + 1) == NULL, "hi-word of doubleword value must be NULL");
-#endif
       if (v0->type()->is_double_word()) i++;
     }
   }

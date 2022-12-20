@@ -226,12 +226,6 @@ void Symbol::increment_refcount() {
 void Symbol::decrement_refcount() {
   if (_refcount >= 0) {
     Atomic::dec(&_refcount);
-#ifdef ASSERT
-    if (_refcount < 0) {
-      print();
-      assert(false, "reference count underflow for symbol");
-    }
-#endif
   }
 }
 

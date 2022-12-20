@@ -32,15 +32,7 @@
 
 #ifdef CC_INTERP
 
-#ifdef ASSERT
-#define VERIFY_OOP(o_) \
-      if (VerifyOops) { \
-        assert((oop(o_))->is_oop_or_null(), "Not an oop!"); \
-        StubRoutines::_verify_oop_count++;  \
-      }
-#else
 #define VERIFY_OOP(o)
-#endif
 
 // Platform dependent data manipulation
 #ifdef TARGET_ARCH_x86

@@ -280,12 +280,6 @@ void CallTypeData::post_initialize(BytecodeStream* stream, MethodData* mdo) {
 
   SignatureStream ss(inv.signature());
   if (has_arguments()) {
-#ifdef ASSERT
-    ResourceMark rm;
-    int count = MIN2(ss.reference_parameter_count(), (int)TypeProfileArgsLimit);
-    assert(count > 0, "room for args type but none found?");
-    check_number_of_arguments(count);
-#endif
     _args.post_initialize(inv.signature(), inv.has_receiver(), false);
   }
 
@@ -300,13 +294,6 @@ void VirtualCallTypeData::post_initialize(BytecodeStream* stream, MethodData* md
   Bytecode_invoke inv(stream->method(), stream->bci());
 
   if (has_arguments()) {
-#ifdef ASSERT
-    ResourceMark rm;
-    SignatureStream ss(inv.signature());
-    int count = MIN2(ss.reference_parameter_count(), (int)TypeProfileArgsLimit);
-    assert(count > 0, "room for args type but none found?");
-    check_number_of_arguments(count);
-#endif
     _args.post_initialize(inv.signature(), inv.has_receiver(), false);
   }
 
@@ -1632,28 +1619,6 @@ void MethodData::clean_extra_data(CleanExtraDataClosure* cl) {
 // Verify there's no unloaded or redefined method referenced by a
 // SpeculativeTrapData entry
 void MethodData::verify_extra_data_clean(CleanExtraDataClosure* cl) {
-#ifdef ASSERT
-  DataLayout* dp  = extra_data_base();
-  DataLayout* end = extra_data_limit();
-
-  for (; dp < end; dp = next_extra(dp)) {
-    switch(dp->tag()) {
-    case DataLayout::speculative_trap_data_tag: {
-      SpeculativeTrapData* data = new SpeculativeTrapData(dp);
-      Method* m = data->method();
-      assert(m != NULL && cl->is_live(m), "Method should exist");
-      break;
-    }
-    case DataLayout::bit_data_tag:
-      continue;
-    case DataLayout::no_tag:
-    case DataLayout::arg_info_data_tag:
-      return;
-    default:
-      fatal(err_msg("unexpected tag %d", dp->tag()));
-    }
-  }
-#endif
 }
 
 void MethodData::clean_method_data(BoolObjectClosure* is_alive) {

@@ -50,68 +50,8 @@ void MethodHandles::load_klass_from_Class(MacroAssembler* _masm, Register klass_
   __ movptr(klass_reg, Address(klass_reg, java_lang_Class::klass_offset_in_bytes()));
 }
 
-#ifdef ASSERT
-static int check_nonzero(const char* xname, int x) {
-  assert(x != 0, err_msg("%s should be nonzero", xname));
-  return x;
-}
-#define NONZERO(x) check_nonzero(#x, x)
-#else //ASSERT
 #define NONZERO(x) (x)
-#endif //ASSERT
 
-#ifdef ASSERT
-void MethodHandles::verify_klass(MacroAssembler* _masm,
-                                 Register obj, SystemDictionary::WKID klass_id,
-                                 const char* error_message) {
-  Klass** klass_addr = SystemDictionary::well_known_klass_addr(klass_id);
-  KlassHandle klass = SystemDictionary::well_known_klass(klass_id);
-  Register temp = rdi;
-  Register temp2 = noreg;
-  LP64_ONLY(temp2 = rscratch1);  // used by MacroAssembler::cmpptr
-  Label L_ok, L_bad;
-  BLOCK_COMMENT("verify_klass {");
-  __ verify_oop(obj);
-  __ testptr(obj, obj);
-  __ jcc(Assembler::zero, L_bad);
-  __ push(temp); if (temp2 != noreg)  __ push(temp2);
-#define UNPUSH { if (temp2 != noreg)  __ pop(temp2);  __ pop(temp); }
-  __ load_klass(temp, obj);
-  __ cmpptr(temp, ExternalAddress((address) klass_addr));
-  __ jcc(Assembler::equal, L_ok);
-  intptr_t super_check_offset = klass->super_check_offset();
-  __ movptr(temp, Address(temp, super_check_offset));
-  __ cmpptr(temp, ExternalAddress((address) klass_addr));
-  __ jcc(Assembler::equal, L_ok);
-  UNPUSH;
-  __ bind(L_bad);
-  __ STOP(error_message);
-  __ BIND(L_ok);
-  UNPUSH;
-  BLOCK_COMMENT("} verify_klass");
-}
-
-void MethodHandles::verify_ref_kind(MacroAssembler* _masm, int ref_kind, Register member_reg, Register temp) {
-  Label L;
-  BLOCK_COMMENT("verify_ref_kind {");
-  __ movl(temp, Address(member_reg, NONZERO(java_lang_invoke_MemberName::flags_offset_in_bytes())));
-  __ shrl(temp, java_lang_invoke_MemberName::MN_REFERENCE_KIND_SHIFT);
-  __ andl(temp, java_lang_invoke_MemberName::MN_REFERENCE_KIND_MASK);
-  __ cmpl(temp, ref_kind);
-  __ jcc(Assembler::equal, L);
-  { char* buf = NEW_C_HEAP_ARRAY(char, 100, mtInternal);
-    jio_snprintf(buf, 100, "verify_ref_kind expected %x", ref_kind);
-    if (ref_kind == JVM_REF_invokeVirtual ||
-        ref_kind == JVM_REF_invokeSpecial)
-      // could do this for all ref_kinds, but would explode assembly code size
-      trace_method_handle(_masm, buf);
-    __ STOP(buf);
-  }
-  BLOCK_COMMENT("} verify_ref_kind");
-  __ bind(L);
-}
-
-#endif //ASSERT
 
 void MethodHandles::jump_from_method_handle(MacroAssembler* _masm, Register method, Register temp,
                                             bool for_compiler_entry) {

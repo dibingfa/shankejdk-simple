@@ -190,14 +190,6 @@ void C1_MacroAssembler::initialize_body(Register obj, Register len_in_bytes, int
   jcc(Assembler::zero, done);
   // initialize topmost word, divide index by 2, check if odd and test if zero
   // note: for the remaining code to work, index must be a multiple of BytesPerWord
-#ifdef ASSERT
-  { Label L;
-    testptr(index, BytesPerWord - 1);
-    jcc(Assembler::zero, L);
-    stop("index is not a multiple of BytesPerWord");
-    bind(L);
-  }
-#endif
   xorptr(t1, t1);    // use _zero reg to clear memory (shorter code)
   if (UseIncDec) {
     shrptr(index, 3);  // divide by 8/16 and set carry flag if bit 2 was set
@@ -419,14 +411,6 @@ void C1_MacroAssembler::verify_not_null_oop(Register r) {
 }
 
 void C1_MacroAssembler::invalidate_registers(bool inv_rax, bool inv_rbx, bool inv_rcx, bool inv_rdx, bool inv_rsi, bool inv_rdi) {
-#ifdef ASSERT
-  if (inv_rax) movptr(rax, 0xDEAD);
-  if (inv_rbx) movptr(rbx, 0xDEAD);
-  if (inv_rcx) movptr(rcx, 0xDEAD);
-  if (inv_rdx) movptr(rdx, 0xDEAD);
-  if (inv_rsi) movptr(rsi, 0xDEAD);
-  if (inv_rdi) movptr(rdi, 0xDEAD);
-#endif
 }
 
 #endif // ifndef PRODUCT

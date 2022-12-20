@@ -51,37 +51,6 @@ jlong atomic_add_jlong(jlong value, jlong volatile* const dest) {
   return exchange_value;
 }
 
-#ifdef ASSERT
-
-// debug statistics
-static volatile jlong _allocated_bytes = 0;
-static volatile jlong _deallocated_bytes = 0;
-static volatile jlong _live_set_bytes = 0;
-
-static void add(size_t alloc_size) {
-  if (!JfrRecorder::is_created()) {
-    const jlong total_allocated = atomic_add_jlong((jlong)alloc_size, &_allocated_bytes);
-    const jlong current_live_set = atomic_add_jlong((jlong)alloc_size, &_live_set_bytes);
-    if (LogJFR && Verbose) tty->print_cr("Allocation: [" SIZE_FORMAT "] bytes", alloc_size);
-    if (LogJFR && Verbose) tty->print_cr("Total alloc [" JLONG_FORMAT "] bytes", total_allocated);
-    if (LogJFR && Verbose) tty->print_cr("Liveset:    [" JLONG_FORMAT "] bytes", current_live_set);
-  }
-}
-
-static void subtract(size_t dealloc_size) {
-  if (!JfrRecorder::is_created()) {
-    const jlong total_deallocated = atomic_add_jlong((jlong)dealloc_size, &_deallocated_bytes);
-    const jlong current_live_set = atomic_add_jlong(((jlong)dealloc_size * -1), &_live_set_bytes);
-    if (LogJFR && Verbose) tty->print_cr("Deallocation: [" SIZE_FORMAT "] bytes", dealloc_size);
-    if (LogJFR && Verbose) tty->print_cr("Total dealloc [" JLONG_FORMAT "] bytes", total_deallocated);
-    if (LogJFR && Verbose) tty->print_cr("Liveset:      [" JLONG_FORMAT "] bytes", current_live_set);
-  }
-}
-
-static void hook_memory_deallocation(size_t dealloc_size) {
-  subtract(dealloc_size);
-}
-#endif // ASSERT
 
 static void hook_memory_allocation(const char* allocation, size_t alloc_size) {
   if (NULL == allocation) {

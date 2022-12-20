@@ -1198,20 +1198,6 @@ bool FpuStackAllocator::merge_fpu_stack_with_successors(BlockBegin* block) {
     for (int i = 0; i < number_of_sux; i++) {
       BlockBegin* sux = block->sux_at(i);
 
-#ifdef ASSERT
-      for (int j = 0; j < sux->number_of_preds(); j++) {
-        assert(block == sux->pred_at(j), "all critical edges must be broken");
-      }
-
-      // check if new state is same
-      if (sux->fpu_stack_state() != NULL) {
-        intArray* sux_state = sux->fpu_stack_state();
-        assert(state->length() == sux_state->length(), "overwriting existing stack state");
-        for (int j = 0; j < state->length(); j++) {
-          assert(state->at(j) == sux_state->at(j), "overwriting existing stack state");
-        }
-      }
-#endif
 #ifndef PRODUCT
       if (TraceFPUStack) {
         tty->print_cr("Setting FPU stack state of B%d", sux->block_id());

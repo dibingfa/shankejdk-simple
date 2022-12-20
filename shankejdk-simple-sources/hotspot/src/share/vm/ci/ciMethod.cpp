@@ -144,11 +144,6 @@ ciMethod::ciMethod(methodHandle h_m, ciInstanceKlass* holder) :
   if (_interpreter_invocation_count == 0)
     _interpreter_invocation_count = 1;
   _instructions_size = -1;
-#ifdef ASSERT
-  if (ReplayCompiles) {
-    ciReplay::initialize(this);
-  }
-#endif
 }
 
 
@@ -526,14 +521,6 @@ ciCallProfile ciMethod::call_profile_at_bci(int bci) {
            // The morphism <= MorphismLimit.
            if ((morphism <  ciCallProfile::MorphismLimit) ||
                (morphism == ciCallProfile::MorphismLimit && count == 0)) {
-#ifdef ASSERT
-             if (count > 0) {
-               this->print_short_name(tty);
-               tty->print_cr(" @ bci:%d", bci);
-               this->print_codes();
-               assert(false, "this call site should not be polymorphic");
-             }
-#endif
              result._morphism = morphism;
            }
         }

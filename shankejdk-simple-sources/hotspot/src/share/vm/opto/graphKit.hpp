@@ -77,11 +77,6 @@ class GraphKit : public Phase {
   GraphKit();                   // empty constructor
   GraphKit(JVMState* jvms);     // the JVM state on which to operate
 
-#ifdef ASSERT
-  ~GraphKit() {
-    assert(!has_exceptions(), "user must call transfer_exceptions_into_jvms");
-  }
-#endif
 
   virtual Parse*          is_Parse()          const { return NULL; }
   virtual LibraryCallKit* is_LibraryCallKit() const { return NULL; }
@@ -156,17 +151,6 @@ class GraphKit : public Phase {
   JVMState* sync_jvms() const;
   JVMState* sync_jvms_for_reexecute();
 
-#ifdef ASSERT
-  // Make sure JVMS has an updated copy of bci and sp.
-  // Also sanity-check method, depth, and monitor depth.
-  bool jvms_in_sync() const;
-
-  // Make sure the map looks OK.
-  void verify_map() const;
-
-  // Make sure a proposed exception state looks OK.
-  static void verify_exception_state(SafePointNode* ex_map);
-#endif
 
   // Clone the existing map state.  (Implements PreserveJVMState.)
   SafePointNode* clone_map();
@@ -200,10 +184,6 @@ class GraphKit : public Phase {
   // Recover a saved exception from its map, and remove it from the map.
   static Node* clear_saved_ex_oop(SafePointNode* ex_map);
 
-#ifdef ASSERT
-  // Recover a saved exception from its map, and remove it from the map.
-  static bool has_saved_ex_oop(SafePointNode* ex_map);
-#endif
 
   // Push an exception in the canonical position for handlers (stack(0)).
   void push_ex_oop(Node* ex_oop) {
@@ -281,9 +261,6 @@ class GraphKit : public Phase {
 
   // Helper Functions for adding debug information
   void kill_dead_locals();
-#ifdef ASSERT
-  bool dead_locals_are_killed();
-#endif
   // The call may deoptimize.  Supply required JVM state as debug info.
   // If must_throw is true, the call is guaranteed not to return normally.
   void add_safepoint_edges(SafePointNode* call,
@@ -929,10 +906,6 @@ class GraphKit : public Phase {
 class PreserveJVMState: public StackObj {
  protected:
   GraphKit*      _kit;
-#ifdef ASSERT
-  int            _block;  // PO of current block, if a Parse
-  int            _bci;
-#endif
   SafePointNode* _map;
   uint           _sp;
 

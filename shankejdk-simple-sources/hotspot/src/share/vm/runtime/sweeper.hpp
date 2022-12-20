@@ -97,13 +97,6 @@ class NMethodSweeper : public AllStatic {
   static void log_sweep(const char* msg, const char* format = NULL, ...) ATTRIBUTE_PRINTF(2, 3);
 
 
-#ifdef ASSERT
-  static bool is_sweeping(nmethod* which) { return _current == which; }
-  // Keep track of sweeper activity in the ring buffer
-  static void record_sweep(nmethod* nm, int line);
-  static void report_events(int id, address entry);
-  static void report_events();
-#endif
 
   static void mark_active_nmethods();      // Invoked at the end of each safepoint
   static void possibly_sweep();            // Compiler threads call this to sweep

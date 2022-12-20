@@ -1099,31 +1099,6 @@ Handle SharedRuntime::find_callee_info_helper(JavaThread* thread,
   assert(receiver.is_null() || receiver->is_oop(), "wrong receiver");
   LinkResolver::resolve_invoke(callinfo, receiver, constants, bytecode_index, bc, CHECK_(nullHandle));
 
-#ifdef ASSERT
-  // Check that the receiver klass is of the right subtype and that it is initialized for virtual calls
-  if (bc != Bytecodes::_invokestatic && bc != Bytecodes::_invokedynamic && bc != Bytecodes::_invokehandle) {
-    assert(receiver.not_null(), "should have thrown exception");
-    KlassHandle receiver_klass(THREAD, receiver->klass());
-    Klass* rk = constants->klass_ref_at(bytecode_index, CHECK_(nullHandle));
-                            // klass is already loaded
-    KlassHandle static_receiver_klass(THREAD, rk);
-    // Method handle invokes might have been optimized to a direct call
-    // so don't check for the receiver class.
-    // FIXME this weakens the assert too much
-    methodHandle callee = callinfo.selected_method();
-    assert(receiver_klass->is_subtype_of(static_receiver_klass()) ||
-           callee->is_method_handle_intrinsic() ||
-           callee->is_compiled_lambda_form(),
-           "actual receiver must be subclass of static receiver klass");
-    if (receiver_klass->oop_is_instance()) {
-      if (InstanceKlass::cast(receiver_klass())->is_not_initialized()) {
-        tty->print_cr("ERROR: Klass not yet initialized!!");
-        receiver_klass()->print();
-      }
-      assert(!InstanceKlass::cast(receiver_klass())->is_not_initialized(), "receiver_klass must be initialized");
-    }
-  }
-#endif
 
   return receiver;
 }
@@ -1272,9 +1247,6 @@ methodHandle SharedRuntime::resolve_sub_helper(JavaThread *thread,
     callee_nm = NULL;
   }
   nmethodLocker nl_callee(callee_nm);
-#ifdef ASSERT
-  address dest_entry_point = callee_nm == NULL ? 0 : callee_nm->entry_point(); // used below
-#endif
 
   if (is_virtual) {
     assert(receiver.not_null() || invoke_code == Bytecodes::_invokehandle, "sanity check");
@@ -1302,14 +1274,6 @@ methodHandle SharedRuntime::resolve_sub_helper(JavaThread *thread,
     // will be supported.
     if (!callee_method->is_old() &&
         (callee_nm == NULL || callee_nm->is_in_use() && (callee_method->code() == callee_nm))) {
-#ifdef ASSERT
-      // We must not try to patch to jump to an already unloaded method.
-      if (dest_entry_point != 0) {
-        CodeBlob* cb = CodeCache::find_blob(dest_entry_point);
-        assert((cb != NULL) && cb->is_nmethod() && (((nmethod*)cb) == callee_nm),
-               "should not call unloaded nmethod");
-      }
-#endif
       if (is_virtual) {
         nmethod* nm = callee_nm;
         if (nm == NULL) CodeCache::find_blob(caller_frame.pc());
@@ -1331,13 +1295,6 @@ methodHandle SharedRuntime::resolve_sub_helper(JavaThread *thread,
 
 // Inline caches exist only in compiled code
 JRT_BLOCK_ENTRY(address, SharedRuntime::handle_wrong_method_ic_miss(JavaThread* thread))
-#ifdef ASSERT
-  RegisterMap reg_map(thread, false);
-  frame stub_frame = thread->last_frame();
-  assert(stub_frame.is_runtime_frame(), "sanity check");
-  frame caller_frame = stub_frame.sender(&reg_map);
-  assert(!caller_frame.is_interpreted_frame() && !caller_frame.is_entry_frame(), "unexpected frame");
-#endif /* ASSERT */
 
   methodHandle callee_method;
   JRT_BLOCK
@@ -1678,30 +1635,6 @@ methodHandle SharedRuntime::reresolve_call_site(JavaThread *thread, TRAPS) {
   return callee_method;
 }
 
-#ifdef ASSERT
-void SharedRuntime::check_member_name_argument_is_last_argument(methodHandle method,
-                                                                const BasicType* sig_bt,
-                                                                const VMRegPair* regs) {
-  ResourceMark rm;
-  const int total_args_passed = method->size_of_parameters();
-  const VMRegPair*    regs_with_member_name = regs;
-        VMRegPair* regs_without_member_name = NEW_RESOURCE_ARRAY(VMRegPair, total_args_passed - 1);
-
-  const int member_arg_pos = total_args_passed - 1;
-  assert(member_arg_pos >= 0 && member_arg_pos < total_args_passed, "oob");
-  assert(sig_bt[member_arg_pos] == T_OBJECT, "dispatch argument must be an object");
-
-  const bool is_outgoing = method->is_method_handle_intrinsic();
-  int comp_args_on_stack = java_calling_convention(sig_bt, regs_without_member_name, total_args_passed - 1, is_outgoing);
-
-  for (int i = 0; i < member_arg_pos; i++) {
-    VMReg a =    regs_with_member_name[i].first();
-    VMReg b = regs_without_member_name[i].first();
-    assert(a->value() == b->value(), err_msg_res("register allocation mismatch: a=%d, b=%d", a->value(), b->value()));
-  }
-  assert(regs_with_member_name[member_arg_pos].first()->is_valid(), "bad member arg");
-}
-#endif
 
 // ---------------------------------------------------------------------------
 // We are calling the interpreter via a c2i. Normally this would mean that
@@ -2445,14 +2378,6 @@ AdapterHandlerEntry* AdapterHandlerLibrary::get_adapter(methodHandle method) {
     // Lookup method signature's fingerprint
     entry = _adapters->lookup(total_args_passed, sig_bt);
 
-#ifdef ASSERT
-    AdapterHandlerEntry* shared_entry = NULL;
-    // Start adapter sharing verification only after the VM is booted.
-    if (VerifyAdapterSharing && (entry != NULL)) {
-      shared_entry = entry;
-      entry = NULL;
-    }
-#endif
 
     if (entry != NULL) {
       return entry;
@@ -2485,18 +2410,6 @@ AdapterHandlerEntry* AdapterHandlerLibrary::get_adapter(methodHandle method) {
                                                      sig_bt,
                                                      regs,
                                                      fingerprint);
-#ifdef ASSERT
-      if (VerifyAdapterSharing) {
-        if (shared_entry != NULL) {
-          assert(shared_entry->compare_code(buf->code_begin(), buffer.insts_size()), "code must match");
-          // Release the one just created and return the original
-          _adapters->free_entry(entry);
-          return shared_entry;
-        } else  {
-          entry->save_code(buf->code_begin(), buffer.insts_size());
-        }
-      }
-#endif
 
       new_adapter = AdapterBlob::create(&buffer);
       NOT_PRODUCT(insts_size = buffer.insts_size());
@@ -2576,31 +2489,9 @@ void AdapterHandlerEntry::relocate(address new_base) {
 
 void AdapterHandlerEntry::deallocate() {
   delete _fingerprint;
-#ifdef ASSERT
-  if (_saved_code) FREE_C_HEAP_ARRAY(unsigned char, _saved_code, mtCode);
-#endif
 }
 
 
-#ifdef ASSERT
-// Capture the code before relocation so that it can be compared
-// against other versions.  If the code is captured after relocation
-// then relative instructions won't be equivalent.
-void AdapterHandlerEntry::save_code(unsigned char* buffer, int length) {
-  _saved_code = NEW_C_HEAP_ARRAY(unsigned char, length, mtCode);
-  _saved_code_length = length;
-  memcpy(_saved_code, buffer, length);
-}
-
-
-bool AdapterHandlerEntry::compare_code(unsigned char* buffer, int length) {
-  if (length != _saved_code_length) {
-    return false;
-  }
-
-  return (memcmp(buffer, _saved_code, length) == 0) ? true : false;
-}
-#endif
 
 
 /**

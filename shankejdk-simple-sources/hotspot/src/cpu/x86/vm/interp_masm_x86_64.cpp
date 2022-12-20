@@ -63,16 +63,6 @@ void InterpreterMacroAssembler::call_VM_leaf_base(address entry_point,
   // saved! There used to be a save_bcp() that only happened in
   // the ASSERT path (no restore_bcp). Which caused bizarre failures
   // when jvm built with ASSERTs.
-#ifdef ASSERT
-  {
-    Label L;
-    cmpptr(Address(rbp, frame::interpreter_frame_last_sp_offset * wordSize), (int32_t)NULL_WORD);
-    jcc(Assembler::equal, L);
-    stop("InterpreterMacroAssembler::call_VM_leaf_base:"
-         " last_sp != NULL");
-    bind(L);
-  }
-#endif
   // super call
   MacroAssembler::call_VM_leaf_base(entry_point, number_of_arguments);
   // interpreter specific
@@ -95,16 +85,6 @@ void InterpreterMacroAssembler::call_VM_base(Register oop_result,
   //       due to GC.
   // assert(java_thread == noreg , "not expecting a precomputed java thread");
   save_bcp();
-#ifdef ASSERT
-  {
-    Label L;
-    cmpptr(Address(rbp, frame::interpreter_frame_last_sp_offset * wordSize), (int32_t)NULL_WORD);
-    jcc(Assembler::equal, L);
-    stop("InterpreterMacroAssembler::call_VM_leaf_base:"
-         " last_sp != NULL");
-    bind(L);
-  }
-#endif /* ASSERT */
   // super call
   MacroAssembler::call_VM_base(oop_result, noreg, last_java_sp,
                                entry_point, number_of_arguments,
@@ -878,34 +858,6 @@ void InterpreterMacroAssembler::set_method_data_pointer_for_bcp() {
 
 void InterpreterMacroAssembler::verify_method_data_pointer() {
   assert(ProfileInterpreter, "must be profiling interpreter");
-#ifdef ASSERT
-  Label verify_continue;
-  push(rax);
-  push(rbx);
-  push(c_rarg3);
-  push(c_rarg2);
-  test_method_data_pointer(c_rarg3, verify_continue); // If mdp is zero, continue
-  get_method(rbx);
-
-  // If the mdp is valid, it will point to a DataLayout header which is
-  // consistent with the bcp.  The converse is highly probable also.
-  load_unsigned_short(c_rarg2,
-                      Address(c_rarg3, in_bytes(DataLayout::bci_offset())));
-  addptr(c_rarg2, Address(rbx, Method::const_offset()));
-  lea(c_rarg2, Address(c_rarg2, ConstMethod::codes_offset()));
-  cmpptr(c_rarg2, r13);
-  jcc(Assembler::equal, verify_continue);
-  // rbx: method
-  // r13: bcp
-  // c_rarg3: mdp
-  call_VM_leaf(CAST_FROM_FN_PTR(address, InterpreterRuntime::verify_mdp),
-               rbx, r13, c_rarg3);
-  bind(verify_continue);
-  pop(c_rarg2);
-  pop(c_rarg3);
-  pop(rbx);
-  pop(rax);
-#endif // ASSERT
 }
 
 

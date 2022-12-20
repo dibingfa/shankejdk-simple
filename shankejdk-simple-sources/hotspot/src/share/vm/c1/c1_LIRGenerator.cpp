@@ -41,11 +41,7 @@
 #include "gc_implementation/g1/heapRegion.hpp"
 #endif // INCLUDE_ALL_GCS
 
-#ifdef ASSERT
-#define __ gen()->lir(__FILE__, __LINE__)->
-#else
 #define __ gen()->lir()->
-#endif
 
 #ifndef PATCHED_ADDR
 #define PATCHED_ADDR  (max_jint)
@@ -3035,15 +3031,6 @@ void LIRGenerator::do_FPIntrinsics(Intrinsic* x) {
 
 // Code for  :  x->x() {x->cond()} x->y() ? x->tval() : x->fval()
 void LIRGenerator::do_IfOp(IfOp* x) {
-#ifdef ASSERT
-  {
-    ValueTag xtag = x->x()->type()->tag();
-    ValueTag ttag = x->tval()->type()->tag();
-    assert(xtag == intTag || xtag == objectTag, "cannot handle others");
-    assert(ttag == addressTag || ttag == intTag || ttag == objectTag || ttag == longTag, "cannot handle others");
-    assert(ttag == x->fval()->type()->tag(), "cannot handle others");
-  }
-#endif
 
   LIRItem left(x->x(), this);
   LIRItem right(x->y(), this);
@@ -3281,13 +3268,6 @@ void LIRGenerator::profile_arguments(ProfileCall* x) {
           }
         }
       } else {
-#ifdef ASSERT
-        Bytecodes::Code code = x->method()->raw_code_at_bci(x->bci_of_invoke());
-        int n = x->nb_profiled_args();
-        assert(MethodData::profile_parameters() && (MethodData::profile_arguments_jsr292_only() ||
-            (x->inlined() && ((code == Bytecodes::_invokedynamic && n <= 1) || (code == Bytecodes::_invokehandle && n <= 2)))),
-            "only at JSR292 bytecodes");
-#endif
       }
     }
   }
@@ -3330,15 +3310,6 @@ void LIRGenerator::profile_parameters_at_call(ProfileCall* x) {
           }
           k++;
           if (k >= parameters_type_data->number_of_parameters()) {
-#ifdef ASSERT
-            int extra = 0;
-            if (MethodData::profile_arguments() && TypeProfileParmsLimit != -1 &&
-                x->nb_profiled_args() >= TypeProfileParmsLimit &&
-                x->recv() != NULL && Bytecodes::has_receiver(bc)) {
-              extra += 1;
-            }
-            assert(i == x->nb_profiled_args() - extra || (TypeProfileParmsLimit != -1 && TypeProfileArgsLimit > TypeProfileParmsLimit), "unused parameters?");
-#endif
             break;
           }
           arg = x->profiled_arg_at(i);
@@ -3498,29 +3469,6 @@ void LIRGenerator::do_RuntimeCall(RuntimeCall* x) {
   }
 }
 
-#ifdef ASSERT
-void LIRGenerator::do_Assert(Assert *x) {
-  ValueTag tag = x->x()->type()->tag();
-  If::Condition cond = x->cond();
-
-  LIRItem xitem(x->x(), this);
-  LIRItem yitem(x->y(), this);
-  LIRItem* xin = &xitem;
-  LIRItem* yin = &yitem;
-
-  assert(tag == intTag, "Only integer assertions are valid!");
-
-  xin->load_item();
-  yin->dont_load_item();
-
-  set_no_result(x);
-
-  LIR_Opr left = xin->result();
-  LIR_Opr right = yin->result();
-
-  __ lir_assert(lir_cond(x->cond()), left, right, x->message(), true);
-}
-#endif
 
 void LIRGenerator::do_RangeCheckPredicate(RangeCheckPredicate *x) {
 

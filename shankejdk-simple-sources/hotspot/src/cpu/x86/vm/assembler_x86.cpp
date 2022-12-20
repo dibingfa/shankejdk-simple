@@ -191,9 +191,6 @@ void Assembler::emit_data(jint data, RelocationHolder const& rspec, int format) 
   assert(imm_operand == 0, "default format must be immediate in this file");
   assert(inst_mark() != NULL, "must be inside InstructionMark");
   if (rspec.type() !=  relocInfo::none) {
-    #ifdef ASSERT
-      check_relocation(rspec, format);
-    #endif
     // Do not use AbstractAssembler::relocate, which is not intended for
     // embedded words.  Instead, relocate to the enclosing instruction.
 
@@ -817,29 +814,6 @@ address Assembler::locate_next_instruction(address inst) {
 }
 
 
-#ifdef ASSERT
-void Assembler::check_relocation(RelocationHolder const& rspec, int format) {
-  address inst = inst_mark();
-  assert(inst != NULL && inst < pc(), "must point to beginning of instruction");
-  address opnd;
-
-  Relocation* r = rspec.reloc();
-  if (r->type() == relocInfo::none) {
-    return;
-  } else if (r->is_call() || format == call32_operand) {
-    // assert(format == imm32_operand, "cannot specify a nonzero format");
-    opnd = locate_operand(inst, call32_operand);
-  } else if (r->is_data()) {
-    assert(format == imm_operand || format == disp32_operand
-           LP64_ONLY(|| format == narrow_oop_operand), "format ok");
-    opnd = locate_operand(inst, (WhichOperand)format);
-  } else {
-    assert(format == imm_operand, "cannot specify a format");
-    return;
-  }
-  assert(opnd == pc(), "must put operand where relocs can find it");
-}
-#endif // ASSERT
 
 void Assembler::emit_operand32(Register reg, Address adr) {
   assert(reg->encoding() < 8, "no extended registers");
@@ -1519,14 +1493,6 @@ void Assembler::jccb(Condition cc, Label& L) {
   if (L.is_bound()) {
     const int short_size = 2;
     address entry = target(L);
-#ifdef ASSERT
-    intptr_t dist = (intptr_t)entry - ((intptr_t)pc() + short_size);
-    intptr_t delta = short_branch_delta();
-    if (delta != 0) {
-      dist += (dist < 0 ? (-delta) :delta);
-    }
-    assert(is8bit(dist), "Dispacement too large for a short jmp");
-#endif
     intptr_t offs = (intptr_t)entry - (intptr_t)pc();
     // 0111 tttn #8-bit disp
     emit_int8(0x70 | cc);
@@ -1593,14 +1559,6 @@ void Assembler::jmpb(Label& L) {
     const int short_size = 2;
     address entry = target(L);
     assert(entry != NULL, "jmp most probably wrong");
-#ifdef ASSERT
-    intptr_t dist = (intptr_t)entry - ((intptr_t)pc() + short_size);
-    intptr_t delta = short_branch_delta();
-    if (delta != 0) {
-      dist += (dist < 0 ? (-delta) :delta);
-    }
-    assert(is8bit(dist), "Dispacement too large for a short jmp");
-#endif
     intptr_t offs = entry - pc();
     emit_int8((unsigned char)0xEB);
     emit_int8((offs - short_size) & 0xFF);
@@ -2037,17 +1995,6 @@ void Assembler::negl(Register dst) {
 }
 
 void Assembler::nop(int i) {
-#ifdef ASSERT
-  assert(i > 0, " ");
-  // The fancy nops aren't currently recognized by debuggers making it a
-  // pain to disassemble code while debugging. If asserts are on clearly
-  // speed is not an issue so simply use the single byte traditional nop
-  // to do alignment.
-
-  for (; i > 0 ; i--) emit_int8((unsigned char)0x90);
-  return;
-
-#endif // ASSERT
 
   if (UseAddressNop && VM_Version::is_intel()) {
     //
@@ -4677,9 +4624,6 @@ void Assembler::emit_data64(jlong data,
   // Do not use AbstractAssembler::relocate, which is not intended for
   // embedded words.  Instead, relocate to the enclosing instruction.
   code_section()->relocate(inst_mark(), rspec, format);
-#ifdef ASSERT
-  check_relocation(rspec, format);
-#endif
   emit_int64(data);
 }
 

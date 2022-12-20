@@ -1734,13 +1734,6 @@ void Arguments::set_g1_gc_flags() {
 }
 
 #if !INCLUDE_ALL_GCS
-#ifdef ASSERT
-static bool verify_serial_gc_flags() {
-  return (UseSerialGC &&
-        !(UseParNewGC || (UseConcMarkSweepGC || CMSIncrementalMode) || UseG1GC ||
-          UseParallelGC || UseParallelOldGC));
-}
-#endif // ASSERT
 #endif // INCLUDE_ALL_GCS
 
 void Arguments::set_gc_specific_flags() {
@@ -3331,12 +3324,6 @@ jint Arguments::parse_each_vm_init_arg(const JavaVMInitArgs* args,
                   "ExtendedDTraceProbes flag is not applicable for this configuration\n");
       return JNI_EINVAL;
 #endif // defined(DTRACE_ENABLED)
-#ifdef ASSERT
-    } else if (match_option(option, "-XX:+FullGCALot", &tail)) {
-      FLAG_SET_CMDLINE(bool, FullGCALot, true);
-      // disable scavenge before parallel mark-compact
-      FLAG_SET_CMDLINE(bool, ScavengeBeforeFullGC, false);
-#endif
     } else if (match_option(option, "-XX:CMSParPromoteBlocksToClaim=", &tail)) {
       julong cms_blocks_to_claim = (julong)atol(tail);
       FLAG_SET_CMDLINE(uintx, CMSParPromoteBlocksToClaim, cms_blocks_to_claim);
@@ -3986,17 +3973,10 @@ jint Arguments::parse(const JavaVMInitArgs* args) {
       return JNI_EINVAL;
     }
   } else {
-#ifdef ASSERT
-    // Parse default .hotspotrc settings file
-    if (!process_settings_file(".hotspotrc", false, args->ignoreUnrecognized)) {
-      return JNI_EINVAL;
-    }
-#else
     struct stat buf;
     if (os::stat(hotspotrc, &buf) == 0) {
       needs_hotspotrc_warning = true;
     }
-#endif
   }
 
   if (PrintVMOptions) {

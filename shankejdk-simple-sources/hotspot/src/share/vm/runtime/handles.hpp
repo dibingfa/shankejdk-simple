@@ -220,10 +220,6 @@ class HandleArea: public Arena {
   friend class HandleMark;
   friend class NoHandleMark;
   friend class ResetNoHandleMark;
-#ifdef ASSERT
-  int _handle_mark_nesting;
-  int _no_handle_mark_nesting;
-#endif
   HandleArea* _prev;          // link to outer (older) area
  public:
   // Constructor
@@ -236,20 +232,12 @@ class HandleArea: public Arena {
   // Handle allocation
  private:
   oop* real_allocate_handle(oop obj) {
-#ifdef ASSERT
-    oop* handle = (oop*) (UseMallocOnly ? internal_malloc_4(oopSize) : Amalloc_4(oopSize));
-#else
     oop* handle = (oop*) Amalloc_4(oopSize);
-#endif
     *handle = obj;
     return handle;
   }
  public:
-#ifdef ASSERT
-  oop* allocate_handle(oop obj);
-#else
   oop* allocate_handle(oop obj) { return real_allocate_handle(obj); }
-#endif
 
   // Garbage collection support
   void oops_do(OopClosure* f);
@@ -321,26 +309,16 @@ class HandleMark {
 
 class NoHandleMark: public StackObj {
  public:
-#ifdef ASSERT
-  NoHandleMark();
-  ~NoHandleMark();
-#else
   NoHandleMark()  {}
   ~NoHandleMark() {}
-#endif
 };
 
 
 class ResetNoHandleMark: public StackObj {
   int _no_handle_mark_nesting;
  public:
-#ifdef ASSERT
-  ResetNoHandleMark();
-  ~ResetNoHandleMark();
-#else
   ResetNoHandleMark()  {}
   ~ResetNoHandleMark() {}
-#endif
 };
 
 #endif // SHARE_VM_RUNTIME_HANDLES_HPP

@@ -221,10 +221,6 @@ MemRegion CMBitMap::getAndClearMarkedRegion(HeapWord* addr,
 
 CMMarkStack::CMMarkStack(ConcurrentMark* cm) :
   _base(NULL), _cm(cm)
-#ifdef ASSERT
-  , _drain_in_progress(false)
-  , _drain_in_progress_yields(false)
-#endif
 {}
 
 bool CMMarkStack::allocate(size_t capacity) {

@@ -136,9 +136,6 @@ class TypeOrigin VALUE_OBJ_CLASS_SPEC {
   bool is_valid() const { return _origin != NONE; }
   u2 index() const { return _index; }
 
-#ifdef ASSERT
-  void print_on(outputStream* str) const;
-#endif
 };
 
 class ErrorContext VALUE_OBJ_CLASS_SPEC {
@@ -229,15 +226,6 @@ class ErrorContext VALUE_OBJ_CLASS_SPEC {
 
   void details(outputStream* ss, const Method* method) const;
 
-#ifdef ASSERT
-  void print_on(outputStream* str) const {
-    str->print("error_context(%d, %d,", _bci, _fault);
-    _type.print_on(str);
-    str->print(",");
-    _expected.print_on(str);
-    str->print(")");
-  }
-#endif
 
  private:
   void location_details(outputStream* ss, const Method* method) const;

@@ -350,9 +350,6 @@ Deoptimization::UnrollBlock* Deoptimization::fetch_unroll_info_helper(JavaThread
   if (deoptee_nm != NULL && deoptee_nm->is_method_handle_return(deoptee.pc()))
     unpack_sp = deoptee.unextended_sp();
 
-#ifdef ASSERT
-  assert(cb->is_deoptimization_stub() || cb->is_uncommon_trap_stub(), "just checking");
-#endif
 #else
   intptr_t* unpack_sp = stub_frame.sender(&dummy_map).unextended_sp();
 #endif // !SHARK
@@ -1117,9 +1114,6 @@ void Deoptimization::pop_frames_failed_reallocs(JavaThread* thread, vframeArray*
         }
       }
       array->element(i)->free_monitors(thread);
-#ifdef ASSERT
-      array->element(i)->set_removed_monitors();
-#endif
     }
   }
 }

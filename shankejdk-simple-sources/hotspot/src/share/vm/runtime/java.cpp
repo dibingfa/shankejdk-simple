@@ -227,24 +227,6 @@ AllocStats alloc_stats;
 
 // General statistics printing (profiling ...)
 void print_statistics() {
-#ifdef ASSERT
-
-  if (CountRuntimeCalls) {
-    extern Histogram *RuntimeHistogram;
-    RuntimeHistogram->print();
-  }
-
-  if (CountJNICalls) {
-    extern Histogram *JNIHistogram;
-    JNIHistogram->print();
-  }
-
-  if (CountJVMCalls) {
-    extern Histogram *JVMHistogram;
-    JVMHistogram->print();
-  }
-
-#endif
 
   if (MemProfiling) {
     MemProfiler::disengage();
@@ -283,11 +265,6 @@ void print_statistics() {
   if (TimeLivenessAnalysis) {
     MethodLiveness::print_times();
   }
-#ifdef ASSERT
-  if (CollectIndexSetStatistics) {
-    IndexSet::print_statistics();
-  }
-#endif // ASSERT
 #endif // COMPILER2
   if (CountCompiledCalls) {
     print_method_invocation_histogram();

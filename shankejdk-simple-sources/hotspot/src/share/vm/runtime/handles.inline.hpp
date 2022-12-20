@@ -40,7 +40,6 @@ inline Handle::Handle(oop obj) {
 }
 
 
-#ifndef ASSERT
 inline Handle::Handle(Thread* thread, oop obj) {
   assert(thread == Thread::current(), "sanity check");
   if (obj == NULL) {
@@ -49,7 +48,6 @@ inline Handle::Handle(Thread* thread, oop obj) {
     _handle = thread->handle_area()->allocate_handle(obj);
   }
 }
-#endif // ASSERT
 
 // Constructors for metadata handles
 #define DEF_METADATA_HANDLE_FN(name, type) \

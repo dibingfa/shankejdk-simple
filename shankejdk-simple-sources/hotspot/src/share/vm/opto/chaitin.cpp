@@ -362,10 +362,6 @@ void PhaseChaitin::Register_Allocate() {
   // them for real.
   de_ssa();
 
-#ifdef ASSERT
-  // Veify the graph before RA.
-  verify(&live_arena);
-#endif
 
   {
     NOT_PRODUCT( Compile::TracePhase t3("computeLive", &_t_computeLive, TimeCompiler); )
@@ -483,15 +479,9 @@ void PhaseChaitin::Register_Allocate() {
     }
     _lrg_map.compress_uf_map_for_nodes();
 
-#ifdef ASSERT
-    verify(&live_arena, true);
-#endif
   } else {
     ifg.SquareUp();
     ifg.Compute_Effective_Degree();
-#ifdef ASSERT
-    set_was_low();
-#endif
   }
 
   // Prepare for Simplify & Select
@@ -554,9 +544,6 @@ void PhaseChaitin::Register_Allocate() {
       coalesce.coalesce_driver();
     }
     _lrg_map.compress_uf_map_for_nodes();
-#ifdef ASSERT
-    verify(&live_arena, true);
-#endif
     cache_lrg_info();           // Count degree of LRGs
 
     // Simplify the InterFerence Graph by removing LRGs of low degree.
@@ -578,10 +565,6 @@ void PhaseChaitin::Register_Allocate() {
   // Merge multidefs if multiple defs representing the same value are used in a single block.
   merge_multidefs();
 
-#ifdef ASSERT
-  // Veify the graph after RA.
-  verify(&live_arena);
-#endif
 
   // max_reg is past the largest *register* used.
   // Convert that to a frame_slot number.
@@ -974,13 +957,6 @@ void PhaseChaitin::gather_lrg_masks( bool after_aggressive ) {
         // AND changes how we count interferences.  A mis-aligned
         // double can interfere with TWO aligned pairs, or effectively
         // FOUR registers!
-#ifdef ASSERT
-        if (is_vect) {
-          assert(lrgmask.is_aligned_sets(lrg.num_regs()), "vector should be aligned");
-          assert(!lrg._fat_proj, "sanity");
-          assert(RegMask::num_registers(kreg) == lrg.num_regs(), "sanity");
-        }
-#endif
         if (!is_vect && lrg.num_regs() == 2 && !lrg._fat_proj && rm.is_misaligned_pair()) {
           lrg._fat_proj = 1;
           lrg._is_bound = 1;
@@ -1023,33 +999,6 @@ void PhaseChaitin::gather_lrg_masks( bool after_aggressive ) {
 // coalescing, it should Simplify.  This call sets the was-lo-degree bit.
 // The bit is checked in Simplify.
 void PhaseChaitin::set_was_low() {
-#ifdef ASSERT
-  for (uint i = 1; i < _lrg_map.max_lrg_id(); i++) {
-    int size = lrgs(i).num_regs();
-    uint old_was_lo = lrgs(i)._was_lo;
-    lrgs(i)._was_lo = 0;
-    if( lrgs(i).lo_degree() ) {
-      lrgs(i)._was_lo = 1;      // Trivially of low degree
-    } else {                    // Else check the Brigg's assertion
-      // Brigg's observation is that the lo-degree neighbors of a
-      // hi-degree live range will not interfere with the color choices
-      // of said hi-degree live range.  The Simplify reverse-stack-coloring
-      // order takes care of the details.  Hence you do not have to count
-      // low-degree neighbors when determining if this guy colors.
-      int briggs_degree = 0;
-      IndexSet *s = _ifg->neighbors(i);
-      IndexSetIterator elements(s);
-      uint lidx;
-      while((lidx = elements.next()) != 0) {
-        if( !lrgs(lidx).lo_degree() )
-          briggs_degree += MAX2(size,lrgs(lidx).num_regs());
-      }
-      if( briggs_degree < lrgs(i).degrees_of_freedom() )
-        lrgs(i)._was_lo = 1;    // Low degree via the briggs assertion
-    }
-    assert(old_was_lo <= lrgs(i)._was_lo, "_was_lo may not decrease");
-  }
-#endif
 }
 
 #define REGISTER_CONSTRAINED 16
@@ -1179,11 +1128,6 @@ void PhaseChaitin::Simplify( ) {
       uint neighbor;
       while ((neighbor = elements.next()) != 0) {
         LRG *n = &lrgs(neighbor);
-#ifdef ASSERT
-        if( VerifyOpto || VerifyRegisterAllocator ) {
-          assert( _ifg->effective_degree(neighbor) == n->degree(), "" );
-        }
-#endif
 
         // Check for just becoming of-low-degree just counting registers.
         // _must_spill live ranges are already on the low degree list.

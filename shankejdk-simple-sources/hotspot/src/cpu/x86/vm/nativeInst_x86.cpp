@@ -115,14 +115,6 @@ void NativeCall::replace_mt_safe(address instr_addr, address code_buffer) {
 
   n_call->wrote(0);
 
-#ifdef ASSERT
-   // verify patching
-   for ( int i = 0; i < instruction_size; i++) {
-     address ptr = (address)((intptr_t)code_buffer + i);
-     int a_byte = (*ptr) & 0xFF;
-     assert(*((address)((intptr_t)instr_addr + i)) == a_byte, "mt safe patching failed");
-   }
-#endif
 
 }
 
@@ -578,14 +570,6 @@ void NativeGeneralJump::replace_mt_safe(address instr_addr, address code_buffer)
 
     n_jump->wrote(0);
 
-#ifdef ASSERT
-   // verify patching
-   for ( int i = 0; i < instruction_size; i++) {
-     address ptr = (address)((intptr_t)code_buffer + i);
-     int a_byte = (*ptr) & 0xFF;
-     assert(*((address)((intptr_t)instr_addr + i)) == a_byte, "mt safe patching failed");
-   }
-#endif
 
 }
 

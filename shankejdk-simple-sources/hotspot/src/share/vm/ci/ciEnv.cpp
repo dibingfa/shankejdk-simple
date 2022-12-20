@@ -817,11 +817,6 @@ ciMethod* ciEnv::get_method_by_index_impl(constantPoolHandle cpool,
            : !m->method_holder()->is_loaded())) {
         m = NULL;
       }
-#ifdef ASSERT
-      if (m != NULL && ReplayCompiles && !ciReplay::is_loaded(m)) {
-        m = NULL;
-      }
-#endif
       if (m != NULL) {
         // We found the method.
         return get_method(m);
@@ -948,12 +943,6 @@ void ciEnv::validate_compile_task_dependencies(ciMethod* target) {
   }
 
   if (klass_violations != 0) {
-#ifdef ASSERT
-    if (!counter_changed && !PrintCompilation) {
-      // Print out the compile task that failed
-      _task->print_line();
-    }
-#endif
     assert(counter_changed, "failed dependencies, but counter didn't change");
     record_failure("concurrent class loading");
   }

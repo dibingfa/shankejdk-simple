@@ -198,51 +198,6 @@ char LIR_OprDesc::type_char(BasicType t) {
 #ifndef PRODUCT
 void LIR_OprDesc::validate_type() const {
 
-#ifdef ASSERT
-  if (!is_pointer() && !is_illegal()) {
-    OprKind kindfield = kind_field(); // Factored out because of compiler bug, see 8002160
-    switch (as_BasicType(type_field())) {
-    case T_LONG:
-      assert((kindfield == cpu_register || kindfield == stack_value) &&
-             size_field() == double_size, "must match");
-      break;
-    case T_FLOAT:
-      // FP return values can be also in CPU registers on ARM and PPC (softfp ABI)
-      assert((kindfield == fpu_register || kindfield == stack_value
-             ARM_ONLY(|| kindfield == cpu_register)
-             PPC_ONLY(|| kindfield == cpu_register) ) &&
-             size_field() == single_size, "must match");
-      break;
-    case T_DOUBLE:
-      // FP return values can be also in CPU registers on ARM and PPC (softfp ABI)
-      assert((kindfield == fpu_register || kindfield == stack_value
-             ARM_ONLY(|| kindfield == cpu_register)
-             PPC_ONLY(|| kindfield == cpu_register) ) &&
-             size_field() == double_size, "must match");
-      break;
-    case T_BOOLEAN:
-    case T_CHAR:
-    case T_BYTE:
-    case T_SHORT:
-    case T_INT:
-    case T_ADDRESS:
-    case T_OBJECT:
-    case T_METADATA:
-    case T_ARRAY:
-      assert((kindfield == cpu_register || kindfield == stack_value) &&
-             size_field() == single_size, "must match");
-      break;
-
-    case T_ILLEGAL:
-      // XXX TKR also means unknown right now
-      // assert(is_illegal(), "must match");
-      break;
-
-    default:
-      ShouldNotReachHere();
-    }
-  }
-#endif
 
 }
 #endif // PRODUCT
@@ -261,44 +216,6 @@ bool LIR_OprDesc::is_oop() const {
 
 
 void LIR_Op2::verify() const {
-#ifdef ASSERT
-  switch (code()) {
-    case lir_cmove:
-    case lir_xchg:
-      break;
-
-    default:
-      assert(!result_opr()->is_register() || !result_opr()->is_oop_register(),
-             "can't produce oops from arith");
-  }
-
-  if (TwoOperandLIRForm) {
-    switch (code()) {
-    case lir_add:
-    case lir_sub:
-    case lir_mul:
-    case lir_mul_strictfp:
-    case lir_div:
-    case lir_div_strictfp:
-    case lir_rem:
-    case lir_logic_and:
-    case lir_logic_or:
-    case lir_logic_xor:
-    case lir_shl:
-    case lir_shr:
-      assert(in_opr1() == result_opr(), "opr1 and result must match");
-      assert(in_opr1()->is_valid() && in_opr2()->is_valid(), "must be valid");
-      break;
-
-    // special handling for lir_ushr because of write barriers
-    case lir_ushr:
-      assert(in_opr1() == result_opr() || in_opr2()->is_constant(), "opr1 and result must match or shift count is constant");
-      assert(in_opr1()->is_valid() && in_opr2()->is_valid(), "must be valid");
-      break;
-
-    }
-  }
-#endif
 }
 
 
@@ -1035,13 +952,6 @@ XHandlers* LIR_OpVisitState::all_xhandler() {
     }
   }
 
-#ifdef ASSERT
-  for (i = 0; i < info_count(); i++) {
-    assert(info_at(i)->exception_handlers() == NULL ||
-           info_at(i)->exception_handlers() == result,
-           "only one xhandler list allowed per LIR-operation");
-  }
-#endif
 
   if (result != NULL) {
     return result;
@@ -1053,18 +963,6 @@ XHandlers* LIR_OpVisitState::all_xhandler() {
 }
 
 
-#ifdef ASSERT
-bool LIR_OpVisitState::no_operands(LIR_Op* op) {
-  visit(op);
-
-  return opr_count(inputMode) == 0 &&
-         opr_count(outputMode) == 0 &&
-         opr_count(tempMode) == 0 &&
-         info_count() == 0 &&
-         !has_call() &&
-         !has_slow_case();
-}
-#endif
 
 //---------------------------------------------------
 
@@ -1148,11 +1046,6 @@ void LIR_OpLock::emit_code(LIR_Assembler* masm) {
   }
 }
 
-#ifdef ASSERT
-void LIR_OpAssert::emit_code(LIR_Assembler* masm) {
-  masm->emit_assert(this);
-}
-#endif
 
 void LIR_OpDelay::emit_code(LIR_Assembler* masm) {
   masm->emit_delay(this);
@@ -1173,26 +1066,9 @@ LIR_List::LIR_List(Compilation* compilation, BlockBegin* block)
 #ifndef PRODUCT
   , _block(block)
 #endif
-#ifdef ASSERT
-  , _file(NULL)
-  , _line(0)
-#endif
 { }
 
 
-#ifdef ASSERT
-void LIR_List::set_file_and_line(const char * file, int line) {
-  const char * f = strrchr(file, '/');
-  if (f == NULL) f = strrchr(file, '\\');
-  if (f == NULL) {
-    f = file;
-  } else {
-    f++;
-  }
-  _file = f;
-  _line = line;
-}
-#endif
 
 
 void LIR_List::append(LIR_InsertionBuffer* buffer) {
@@ -1722,11 +1598,6 @@ void LIR_Op::print_on(outputStream* out) const {
   out->print("%s ", name());
   print_instr(out);
   if (info() != NULL) out->print(" [bci:%d]", info()->stack()->bci());
-#ifdef ASSERT
-  if (Verbose && _file != NULL) {
-    out->print(" (%s:%d)", _file, _line);
-  }
-#endif
 }
 
 const char * LIR_Op::name() const {
@@ -1837,9 +1708,6 @@ const char * LIR_Op::name() const {
      // LIR_OpProfileType
      case lir_profile_type:          s = "profile_type";  break;
      // LIR_OpAssert
-#ifdef ASSERT
-     case lir_assert:                s = "assert";        break;
-#endif
      case lir_none:                  ShouldNotReachHere();break;
     default:                         s = "illegal_op";    break;
   }
@@ -2093,14 +1961,6 @@ void LIR_OpLock::print_instr(outputStream* out) const {
   out->print("[lbl:" INTPTR_FORMAT "]", p2i(stub()->entry()));
 }
 
-#ifdef ASSERT
-void LIR_OpAssert::print_instr(outputStream* out) const {
-  print_condition(out, condition()); out->print(" ");
-  in_opr1()->print(out);             out->print(" ");
-  in_opr2()->print(out);             out->print(", \"");
-  out->print("%s", msg());          out->print("\"");
-}
-#endif
 
 
 void LIR_OpDelay::print_instr(outputStream* out) const {
@@ -2154,15 +2014,3 @@ void LIR_InsertionBuffer::append(int index, LIR_Op* op) {
   DEBUG_ONLY(verify());
 }
 
-#ifdef ASSERT
-void LIR_InsertionBuffer::verify() {
-  int sum = 0;
-  int prev_idx = -1;
-
-  for (int i = 0; i < number_of_insertion_points(); i++) {
-    assert(prev_idx < index_at(i), "index must be ordered ascending");
-    sum += count_at(i);
-  }
-  assert(sum == number_of_ops(), "wrong total sum");
-}
-#endif

@@ -381,45 +381,6 @@ void Universe::genesis(TRAPS) {
     JDK_Version::fully_initialize(jdk_version);
   }
 
-  #ifdef ASSERT
-  if (FullGCALot) {
-    // Allocate an array of dummy objects.
-    // We'd like these to be at the bottom of the old generation,
-    // so that when we free one and then collect,
-    // (almost) the whole heap moves
-    // and we find out if we actually update all the oops correctly.
-    // But we can't allocate directly in the old generation,
-    // so we allocate wherever, and hope that the first collection
-    // moves these objects to the bottom of the old generation.
-    // We can allocate directly in the permanent generation, so we do.
-    int size;
-    if (UseConcMarkSweepGC) {
-      warning("Using +FullGCALot with concurrent mark sweep gc "
-              "will not force all objects to relocate");
-      size = FullGCALotDummies;
-    } else {
-      size = FullGCALotDummies * 2;
-    }
-    objArrayOop    naked_array = oopFactory::new_objArray(SystemDictionary::Object_klass(), size, CHECK);
-    objArrayHandle dummy_array(THREAD, naked_array);
-    int i = 0;
-    while (i < size) {
-        // Allocate dummy in old generation
-      oop dummy = InstanceKlass::cast(SystemDictionary::Object_klass())->allocate_instance(CHECK);
-      dummy_array->obj_at_put(i++, dummy);
-    }
-    {
-      // Only modify the global variable inside the mutex.
-      // If we had a race to here, the other dummy_array instances
-      // and their elements just get dropped on the floor, which is fine.
-      MutexLocker ml(FullGCALot_lock);
-      if (_fullgc_alot_dummy_array == NULL) {
-        _fullgc_alot_dummy_array = dummy_array();
-      }
-    }
-    assert(i == _fullgc_alot_dummy_array->length(), "just checking");
-  }
-  #endif
 
   // Initialize dependency array for null class loader
   ClassLoaderData::the_null_class_loader_data()->init_dependencies(CHECK);
@@ -1588,24 +1549,3 @@ Method* LatestMethodCache::get_method() {
 }
 
 
-#ifdef ASSERT
-// Release dummy object(s) at bottom of heap
-bool Universe::release_fullgc_alot_dummy() {
-  MutexLocker ml(FullGCALot_lock);
-  if (_fullgc_alot_dummy_array != NULL) {
-    if (_fullgc_alot_dummy_next >= _fullgc_alot_dummy_array->length()) {
-      // No more dummies to release, release entire array instead
-      _fullgc_alot_dummy_array = NULL;
-      return false;
-    }
-    if (!UseConcMarkSweepGC) {
-      // Release dummy at bottom of old generation
-      _fullgc_alot_dummy_array->obj_at_put(_fullgc_alot_dummy_next++, NULL);
-    }
-    // Release dummy at bottom of permanent generation
-    _fullgc_alot_dummy_array->obj_at_put(_fullgc_alot_dummy_next++, NULL);
-  }
-  return true;
-}
-
-#endif // ASSERT

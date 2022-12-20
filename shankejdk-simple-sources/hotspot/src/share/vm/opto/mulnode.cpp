@@ -83,15 +83,6 @@ Node *MulNode::Ideal(PhaseGVN *phase, bool can_reshape) {
       op != Op_MulD ) {
     if( t2 == Type::TOP ) return NULL;
     Node *mul1 = in(1);
-#ifdef ASSERT
-    // Check for dead loop
-    int   op1 = mul1->Opcode();
-    if( phase->eqv( mul1, this ) || phase->eqv( in(2), this ) ||
-        ( op1 == mul_opcode() || op1 == add_opcode() ) &&
-        ( phase->eqv( mul1->in(1), this ) || phase->eqv( mul1->in(2), this ) ||
-          phase->eqv( mul1->in(1), mul1 ) || phase->eqv( mul1->in(2), mul1 ) ) )
-      assert(false, "dead loop in MulNode::Ideal");
-#endif
 
     if( mul1->Opcode() == mul_opcode() ) {  // Left input is a multiply?
       // Mul of a constant?
@@ -994,13 +985,6 @@ const Type *RShiftINode::Value( PhaseTransform *phase ) const {
     jint hi = (jint)r1->_hi >> (jint)shift;
     assert(lo <= hi, "must have valid bounds");
     const TypeInt* ti = TypeInt::make(lo, hi, MAX2(r1->_widen,r2->_widen));
-#ifdef ASSERT
-    // Make sure we get the sign-capture idiom correct.
-    if (shift == BitsPerJavaInteger-1) {
-      if (r1->_lo >= 0) assert(ti == TypeInt::ZERO,    ">>31 of + is  0");
-      if (r1->_hi <  0) assert(ti == TypeInt::MINUS_1, ">>31 of - is -1");
-    }
-#endif
     return ti;
   }
 
@@ -1056,13 +1040,6 @@ const Type *RShiftLNode::Value( PhaseTransform *phase ) const {
     jlong hi = (jlong)r1->_hi >> (jlong)shift;
     assert(lo <= hi, "must have valid bounds");
     const TypeLong* tl = TypeLong::make(lo, hi, MAX2(r1->_widen,r2->_widen));
-    #ifdef ASSERT
-    // Make sure we get the sign-capture idiom correct.
-    if (shift == (2*BitsPerJavaInteger)-1) {
-      if (r1->_lo >= 0) assert(tl == TypeLong::ZERO,    ">>63 of + is 0");
-      if (r1->_hi < 0)  assert(tl == TypeLong::MINUS_1, ">>63 of - is -1");
-    }
-    #endif
     return tl;
   }
 
@@ -1211,13 +1188,6 @@ const Type *URShiftINode::Value( PhaseTransform *phase ) const {
     }
     assert(lo <= hi, "must have valid bounds");
     const TypeInt* ti = TypeInt::make(lo, hi, MAX2(r1->_widen,r2->_widen));
-    #ifdef ASSERT
-    // Make sure we get the sign-capture idiom correct.
-    if (shift == BitsPerJavaInteger-1) {
-      if (r1->_lo >= 0) assert(ti == TypeInt::ZERO, ">>>31 of + is 0");
-      if (r1->_hi < 0)  assert(ti == TypeInt::ONE,  ">>>31 of - is +1");
-    }
-    #endif
     return ti;
   }
 
@@ -1342,13 +1312,6 @@ const Type *URShiftLNode::Value( PhaseTransform *phase ) const {
     }
     assert(lo <= hi, "must have valid bounds");
     const TypeLong* tl = TypeLong::make(lo, hi, MAX2(r1->_widen,r2->_widen));
-    #ifdef ASSERT
-    // Make sure we get the sign-capture idiom correct.
-    if (shift == BitsPerJavaLong - 1) {
-      if (r1->_lo >= 0) assert(tl == TypeLong::ZERO, ">>>63 of + is 0");
-      if (r1->_hi < 0)  assert(tl == TypeLong::ONE,  ">>>63 of - is +1");
-    }
-    #endif
     return tl;
   }
 

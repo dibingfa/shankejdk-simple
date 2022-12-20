@@ -51,12 +51,6 @@ class arrayOopDesc : public oopDesc {
   static int header_size_in_bytes() {
     size_t hs = align_size_up(length_offset_in_bytes() + sizeof(int),
                               HeapWordSize);
-#ifdef ASSERT
-    // make sure it isn't called before UseCompressedOops is initialized.
-    static size_t arrayoopdesc_hs = 0;
-    if (arrayoopdesc_hs == 0) arrayoopdesc_hs = hs;
-    assert(arrayoopdesc_hs == hs, "header size can't change");
-#endif // ASSERT
     return (int)hs;
   }
 

@@ -27,21 +27,7 @@
 
 #include "jfr/writers/jfrStorageHost.inline.hpp"
 
-#ifdef ASSERT
-class ExclusiveAccessAssert {
- private:
-  bool _acquired;
- public:
-  ExclusiveAccessAssert() : _acquired(false) {}
-  void acquire() { assert_non_acquired(); _acquired = true; }
-  void release() { assert_acquired(); _acquired = false; }
-  bool is_acquired() const { return _acquired; }
-  void assert_acquired() const { assert(_acquired, "Not acquired!"); }
-  void assert_non_acquired() const { assert(!_acquired, "Already acquired!"); }
-};
-#else
  class ExclusiveAccessAssert {};
-#endif
 
 template <typename Adapter, typename AP, typename AccessAssert = ExclusiveAccessAssert>
 class MemoryWriterHost : public StorageHost<Adapter, AP> {

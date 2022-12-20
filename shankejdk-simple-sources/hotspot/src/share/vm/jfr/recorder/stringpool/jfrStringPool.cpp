@@ -221,8 +221,3 @@ void JfrStringPool::unlock() {
   _lock->unlock();
 }
 
-#ifdef ASSERT
-bool JfrStringPool::is_locked() const {
-  return _lock->owned_by_self();
-}
-#endif

@@ -1333,15 +1333,6 @@ void GraphBuilder::table_switch() {
     // before the body of a loop the state is needed
     ValueStack* state_before = copy_state_if_bb(has_bb);
     Instruction* res = append(new TableSwitch(ipop(), sux, sw.low_key(), state_before, has_bb));
-#ifdef ASSERT
-    if (res->as_Goto()) {
-      for (i = 0; i < l; i++) {
-        if (sux->at(i) == res->as_Goto()->sux_at(0)) {
-          assert(res->as_Goto()->is_safepoint() == sw.dest_offset_at(i) < 0, "safepoint state of Goto returned by canonicalizer incorrect");
-        }
-      }
-    }
-#endif
   }
 }
 
@@ -1382,15 +1373,6 @@ void GraphBuilder::lookup_switch() {
     // before the body of a loop the state is needed
     ValueStack* state_before = copy_state_if_bb(has_bb);
     Instruction* res = append(new LookupSwitch(ipop(), sux, keys, state_before, has_bb));
-#ifdef ASSERT
-    if (res->as_Goto()) {
-      for (i = 0; i < l; i++) {
-        if (sux->at(i) == res->as_Goto()->sux_at(0)) {
-          assert(res->as_Goto()->is_safepoint() == sw.pair_at(i).offset() < 0, "safepoint state of Goto returned by canonicalizer incorrect");
-        }
-      }
-    }
-#endif
   }
 }
 
@@ -1785,12 +1767,6 @@ Values* GraphBuilder::args_list_for_profiling(ciMethod* target, int& start, bool
 }
 
 void GraphBuilder::check_args_for_profiling(Values* obj_args, int expected) {
-#ifdef ASSERT
-  bool ignored_will_link;
-  ciSignature* declared_signature = NULL;
-  ciMethod* real_target = method()->get_method_at_bci(bci(), ignored_will_link, &declared_signature);
-  assert(expected == obj_args->length() || real_target->is_method_handle_intrinsic(), "missed on arg?");
-#endif
 }
 
 // Collect arguments that we want to profile in a list
@@ -2611,17 +2587,6 @@ void PhiSimplifier::block_do(BlockBegin* b) {
     simplify(phi);
   );
 
-#ifdef ASSERT
-  for_each_phi_fun(b, phi,
-                   assert(phi->operand_count() != 1 || phi->subst() != phi, "missed trivial simplification");
-  );
-
-  ValueStack* state = b->state()->caller_state();
-  for_each_state_value(state, value,
-    Phi* phi = value->as_Phi();
-    assert(phi == NULL || phi->block() != b, "must not have phi function to simplify in caller state");
-  );
-#endif
 }
 
 // This method is called after all blocks are filled with HIR instructions

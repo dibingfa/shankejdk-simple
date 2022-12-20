@@ -285,13 +285,6 @@ void SafepointSynchronize::begin() {
   // Consider using active_processor_count() ... but that call is expensive.
   int ncpus = os::processor_count() ;
 
-#ifdef ASSERT
-  for (JavaThread *cur = Threads::first(); cur != NULL; cur = cur->next()) {
-    assert(cur->safepoint_state()->is_running(), "Illegal initial state");
-    // Clear the visited flag to ensure that the critical counts are collected properly.
-    cur->set_visited_for_critical_count(false);
-  }
-#endif // ASSERT
 
   if (SafepointTimeout)
     safepoint_limit_time = os::javaTimeNanos() + (jlong)SafepointTimeoutDelay * MICROUNITS;
@@ -465,12 +458,6 @@ void SafepointSynchronize::begin() {
     }
   }
 
-#ifdef ASSERT
-  for (JavaThread *cur = Threads::first(); cur != NULL; cur = cur->next()) {
-    // make sure all the threads were visited
-    assert(cur->was_visited_for_critical_count(), "missed a thread");
-  }
-#endif // ASSERT
 
   // Update the count of active JNI critical regions
   GC_locker::set_jni_lock_count(_current_jni_active_count);
@@ -522,16 +509,6 @@ void SafepointSynchronize::end() {
     end_statistics(os::javaTimeNanos());
   }
 
-#ifdef ASSERT
-  // A pending_exception cannot be installed during a safepoint.  The threads
-  // may install an async exception after they come back from a safepoint into
-  // pending_exception after they unblock.  But that should happen later.
-  for(JavaThread *cur = Threads::first(); cur; cur = cur->next()) {
-    assert (!(cur->has_pending_exception() &&
-              cur->safepoint_state()->is_at_poll_safepoint()),
-            "safepoint installed a pending exception");
-  }
-#endif // ASSERT
 
   if (PageArmed) {
     // Make polling safepoint aware
@@ -722,11 +699,6 @@ void SafepointSynchronize::check_for_lazy_critical_native(JavaThread *thread, Ja
       // more than one safepoint, so only update the critical state on
       // the first one.  When it returns it will perform the unlock.
       if (!thread->do_critical_native_unlock()) {
-#ifdef ASSERT
-        if (!thread->in_critical()) {
-          GC_locker::increment_debug_jni_lock_count();
-        }
-#endif
         thread->enter_critical();
         // Make sure the native wrapper calls back on return to
         // perform the needed critical unlock.

@@ -139,17 +139,6 @@ void FreeRegionList::add_ordered(FreeRegionList* from_list) {
     return;
   }
 
-  #ifdef ASSERT
-  FreeRegionListIterator iter(from_list);
-  while (iter.more_available()) {
-    HeapRegion* hr = iter.get_next();
-    // In set_containing_set() we check that we either set the value
-    // from NULL to non-NULL or vice versa to catch bugs. So, we have
-    // to NULL it first before setting it to the value.
-    hr->set_containing_set(NULL);
-    hr->set_containing_set(this);
-  }
-  #endif // ASSERT
 
   if (is_empty()) {
     assert(length() == 0 && _tail == NULL, hrs_ext_msg(this, "invariant"));

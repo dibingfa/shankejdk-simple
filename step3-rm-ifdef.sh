@@ -7,7 +7,7 @@ removeifdef() {
        removeifdef $fullfile
     else
         rm -rf temp.txt
-        unifdef -U_WIN32 -UJAVAW -U_MSC_VER $fullfile 1>temp.txt 2>/dev/null
+        unifdef -U_WIN32 -UJAVAW -U_MSC_VER -UASSERT $fullfile 1>temp.txt 2>/dev/null
         if [ $? -eq 1 ]
         then
           rm -rf $fullfile

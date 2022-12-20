@@ -49,10 +49,6 @@ class LIR_Assembler: public CompilationResourceObj {
 
   Label              _unwind_handler_entry;
 
-#ifdef ASSERT
-  BlockList          _branch_target_blocks;
-  void check_no_unbound_labels();
-#endif
 
   FrameMap* frame_map() const { return _frame_map; }
 
@@ -215,9 +211,6 @@ class LIR_Assembler: public CompilationResourceObj {
   void arith_op(LIR_Code code, LIR_Opr left, LIR_Opr right, LIR_Opr dest, CodeEmitInfo* info, bool pop_fpu_stack);
   void arithmetic_idiv(LIR_Code code, LIR_Opr left, LIR_Opr right, LIR_Opr temp, LIR_Opr result, CodeEmitInfo* info);
   void intrinsic_op(LIR_Code code, LIR_Opr value, LIR_Opr unused, LIR_Opr dest, LIR_Op* op);
-#ifdef ASSERT
-  void emit_assert(LIR_OpAssert* op);
-#endif
 
   void logic_op(LIR_Code code, LIR_Opr left, LIR_Opr right, LIR_Opr dest);
 

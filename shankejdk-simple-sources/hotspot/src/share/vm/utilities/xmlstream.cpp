@@ -40,15 +40,6 @@ void xmlStream::initialize(outputStream* out) {
   _text_init._outer_xmlStream = this;
   _text = &_text_init;
 
-#ifdef ASSERT
-  _element_depth = 0;
-  int   init_len = 100;
-  char* init_buf = NEW_C_HEAP_ARRAY(char, init_len, mtInternal);
-  _element_close_stack_low  = init_buf;
-  _element_close_stack_high = init_buf + init_len;
-  _element_close_stack_ptr  = init_buf + init_len - 1;
-  _element_close_stack_ptr[0] = '\0';
-#endif
 
   // Make sure each log uses the same base for time stamps.
   if (is_open()) {
@@ -56,11 +47,6 @@ void xmlStream::initialize(outputStream* out) {
   }
 }
 
-#ifdef ASSERT
-xmlStream::~xmlStream() {
-  FREE_C_HEAP_ARRAY(char, _element_close_stack_low, mtInternal);
-}
-#endif
 
 // Pass the given chars directly to _out.
 void xmlStream::write(const char* s, size_t len) {
@@ -135,70 +121,6 @@ void xmlStream::va_tag(bool push, const char* format, va_list ap) {
   _markup_state = (push ? HEAD : ELEM);
 }
 
-#ifdef ASSERT
-/// Debugging goo to make sure element tags nest properly.
-
-// ------------------------------------------------------------------
-void xmlStream::see_tag(const char* tag, bool push) {
-  assert_if_no_error(!inside_attrs(), "cannot start new element inside attrs");
-  if (!push)  return;
-
-  // tag goes up until either null or space:
-  const char* tag_end = strchr(tag, ' ');
-  size_t tag_len = (tag_end == NULL) ? strlen(tag) : tag_end - tag;
-  assert(tag_len > 0, "tag must not be empty");
-  // push the tag onto the stack, pulling down the pointer
-  char* old_ptr  = _element_close_stack_ptr;
-  char* old_low  = _element_close_stack_low;
-  char* push_ptr = old_ptr - (tag_len+1);
-  if (push_ptr < old_low) {
-    int old_len = _element_close_stack_high - old_ptr;
-    int new_len = old_len * 2;
-    if (new_len < 100)  new_len = 100;
-    char* new_low  = NEW_C_HEAP_ARRAY(char, new_len, mtInternal);
-    char* new_high = new_low + new_len;
-    char* new_ptr  = new_high - old_len;
-    memcpy(new_ptr, old_ptr, old_len);
-    _element_close_stack_high = new_high;
-    _element_close_stack_low  = new_low;
-    _element_close_stack_ptr  = new_ptr;
-    FREE_C_HEAP_ARRAY(char, old_low, mtInternal);
-    push_ptr = new_ptr - (tag_len+1);
-  }
-  assert(push_ptr >= _element_close_stack_low, "in range");
-  memcpy(push_ptr, tag, tag_len);
-  push_ptr[tag_len] = 0;
-  _element_close_stack_ptr = push_ptr;
-  _element_depth += 1;
-}
-
-// ------------------------------------------------------------------
-void xmlStream::pop_tag(const char* tag) {
-  assert_if_no_error(!inside_attrs(), "cannot close element inside attrs");
-  assert(_element_depth > 0, "must be in an element to close");
-  assert(*tag != 0, "tag must not be empty");
-  char* cur_tag = _element_close_stack_ptr;
-  bool  bad_tag = false;
-  while (*cur_tag != 0 && strcmp(cur_tag, tag) != 0) {
-    this->print_cr("</%s> <!-- missing closing tag -->", cur_tag);
-    _element_close_stack_ptr = (cur_tag += strlen(cur_tag) + 1);
-    _element_depth -= 1;
-    bad_tag = true;
-  }
-  if (*cur_tag == 0) {
-    bad_tag = true;
-  } else {
-    // Pop the stack, by skipping over the tag and its null.
-    _element_close_stack_ptr = cur_tag + strlen(cur_tag) + 1;
-    _element_depth -= 1;
-  }
-  if (bad_tag && !VMThread::should_terminate() && !VM_Exit::vm_exited() &&
-      !is_error_reported())
-  {
-    assert(false, "bad tag in log");
-  }
-}
-#endif
 
 
 // ------------------------------------------------------------------

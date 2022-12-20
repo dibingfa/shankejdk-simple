@@ -67,11 +67,6 @@ bool EdgeStore::equals(const Edge& query, uintptr_t hash, const EdgeEntry* entry
   return true;
 }
 
-#ifdef ASSERT
-bool EdgeStore::contains(const oop* reference) const {
-  return get(reference) != NULL;
-}
-#endif
 
 StoredEdge* EdgeStore::get(const oop* reference) const {
   assert(reference != NULL, "invariant");

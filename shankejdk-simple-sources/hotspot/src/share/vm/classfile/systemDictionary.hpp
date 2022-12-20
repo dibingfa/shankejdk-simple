@@ -389,9 +389,6 @@ public:
   // Verification
   static void verify();
 
-#ifdef ASSERT
-  static bool is_internal_format(Symbol* class_name);
-#endif
 
   // Initialization
   static void initialize(TRAPS);

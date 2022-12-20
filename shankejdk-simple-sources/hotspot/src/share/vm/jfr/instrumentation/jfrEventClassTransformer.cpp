@@ -427,11 +427,6 @@ static u2 utf8_info_index(const InstanceKlass* ik, const Symbol* const target, T
   return invalid_cp_index;
 }
 
-#ifdef ASSERT
-static bool is_index_within_range(u2 index, u2 orig_cp_len, u2 new_cp_entries_len) {
-  return index > 0 && index < orig_cp_len + new_cp_entries_len;
-}
-#endif
 
 static u2 add_utf8_info(JfrBigEndianWriter& writer, const char* utf8_constant, u2 orig_cp_len, u2& new_cp_entries_len) {
   assert(utf8_constant != NULL, "invariant");

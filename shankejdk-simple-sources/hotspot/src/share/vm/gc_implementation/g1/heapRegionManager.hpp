@@ -119,10 +119,6 @@ class HeapRegionManager: public CHeapObj<mtGC> {
   uint find_empty_from_idx_reverse(uint start_idx, uint* res_idx) const;
   // Allocate a new HeapRegion for the given index.
   HeapRegion* new_heap_region(uint hrm_index);
-#ifdef ASSERT
-public:
-  bool is_free(HeapRegion* hr) const;
-#endif
   // Returns whether the given region is available for allocation.
   bool is_available(uint region) const;
 

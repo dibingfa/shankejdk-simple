@@ -147,9 +147,7 @@ class OSThreadSamplerCallback : public os::CrashProtectionCallback {
 };
 
 void OSThreadSampler::do_task(const os::SuspendedThreadTaskContext& context) {
-#ifndef ASSERT
   guarantee(JfrOptionSet::sample_protection(), "Sample Protection should be on in product builds");
-#endif
   assert(_suspend_time.value() == 0, "already timestamped!");
   _suspend_time = JfrTicks::now();
 

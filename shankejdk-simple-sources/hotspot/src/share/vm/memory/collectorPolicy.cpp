@@ -59,24 +59,6 @@ CollectorPolicy::CollectorPolicy() :
     _all_soft_refs_clear(false)
 {}
 
-#ifdef ASSERT
-void CollectorPolicy::assert_flags() {
-  assert(InitialHeapSize <= MaxHeapSize, "Ergonomics decided on incompatible initial and maximum heap sizes");
-  assert(InitialHeapSize % _heap_alignment == 0, "InitialHeapSize alignment");
-  assert(MaxHeapSize % _heap_alignment == 0, "MaxHeapSize alignment");
-}
-
-void CollectorPolicy::assert_size_info() {
-  assert(InitialHeapSize == _initial_heap_byte_size, "Discrepancy between InitialHeapSize flag and local storage");
-  assert(MaxHeapSize == _max_heap_byte_size, "Discrepancy between MaxHeapSize flag and local storage");
-  assert(_max_heap_byte_size >= _min_heap_byte_size, "Ergonomics decided on incompatible minimum and maximum heap sizes");
-  assert(_initial_heap_byte_size >= _min_heap_byte_size, "Ergonomics decided on incompatible initial and minimum heap sizes");
-  assert(_max_heap_byte_size >= _initial_heap_byte_size, "Ergonomics decided on incompatible initial and maximum heap sizes");
-  assert(_min_heap_byte_size % _heap_alignment == 0, "min_heap_byte_size alignment");
-  assert(_initial_heap_byte_size % _heap_alignment == 0, "initial_heap_byte_size alignment");
-  assert(_max_heap_byte_size % _heap_alignment == 0, "max_heap_byte_size alignment");
-}
-#endif // ASSERT
 
 void CollectorPolicy::initialize_flags() {
   assert(_space_alignment != 0, "Space alignment not set up properly");
@@ -229,45 +211,6 @@ size_t GenCollectorPolicy::young_gen_size_lower_bound() {
   return align_size_up(3 * _space_alignment, _gen_alignment);
 }
 
-#ifdef ASSERT
-void GenCollectorPolicy::assert_flags() {
-  CollectorPolicy::assert_flags();
-  assert(NewSize >= _min_gen0_size, "Ergonomics decided on a too small young gen size");
-  assert(NewSize <= MaxNewSize, "Ergonomics decided on incompatible initial and maximum young gen sizes");
-  assert(FLAG_IS_DEFAULT(MaxNewSize) || MaxNewSize < MaxHeapSize, "Ergonomics decided on incompatible maximum young gen and heap sizes");
-  assert(NewSize % _gen_alignment == 0, "NewSize alignment");
-  assert(FLAG_IS_DEFAULT(MaxNewSize) || MaxNewSize % _gen_alignment == 0, "MaxNewSize alignment");
-}
-
-void TwoGenerationCollectorPolicy::assert_flags() {
-  GenCollectorPolicy::assert_flags();
-  assert(OldSize + NewSize <= MaxHeapSize, "Ergonomics decided on incompatible generation and heap sizes");
-  assert(OldSize % _gen_alignment == 0, "OldSize alignment");
-}
-
-void GenCollectorPolicy::assert_size_info() {
-  CollectorPolicy::assert_size_info();
-  // GenCollectorPolicy::initialize_size_info may update the MaxNewSize
-  assert(MaxNewSize < MaxHeapSize, "Ergonomics decided on incompatible maximum young and heap sizes");
-  assert(NewSize == _initial_gen0_size, "Discrepancy between NewSize flag and local storage");
-  assert(MaxNewSize == _max_gen0_size, "Discrepancy between MaxNewSize flag and local storage");
-  assert(_min_gen0_size <= _initial_gen0_size, "Ergonomics decided on incompatible minimum and initial young gen sizes");
-  assert(_initial_gen0_size <= _max_gen0_size, "Ergonomics decided on incompatible initial and maximum young gen sizes");
-  assert(_min_gen0_size % _gen_alignment == 0, "_min_gen0_size alignment");
-  assert(_initial_gen0_size % _gen_alignment == 0, "_initial_gen0_size alignment");
-  assert(_max_gen0_size % _gen_alignment == 0, "_max_gen0_size alignment");
-}
-
-void TwoGenerationCollectorPolicy::assert_size_info() {
-  GenCollectorPolicy::assert_size_info();
-  assert(OldSize == _initial_gen1_size, "Discrepancy between OldSize flag and local storage");
-  assert(_min_gen1_size <= _initial_gen1_size, "Ergonomics decided on incompatible minimum and initial old gen sizes");
-  assert(_initial_gen1_size <= _max_gen1_size, "Ergonomics decided on incompatible initial and maximum old gen sizes");
-  assert(_max_gen1_size % _gen_alignment == 0, "_max_gen1_size alignment");
-  assert(_initial_gen1_size % _gen_alignment == 0, "_initial_gen1_size alignment");
-  assert(_max_heap_byte_size <= (_max_gen0_size + _max_gen1_size), "Total maximum heap sizes must be sum of generation maximum sizes");
-}
-#endif // ASSERT
 
 void GenCollectorPolicy::initialize_flags() {
   CollectorPolicy::initialize_flags();

@@ -474,10 +474,6 @@ protected:
 
   // Fast delete in area.  Common case is: NOP (except for storage reclaimed)
   void Afree(void *ptr, size_t size) {
-#ifdef ASSERT
-    if (ZapResourceArea) memset(ptr, badResourceValue, size); // zap freed memory
-    if (UseMallocOnly) return;
-#endif
     if (((char*)ptr) + size == _hwm) _hwm = (char*)ptr;
   }
 
@@ -545,25 +541,6 @@ class ResourceObj ALLOCATION_SUPER_CLASS_SPEC {
  public:
   enum allocation_type { STACK_OR_EMBEDDED = 0, RESOURCE_AREA, C_HEAP, ARENA, allocation_mask = 0x3 };
   static void set_allocation_type(address res, allocation_type type) NOT_DEBUG_RETURN;
-#ifdef ASSERT
- private:
-  // When this object is allocated on stack the new() operator is not
-  // called but garbage on stack may look like a valid allocation_type.
-  // Store negated 'this' pointer when new() is called to distinguish cases.
-  // Use second array's element for verification value to distinguish garbage.
-  uintptr_t _allocation_t[2];
-  bool is_type_set() const;
- public:
-  allocation_type get_allocation_type() const;
-  bool allocated_on_stack()    const { return get_allocation_type() == STACK_OR_EMBEDDED; }
-  bool allocated_on_res_area() const { return get_allocation_type() == RESOURCE_AREA; }
-  bool allocated_on_C_heap()   const { return get_allocation_type() == C_HEAP; }
-  bool allocated_on_arena()    const { return get_allocation_type() == ARENA; }
-  ResourceObj(); // default construtor
-  ResourceObj(const ResourceObj& r); // default copy construtor
-  ResourceObj& operator=(const ResourceObj& r); // default copy assignment
-  ~ResourceObj();
-#endif // ASSERT
 
  public:
   void* operator new(size_t size, allocation_type type, MEMFLAGS flags) throw();

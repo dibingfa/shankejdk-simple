@@ -43,9 +43,6 @@ class XHandler: public CompilationResourceObj {
   int                 _phi_operand;  // For resolving of phi functions at begin of entry_block
   int                 _scope_count;  // for filling ExceptionRangeEntry::scope_count
 
-#ifdef ASSERT
-  int                 _lir_op_id;    // op_id of the LIR-operation throwing to this handler
-#endif
 
  public:
   // creation
@@ -56,9 +53,6 @@ class XHandler: public CompilationResourceObj {
     , _entry_pco(-1)
     , _phi_operand(-1)
     , _scope_count(-1)
-#ifdef ASSERT
-    , _lir_op_id(-1)
-#endif
   { }
 
   XHandler(XHandler* other)
@@ -68,9 +62,6 @@ class XHandler: public CompilationResourceObj {
     , _entry_pco(other->_entry_pco)
     , _phi_operand(other->_phi_operand)
     , _scope_count(other->_scope_count)
-#ifdef ASSERT
-    , _lir_op_id(other->_lir_op_id)
-#endif
   { }
 
   // accessors for data of ciExceptionHandler

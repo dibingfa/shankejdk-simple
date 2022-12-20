@@ -155,11 +155,7 @@ typedef unsigned int node_idx_t;
 
 
 #ifndef OPTO_DU_ITERATOR_ASSERT
-#ifdef ASSERT
-#define OPTO_DU_ITERATOR_ASSERT 1
-#else
 #define OPTO_DU_ITERATOR_ASSERT 0
-#endif
 #endif //OPTO_DU_ITERATOR_ASSERT
 
 #if OPTO_DU_ITERATOR_ASSERT
@@ -215,9 +211,6 @@ public:
   // be the "new" New operator.
   inline void* operator new( size_t x, Compile* C) throw() {
     Node* n = (Node*)C->node_arena()->Amalloc_D(x);
-#ifdef ASSERT
-    n->_in = (Node**)n; // magic cookie for assertion check
-#endif
     n->_out = (Node**)C;
     return (void*)n;
   }
@@ -383,10 +376,6 @@ protected:
     debug_only(_out[_outcnt] = (Node *)(uintptr_t)0xdeadbeef);
   }
 
-#ifdef ASSERT
-  bool is_dead() const;
-#define is_not_dead(n) ((n) == NULL || !VerifyIterativeGVN || !((n)->is_dead()))
-#endif
   // Check whether node has become unreachable
   bool is_unreachable(PhaseIterGVN &igvn) const;
 
@@ -1087,28 +1076,6 @@ public:
     tty->print("\n");
   }
 #endif
-#ifdef ASSERT
-  void verify_construction();
-  bool verify_jvms(const JVMState* jvms) const;
-  int  _debug_idx;                     // Unique value assigned to every node.
-  int   debug_idx() const              { return _debug_idx; }
-  void  set_debug_idx( int debug_idx ) { _debug_idx = debug_idx; }
-
-  Node* _debug_orig;                   // Original version of this, if any.
-  Node*  debug_orig() const            { return _debug_orig; }
-  void   set_debug_orig(Node* orig);   // _debug_orig = orig
-
-  int        _hash_lock;               // Barrier to modifications of nodes in the hash table
-  void  enter_hash_lock() { ++_hash_lock; assert(_hash_lock < 99, "in too many hash tables?"); }
-  void   exit_hash_lock() { --_hash_lock; assert(_hash_lock >= 0, "mispaired hash locks"); }
-
-  static void init_NodeProperty();
-
-  #if OPTO_DU_ITERATOR_ASSERT
-  const Node* _last_del;               // The last deleted node.
-  uint        _del_tick;               // Bumped when a deletion happens..
-  #endif
-#endif
 };
 
 //-----------------------------------------------------------------------------
@@ -1118,24 +1085,7 @@ public:
 
 // Common code for assertion checking on DU iterators.
 class DUIterator_Common VALUE_OBJ_CLASS_SPEC {
-#ifdef ASSERT
- protected:
-  bool         _vdui;               // cached value of VerifyDUIterators
-  const Node*  _node;               // the node containing the _out array
-  uint         _outcnt;             // cached node->_outcnt
-  uint         _del_tick;           // cached node->_del_tick
-  Node*        _last;               // last value produced by the iterator
-
-  void sample(const Node* node);    // used by c'tor to set up for verifies
-  void verify(const Node* node, bool at_end_ok = false);
-  void verify_resync();
-  void reset(const DUIterator_Common& that);
-
-// The VDUI_ONLY macro protects code conditionalized on VerifyDUIterators
-  #define I_VDUI_ONLY(i,x) { if ((i)._vdui) { x; } }
-#else
   #define I_VDUI_ONLY(i,x) { }
-#endif //ASSERT
 };
 
 #define VDUI_ONLY(x)     I_VDUI_ONLY(*this, x)
@@ -1163,17 +1113,6 @@ class DUIterator : public DUIterator_Common {
   // this class are used only for assertion checking.
   uint         _idx;
 
-  #ifdef ASSERT
-  uint         _refresh_tick;    // Records the refresh activity.
-
-  void sample(const Node* node); // Initialize _refresh_tick etc.
-  void verify(const Node* node, bool at_end_ok = false);
-  void verify_increment();       // Verify an increment operation.
-  void verify_resync();          // Verify that we can back up over a deletion.
-  void verify_finish();          // Verify that the loop terminated properly.
-  void refresh();                // Resample verification info.
-  void reset(const DUIterator& that);  // Resample after assignment.
-  #endif
 
   DUIterator(const Node* node, int dummy_to_avoid_conversion)
     { _idx = 0;                         debug_only(sample(node)); }
@@ -1228,13 +1167,6 @@ class DUIterator_Fast : public DUIterator_Common {
   // this class are used only for assertion checking.
   Node**       _outp;
 
-  #ifdef ASSERT
-  void verify(const Node* node, bool at_end_ok = false);
-  void verify_limit();
-  void verify_resync();
-  void verify_relimit(uint n);
-  void reset(const DUIterator_Fast& that);
-  #endif
 
   // Note:  offset must be signed, since -1 is sometimes passed
   DUIterator_Fast(const Node* node, ptrdiff_t offset)
@@ -1288,11 +1220,6 @@ Node* Node::fast_out(DUIterator_Fast& i) const {
 class DUIterator_Last : private DUIterator_Fast {
   friend class Node;
 
-  #ifdef ASSERT
-  void verify(const Node* node, bool at_end_ok = false);
-  void verify_limit();
-  void verify_step(uint num_edges);
-  #endif
 
   // Note:  offset must be signed, since -1 is sometimes passed
   DUIterator_Last(const Node* node, ptrdiff_t offset)

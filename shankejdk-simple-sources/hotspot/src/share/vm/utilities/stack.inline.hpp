@@ -206,31 +206,6 @@ void Stack<E, F>::reset(bool reset_cache)
   }
 }
 
-#ifdef ASSERT
-template <class E, MEMFLAGS F>
-void Stack<E, F>::verify(bool at_empty_transition) const
-{
-  assert(size() <= this->max_size(), "stack exceeded bounds");
-  assert(this->cache_size() <= this->max_cache_size(), "cache exceeded bounds");
-  assert(this->_cur_seg_size <= this->segment_size(), "segment index exceeded bounds");
-
-  assert(this->_full_seg_size % this->_seg_size == 0, "not a multiple");
-  assert(at_empty_transition || is_empty() == (size() == 0), "mismatch");
-  assert((_cache == NULL) == (this->cache_size() == 0), "mismatch");
-
-  if (is_empty()) {
-    assert(this->_cur_seg_size == this->segment_size(), "sanity");
-  }
-}
-
-template <class E, MEMFLAGS F>
-void Stack<E, F>::zap_segment(E* seg, bool zap_link_field) const
-{
-  if (!ZapStackSegments) return;
-  const size_t zap_bytes = segment_bytes() - (zap_link_field ? 0 : sizeof(E*));
-  Copy::fill_to_bytes(seg, zap_bytes, badStackSegVal);
-}
-#endif
 
 template <class E, MEMFLAGS F>
 E* ResourceStack<E, F>::alloc(size_t bytes)

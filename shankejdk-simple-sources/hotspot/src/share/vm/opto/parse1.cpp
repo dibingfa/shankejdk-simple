@@ -509,18 +509,6 @@ Parse::Parse(JVMState* caller, ciMethod* parse_method, float expected_uses)
     _tf = C->tf();     // the OSR entry type is different
   }
 
-#ifdef ASSERT
-  if (depth() == 1) {
-    assert(C->is_osr_compilation() == this->is_osr_parse(), "OSR in sync");
-    if (C->tf() != tf()) {
-      MutexLockerEx ml(Compile_lock, Mutex::_no_safepoint_check_flag);
-      assert(C->env()->system_dictionary_modification_counter_changed(),
-             "Must invalidate if TypeFuncs differ");
-    }
-  } else {
-    assert(!this->is_osr_parse(), "no recursive OSR");
-  }
-#endif
 
   methods_parsed++;
 #ifndef PRODUCT
@@ -1252,16 +1240,6 @@ void Parse::Block::init_graph(Parse* outer) {
       block2->_is_handler = true;
     }
 
-    #ifdef ASSERT
-    // A block's successors must be distinguishable by BCI.
-    // That is, no bytecode is allowed to branch to two different
-    // clones of the same code location.
-    for (int j = 0; j < i; j++) {
-      Block* block1 = _successors[j];
-      if (block1 == block2)  continue;  // duplicates are OK
-      assert(block1->start() != block2->start(), "successors have unique bcis");
-    }
-    #endif
   }
 
   // Note: We never call next_path_num along exception paths, so they
@@ -1483,12 +1461,6 @@ void Parse::do_one_block() {
 
     NOT_PRODUCT( parse_histogram()->set_initial_state(bc()); );
 
-#ifdef ASSERT
-    int pre_bc_sp = sp();
-    int inputs, depth;
-    bool have_se = !stopped() && compute_stack_effects(inputs, depth);
-    assert(!have_se || pre_bc_sp >= inputs, err_msg_res("have enough stack to execute this BC: pre_bc_sp=%d, inputs=%d", pre_bc_sp, inputs));
-#endif //ASSERT
 
     do_one_bytecode();
 
@@ -1634,11 +1606,6 @@ void Parse::merge_common(Parse::Block* target, int pnum) {
 
   } else {                      // Prior mapping at this bci
     if (TraceOptoParse) {  tty->print(" with previous state"); }
-#ifdef ASSERT
-    if (target->is_SEL_head()) {
-      target->mark_merged_backedge(block());
-    }
-#endif
     // We must not manufacture more phis if the target is already parsed.
     bool nophi = target->is_parsed();
 

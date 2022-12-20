@@ -103,10 +103,6 @@ void ClassFileParser::parse_constant_pool_entries(int length, TRAPS) {
   ClassFileStream* cfs0 = stream();
   ClassFileStream cfs1 = *cfs0;
   ClassFileStream* cfs = &cfs1;
-#ifdef ASSERT
-  assert(cfs->allocated_on_stack(),"should be local");
-  u1* old_current = cfs0->current();
-#endif
   Handle class_loader(THREAD, _loader_data->class_loader());
 
   // Used for batching symbol allocations.
@@ -307,9 +303,6 @@ void ClassFileParser::parse_constant_pool_entries(int length, TRAPS) {
   }
 
   // Copy _current pointer of local copy back to stream().
-#ifdef ASSERT
-  assert(cfs0->current() == old_current, "non-exclusive use of stream()");
-#endif
   cfs0->set_current(cfs1.current());
 }
 
@@ -2442,12 +2435,6 @@ methodHandle ClassFileParser::parse_method(bool is_interface,
   } else {
     m->compute_size_of_parameters(THREAD);
   }
-#ifdef ASSERT
-  if (args_size >= 0) {
-    m->compute_size_of_parameters(THREAD);
-    assert(args_size == m->size_of_parameters(), "");
-  }
-#endif
 
   // Fill in code attribute information
   m->set_max_stack(max_stack);
@@ -4540,21 +4527,6 @@ void ClassFileParser::set_precomputed_flags(instanceKlassHandle k) {
     }
   }
 
-#ifdef ASSERT
-  bool f = false;
-  Method* m = k->lookup_method(vmSymbols::finalize_method_name(),
-                                 vmSymbols::void_method_signature());
-  if (m != NULL && !m->is_empty_method()) {
-      f = true;
-  }
-
-  // Spec doesn't prevent agent from redefinition of empty finalizer.
-  // Despite the fact that it's generally bad idea and redefined finalizer
-  // will not work as expected we shouldn't abort vm in this case
-  if (!k->has_redefined_this_or_super()) {
-    assert(f == k->has_finalizer(), "inconsistent has_finalizer");
-  }
-#endif
 
   // Check if this klass supports the java.lang.Cloneable interface
   if (SystemDictionary::Cloneable_klass_loaded()) {
@@ -4572,17 +4544,6 @@ void ClassFileParser::set_precomputed_flags(instanceKlassHandle k) {
         _has_vanilla_constructor) {
       k->set_has_vanilla_constructor();
     }
-#ifdef ASSERT
-    bool v = false;
-    if (super->has_vanilla_constructor()) {
-      Method* constructor = k->find_method(vmSymbols::object_initializer_name(
-), vmSymbols::void_method_signature());
-      if (constructor != NULL && constructor->is_vanilla_constructor()) {
-        v = true;
-      }
-    }
-    assert(v == k->has_vanilla_constructor(), "inconsistent has_vanilla_constructor");
-#endif
   }
 
   // If it cannot be fast-path allocated, set a bit in the layout helper.
@@ -5388,11 +5349,6 @@ ClassFileStream* ClassFileParser::clone_stream() const {
 }
 
 void ClassFileParser::set_klass_to_deallocate(InstanceKlass* klass) {
-#ifdef ASSERT
-  if (klass != NULL) {
-    assert(NULL == _klass, "leaking?");
-  }
-#endif
 
   _klass = klass;
 }

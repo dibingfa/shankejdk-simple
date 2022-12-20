@@ -120,10 +120,6 @@ void Parse::do_field_access(bool is_get, bool is_field) {
     // Compile-time detect of null-exception?
     if (stopped())  return;
 
-#ifdef ASSERT
-    const TypeInstPtr *tjp = TypeInstPtr::make(TypePtr::NotNull, iter().get_declared_field_holder());
-    assert(_gvn.type(obj)->higher_equal(tjp), "cast_up is no longer needed");
-#endif
 
     if (is_get) {
       (void) pop();  // pop receiver before getting

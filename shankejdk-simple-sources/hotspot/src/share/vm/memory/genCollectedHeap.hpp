@@ -201,9 +201,6 @@ public:
   // Assumes the the young gen address range is less than that of the old gen.
   bool is_in_young(oop p);
 
-#ifdef ASSERT
-  virtual bool is_in_partial_collection(const void* p);
-#endif
 
   virtual bool is_scavengable(const void* addr) {
     return is_in_young((oop)addr);

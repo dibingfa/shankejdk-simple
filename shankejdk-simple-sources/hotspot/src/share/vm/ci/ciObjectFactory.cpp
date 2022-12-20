@@ -135,14 +135,6 @@ void ciObjectFactory::init_shared_objects() {
       init_ident_of(sym);
       _shared_ci_symbols[i] = sym;
     }
-#ifdef ASSERT
-    for (i = vmSymbols::FIRST_SID; i < vmSymbols::SID_LIMIT; i++) {
-      Symbol* vmsym = vmSymbols::symbol_at((vmSymbols::SID) i);
-      ciSymbol* sym = vm_symbol_at((vmSymbols::SID) i);
-      assert(sym->get_symbol() == vmsym, "oop must match");
-    }
-    assert(ciSymbol::void_class_signature()->get_symbol() == vmSymbols::void_class_signature(), "spot check");
-#endif
   }
 
   _ci_metadata = new (_arena) GrowableArray<ciMetadata*>(_arena, 64, 0, NULL);
@@ -268,27 +260,8 @@ ciObject* ciObjectFactory::get(oop key) {
 ciMetadata* ciObjectFactory::get_metadata(Metadata* key) {
   ASSERT_IN_VM;
 
-#ifdef ASSERT
-  if (CIObjectFactoryVerify) {
-    Metadata* last = NULL;
-    for (int j = 0; j< _ci_metadata->length(); j++) {
-      Metadata* o = _ci_metadata->at(j)->constant_encoding();
-      assert(last < o, "out of order");
-      last = o;
-    }
-  }
-#endif // ASSERT
   int len = _ci_metadata->length();
   int index = find(key, _ci_metadata);
-#ifdef ASSERT
-  if (CIObjectFactoryVerify) {
-    for (int i=0; i<_ci_metadata->length(); i++) {
-      if (_ci_metadata->at(i)->constant_encoding() == key) {
-        assert(index == i, " bad lookup");
-      }
-    }
-  }
-#endif
   if (!is_found_at(index, key, _ci_metadata)) {
     // The ciMetadata does not yet exist. Create it and insert it
     // into the cache.

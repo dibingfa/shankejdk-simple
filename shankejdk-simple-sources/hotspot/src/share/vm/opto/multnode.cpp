@@ -103,10 +103,6 @@ const TypePtr *ProjNode::adr_type() const {
   if (bottom_type() == Type::MEMORY) {
     // in(0) might be a narrow MemBar; otherwise we will report TypePtr::BOTTOM
     const TypePtr* adr_type = in(0)->adr_type();
-    #ifdef ASSERT
-    if (!is_error_reported() && !Node::in_dump())
-      assert(adr_type != NULL, "source must have adr_type");
-    #endif
     return adr_type;
   }
   assert(bottom_type()->base() != Type::Memory, "no other memories?");

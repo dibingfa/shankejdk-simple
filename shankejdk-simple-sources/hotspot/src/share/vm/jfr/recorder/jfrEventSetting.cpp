@@ -53,11 +53,3 @@ void JfrEventSetting::set_enabled(jlong id, bool enabled) {
   setting(event_id).enabled = enabled;
 }
 
-#ifdef ASSERT
-bool JfrEventSetting::bounds_check_event(jlong id) {
-  if ((unsigned)id < NUM_RESERVED_EVENTS || (unsigned)id >= MaxJfrEventId) {
-    return false;
-  }
-  return true;
-}
-#endif // ASSERT

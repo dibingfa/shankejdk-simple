@@ -344,10 +344,6 @@ class VirtualSpaceNode : public CHeapObj<mtClass> {
   uintx container_count() { return _container_count; }
   void inc_container_count();
   void dec_container_count();
-#ifdef ASSERT
-  uint container_count_slow();
-  void verify_container_count();
-#endif
 
   // used and capacity in this single entry in the list
   size_t used_words_in_vs() const;
@@ -376,10 +372,6 @@ class VirtualSpaceNode : public CHeapObj<mtClass> {
   // the smallest chunk size.
   void retire(ChunkManager* chunk_manager);
 
-#ifdef ASSERT
-  // Debug support
-  void mangle();
-#endif
 
   void print_on(outputStream* st) const;
 };
@@ -461,24 +453,6 @@ void VirtualSpaceNode::purge(ChunkManager* chunk_manager) {
   }
 }
 
-#ifdef ASSERT
-uint VirtualSpaceNode::container_count_slow() {
-  uint count = 0;
-  Metachunk* chunk = first_chunk();
-  Metachunk* invalid_chunk = (Metachunk*) top();
-  while (chunk < invalid_chunk ) {
-    MetaWord* next = ((MetaWord*)chunk) + chunk->word_size();
-    // Don't count the chunks on the free lists.  Those are
-    // still part of the VirtualSpaceNode but not currently
-    // counted.
-    if (!chunk->is_tagged_free()) {
-      count++;
-    }
-    chunk = (Metachunk*) next;
-  }
-  return count;
-}
-#endif
 
 // List of VirtualSpaces for metadata allocation.
 class VirtualSpaceList : public CHeapObj<mtClass> {
@@ -595,9 +569,6 @@ class Metadebug : AllStatic {
  public:
 
   static void init_allocation_fail_alot_count();
-#ifdef ASSERT
-  static bool test_metadata_failure();
-#endif
 };
 
 int Metadebug::_allocation_fail_alot_count = 0;
@@ -775,9 +746,6 @@ class SpaceManager : public CHeapObj<mtClass> {
   void verify();
   void verify_chunk_size(Metachunk* chunk);
   NOT_PRODUCT(void mangle_freed_chunks();)
-#ifdef ASSERT
-  void verify_allocated_blocks_words();
-#endif
 
   size_t get_raw_word_size(size_t word_size) {
     size_t byte_size = word_size * BytesPerWord;
@@ -816,13 +784,6 @@ void VirtualSpaceNode::dec_container_count() {
   _container_count--;
 }
 
-#ifdef ASSERT
-void VirtualSpaceNode::verify_container_count() {
-  assert(_container_count == container_count_slow(),
-    err_msg("Inconsistency in countainer_count _container_count " SIZE_FORMAT
-            " container_count_slow() " SIZE_FORMAT, _container_count, container_count_slow()));
-}
-#endif
 
 // BlockFreelist methods
 
@@ -888,10 +849,6 @@ void BlockFreelist::print_on(outputStream* st) const {
 
 VirtualSpaceNode::~VirtualSpaceNode() {
   _rs.release();
-#ifdef ASSERT
-  size_t word_size = sizeof(*this) / BytesPerWord;
-  Copy::fill_to_words((HeapWord*) this, word_size, 0xf1f1f1f1);
-#endif
 }
 
 size_t VirtualSpaceNode::used_words_in_vs() const {
@@ -1019,12 +976,6 @@ void VirtualSpaceNode::print_on(outputStream* st) const {
            vs->high_boundary());
 }
 
-#ifdef ASSERT
-void VirtualSpaceNode::mangle() {
-  size_t word_size = capacity_words_in_vs();
-  Copy::fill_to_words((HeapWord*) low(), word_size, 0xf1f1f1f1);
-}
-#endif // ASSERT
 
 // VirtualSpaceList methods
 // Space allocated from the VirtualSpace
@@ -1123,16 +1074,6 @@ void VirtualSpaceList::purge(ChunkManager* chunk_manager) {
       prev_vsl = vsl;
     }
   }
-#ifdef ASSERT
-  if (purged_vsl != NULL) {
-    // List should be stable enough to use an iterator here.
-    VirtualSpaceListIterator iter(virtual_space_list());
-    while (iter.repeat()) {
-      VirtualSpaceNode* vsl = iter.get_next();
-      assert(vsl != purged_vsl, "Purge of vsl failed");
-    }
-  }
-#endif
 }
 
 
@@ -1258,9 +1199,6 @@ void VirtualSpaceList::link_vs(VirtualSpaceNode* new_entry) {
   inc_reserved_words(new_entry->reserved_words());
   inc_committed_words(new_entry->committed_words());
   inc_virtual_space_count();
-#ifdef ASSERT
-  new_entry->mangle();
-#endif
   if (TraceMetavirtualspaceAllocation && Verbose) {
     VirtualSpaceNode* vsl = current_virtual_space();
     vsl->print_on(gclog_or_tty);
@@ -1677,24 +1615,6 @@ void Metadebug::init_allocation_fail_alot_count() {
   }
 }
 
-#ifdef ASSERT
-bool Metadebug::test_metadata_failure() {
-  if (MetadataAllocationFailALot &&
-      Threads::is_vm_complete()) {
-    if (_allocation_fail_alot_count > 0) {
-      _allocation_fail_alot_count--;
-    } else {
-      if (TraceMetadataChunkAllocation && Verbose) {
-        gclog_or_tty->print_cr("Metadata allocation failing for "
-                               "MetadataAllocationFailALot");
-      }
-      init_allocation_fail_alot_count();
-      return true;
-    }
-  }
-  return false;
-}
-#endif
 
 // ChunkManager methods
 
@@ -1707,15 +1627,6 @@ size_t ChunkManager::free_chunks_total_bytes() {
 }
 
 size_t ChunkManager::free_chunks_count() {
-#ifdef ASSERT
-  if (!UseConcMarkSweepGC && !SpaceManager::expand_lock()->is_locked()) {
-    MutexLockerEx cl(SpaceManager::expand_lock(),
-                     Mutex::_no_safepoint_check_flag);
-    // This lock is only needed in debug because the verification
-    // of the _free_chunks_totals walks the list of free chunks
-    slow_locked_verify_free_chunks_count();
-  }
-#endif
   return _free_chunks_count;
 }
 
@@ -1742,11 +1653,6 @@ void ChunkManager::locked_verify_free_chunks_count() {
 }
 
 void ChunkManager::verify_free_chunks_count() {
-#ifdef ASSERT
-  MutexLockerEx cl(SpaceManager::expand_lock(),
-                     Mutex::_no_safepoint_check_flag);
-  locked_verify_free_chunks_count();
-#endif
 }
 
 void ChunkManager::verify() {
@@ -1865,11 +1771,6 @@ Metachunk* ChunkManager::free_chunks_get(size_t word_size) {
   // Remove it from the links to this freelist
   chunk->set_next(NULL);
   chunk->set_prev(NULL);
-#ifdef ASSERT
-  // Chunk is no longer on any freelist. Setting to false make container_count_slow()
-  // work.
-  chunk->set_is_tagged_free(false);
-#endif
   chunk->container()->inc_container_count();
 
   slow_locked_verify();
@@ -2337,9 +2238,6 @@ SpaceManager::~SpaceManager() {
   Metachunk* humongous_chunks = chunks_in_use(HumongousIndex);
 
   while (humongous_chunks != NULL) {
-#ifdef ASSERT
-    humongous_chunks->set_is_tagged_free(true);
-#endif
     if (TraceMetadataChunkAllocation && Verbose) {
       gclog_or_tty->print(PTR_FORMAT " (" SIZE_FORMAT ") ",
                           humongous_chunks,
@@ -2504,11 +2402,6 @@ MetaWord* SpaceManager::allocate(size_t word_size) {
 // This methods does not know about blocks (Metablocks)
 MetaWord* SpaceManager::allocate_work(size_t word_size) {
   assert_lock_strong(_lock);
-#ifdef ASSERT
-  if (Metadebug::test_metadata_failure()) {
-    return NULL;
-  }
-#endif
   // Is there space in the current chunk?
   MetaWord* result = NULL;
 
@@ -2563,18 +2456,6 @@ void SpaceManager::verify_chunk_size(Metachunk* chunk) {
   return;
 }
 
-#ifdef ASSERT
-void SpaceManager::verify_allocated_blocks_words() {
-  // Verification is only guaranteed at a safepoint.
-  assert(SafepointSynchronize::is_at_safepoint() || !Universe::is_fully_initialized(),
-    "Verification can fail if the applications is running");
-  assert(allocated_blocks_words() == sum_used_in_chunks_in_use(),
-    err_msg("allocation total is not consistent " SIZE_FORMAT
-            " vs " SIZE_FORMAT,
-            allocated_blocks_words(), sum_used_in_chunks_in_use()));
-}
-
-#endif
 
 void SpaceManager::dump(outputStream* const out) const {
   size_t curr_total = 0;
@@ -2927,45 +2808,9 @@ void MetaspaceAux::verify_free_chunks() {
 }
 
 void MetaspaceAux::verify_capacity() {
-#ifdef ASSERT
-  size_t running_sum_capacity_bytes = capacity_bytes();
-  // For purposes of the running sum of capacity, verify against capacity
-  size_t capacity_in_use_bytes = capacity_bytes_slow();
-  assert(running_sum_capacity_bytes == capacity_in_use_bytes,
-    err_msg("capacity_words() * BytesPerWord " SIZE_FORMAT
-            " capacity_bytes_slow()" SIZE_FORMAT,
-            running_sum_capacity_bytes, capacity_in_use_bytes));
-  for (Metaspace::MetadataType i = Metaspace::ClassType;
-       i < Metaspace:: MetadataTypeCount;
-       i = (Metaspace::MetadataType)(i + 1)) {
-    size_t capacity_in_use_bytes = capacity_bytes_slow(i);
-    assert(capacity_bytes(i) == capacity_in_use_bytes,
-      err_msg("capacity_bytes(%u) " SIZE_FORMAT
-              " capacity_bytes_slow(%u)" SIZE_FORMAT,
-              i, capacity_bytes(i), i, capacity_in_use_bytes));
-  }
-#endif
 }
 
 void MetaspaceAux::verify_used() {
-#ifdef ASSERT
-  size_t running_sum_used_bytes = used_bytes();
-  // For purposes of the running sum of used, verify against used
-  size_t used_in_use_bytes = used_bytes_slow();
-  assert(used_bytes() == used_in_use_bytes,
-    err_msg("used_bytes() " SIZE_FORMAT
-            " used_bytes_slow()" SIZE_FORMAT,
-            used_bytes(), used_in_use_bytes));
-  for (Metaspace::MetadataType i = Metaspace::ClassType;
-       i < Metaspace:: MetadataTypeCount;
-       i = (Metaspace::MetadataType)(i + 1)) {
-    size_t used_in_use_bytes = used_bytes_slow(i);
-    assert(used_bytes(i) == used_in_use_bytes,
-      err_msg("used_bytes(%u) " SIZE_FORMAT
-              " used_bytes_slow(%u)" SIZE_FORMAT,
-              i, used_bytes(i), i, used_in_use_bytes));
-  }
-#endif
 }
 
 void MetaspaceAux::verify_metrics() {
@@ -3558,9 +3403,6 @@ void Metaspace::deallocate(MetaWord* ptr, size_t word_size, bool is_class) {
     MutexLockerEx ml(vsm()->lock(), Mutex::_no_safepoint_check_flag);
     if (word_size < TreeChunk<Metablock, FreeList<Metablock> >::min_size()) {
       // Dark matter.  Too small for dictionary.
-#ifdef ASSERT
-      Copy::fill_to_words((HeapWord*)ptr, word_size, 0xf5f5f5f5);
-#endif
       return;
     }
     if (is_class && using_class_space()) {
@@ -3573,9 +3415,6 @@ void Metaspace::deallocate(MetaWord* ptr, size_t word_size, bool is_class) {
 
     if (word_size < TreeChunk<Metablock, FreeList<Metablock> >::min_size()) {
       // Dark matter.  Too small for dictionary.
-#ifdef ASSERT
-      Copy::fill_to_words((HeapWord*)ptr, word_size, 0xf5f5f5f5);
-#endif
       return;
     }
     if (is_class && using_class_space()) {

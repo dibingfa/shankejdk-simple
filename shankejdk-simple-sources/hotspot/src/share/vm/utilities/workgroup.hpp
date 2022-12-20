@@ -409,9 +409,6 @@ class SubTasksDone: public CHeapObj<mtInternal> {
   // threads working on the task have finished).
   uint _n_threads;
   uint _threads_completed;
-#ifdef ASSERT
-  volatile uint _claimed;
-#endif
 
   // Set all tasks to unclaimed.
   void clear();

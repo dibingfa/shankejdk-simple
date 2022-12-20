@@ -75,14 +75,6 @@ void AbstractInterpreter::layout_activation(Method* method,
   int extra_locals = (method->max_locals() - method->size_of_parameters()) *
     Interpreter::stackElementWords;
 
-#ifdef ASSERT
-  if (!EnableInvokeDynamic) {
-    // @@@ FIXME: Should we correct interpreter_frame_sender_sp in the calling sequences?
-    // Probably, since deoptimization doesn't work yet.
-    assert(caller->unextended_sp() == interpreter_frame->interpreter_frame_sender_sp(), "Frame not properly walkable");
-  }
-  assert(caller->sp() == interpreter_frame->sender_sp(), "Frame not properly walkable(2)");
-#endif
 
   interpreter_frame->interpreter_frame_set_method(method);
   // NOTE the difference in using sender_sp and
@@ -91,11 +83,6 @@ void AbstractInterpreter::layout_activation(Method* method,
   // sender_sp is fp+8/16 (32bit/64bit) XXX
   intptr_t* locals = interpreter_frame->sender_sp() + max_locals - 1;
 
-#ifdef ASSERT
-  if (caller->is_interpreted_frame()) {
-    assert(locals < caller->fp() + frame::interpreter_frame_initial_sp_offset, "bad placement");
-  }
-#endif
 
   interpreter_frame->interpreter_frame_set_locals(locals);
   BasicObjectLock* montop = interpreter_frame->interpreter_frame_monitor_begin();

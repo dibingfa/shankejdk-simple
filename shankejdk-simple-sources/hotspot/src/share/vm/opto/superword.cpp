@@ -419,23 +419,8 @@ MemNode* SuperWord::find_align_to_ref(Node_List &memops) {
     }
   }
 
-#ifdef ASSERT
-  if (TraceSuperWord && Verbose) {
-    tty->print_cr("\nVector memops after find_align_to_refs");
-    for (uint i = 0; i < memops.size(); i++) {
-      MemNode* s = memops.at(i)->as_Mem();
-      s->dump();
-    }
-  }
-#endif
 
   if (max_ct > 0) {
-#ifdef ASSERT
-    if (TraceSuperWord) {
-      tty->print("\nVector align to node: ");
-      memops.at(max_idx)->as_Mem()->dump();
-    }
-#endif
     return memops.at(max_idx)->as_Mem();
   }
   return NULL;
@@ -1472,12 +1457,6 @@ void SuperWord::output() {
       if (vlen_in_bytes > max_vlen_in_bytes) {
         max_vlen_in_bytes = vlen_in_bytes;
       }
-#ifdef ASSERT
-      if (TraceNewVectors) {
-        tty->print("new Vector node: ");
-        vn->dump();
-      }
-#endif
     }
   }
   C->set_max_vector_size(max_vlen_in_bytes);
@@ -1533,12 +1512,6 @@ Node* SuperWord::vector_opd(Node_List* p, int opd_idx) {
 
     _igvn.register_new_node_with_optimizer(vn);
     _phase->set_ctrl(vn, _phase->get_ctrl(opd));
-#ifdef ASSERT
-    if (TraceNewVectors) {
-      tty->print("new Vector node: ");
-      vn->dump();
-    }
-#endif
     return vn;
   }
 
@@ -1556,12 +1529,6 @@ Node* SuperWord::vector_opd(Node_List* p, int opd_idx) {
   }
   _igvn.register_new_node_with_optimizer(pk);
   _phase->set_ctrl(pk, _phase->get_ctrl(opd));
-#ifdef ASSERT
-  if (TraceNewVectors) {
-    tty->print("new Vector node: ");
-    pk->dump();
-  }
-#endif
   return pk;
 }
 

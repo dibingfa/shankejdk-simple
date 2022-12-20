@@ -160,19 +160,6 @@ inline void G1UpdateRSOrPushRefOopClosure::do_oop_nv(T* p) {
   if (obj == NULL) {
     return;
   }
-#ifdef ASSERT
-  // can't do because of races
-  // assert(obj == NULL || obj->is_oop(), "expected an oop");
-
-  // Do the safe subset of is_oop
-#ifdef CHECK_UNHANDLED_OOPS
-  oopDesc* o = obj.obj();
-#else
-  oopDesc* o = obj;
-#endif // CHECK_UNHANDLED_OOPS
-  assert((intptr_t)o % MinObjAlignmentInBytes == 0, "not oop aligned");
-  assert(Universe::heap()->is_in_reserved(obj), "must be in heap");
-#endif // ASSERT
 
   assert(_from != NULL, "from region must be non-NULL");
   assert(_from->is_in_reserved(p), "p is not in from");

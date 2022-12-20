@@ -424,13 +424,8 @@ class CommandLineFlags {
 
 // use this for flags that are true by default in the debug version but
 // false in the optimized version, and vice versa
-#ifdef ASSERT
-#define trueInDebug  true
-#define falseInDebug false
-#else
 #define trueInDebug  false
 #define falseInDebug true
-#endif
 
 // use this for flags that are true per default in the product build
 // but false in development builds, and vice versa

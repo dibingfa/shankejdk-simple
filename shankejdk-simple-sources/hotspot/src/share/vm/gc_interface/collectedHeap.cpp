@@ -40,9 +40,6 @@
 #include "services/heapDumper.hpp"
 
 
-#ifdef ASSERT
-int CollectedHeap::_fire_out_of_memory_count = 0;
-#endif
 
 size_t CollectedHeap::_filler_array_max_size = 0;
 
@@ -242,24 +239,6 @@ void CollectedHeap::check_for_non_bad_heap_word_value(HeapWord* addr, size_t siz
 }
 #endif // PRODUCT
 
-#ifdef ASSERT
-void CollectedHeap::check_for_valid_allocation_state() {
-  Thread *thread = Thread::current();
-  // How to choose between a pending exception and a potential
-  // OutOfMemoryError?  Don't allow pending exceptions.
-  // This is a VM policy failure, so how do we exhaustively test it?
-  assert(!thread->has_pending_exception(),
-         "shouldn't be allocating with pending exception");
-  if (StrictSafepointChecks) {
-    assert(thread->allow_allocation(),
-           "Allocation done by thread for which allocation is blocked "
-           "by No_Allocation_Verifier!");
-    // Allocation of an oop can always invoke a safepoint,
-    // hence, the true argument
-    thread->check_for_valid_safepoint_state(true);
-  }
-}
-#endif
 
 HeapWord* CollectedHeap::allocate_from_tlab_slow(KlassHandle klass, Thread* thread, size_t size) {
 
@@ -291,13 +270,6 @@ HeapWord* CollectedHeap::allocate_from_tlab_slow(KlassHandle klass, Thread* thre
     Copy::zero_to_words(obj, new_tlab_size);
   } else {
     // ...and zap just allocated object.
-#ifdef ASSERT
-    // Skip mangling the space corresponding to the object header to
-    // ensure that the returned space is not considered parsable by
-    // any concurrent GC thread.
-    size_t hdr_size = oopDesc::header_size();
-    Copy::fill_to_words(obj + hdr_size, new_tlab_size - hdr_size, badHeapWordVal);
-#endif // ASSERT
   }
   thread->tlab().fill(obj, obj + size, new_tlab_size);
   return obj;
@@ -414,23 +386,6 @@ size_t CollectedHeap::filler_array_min_size() {
   return align_object_size(filler_array_hdr_size()); // align to MinObjAlignment
 }
 
-#ifdef ASSERT
-void CollectedHeap::fill_args_check(HeapWord* start, size_t words)
-{
-  assert(words >= min_fill_size(), "too small to fill");
-  assert(words % MinObjAlignment == 0, "unaligned size");
-  assert(Universe::heap()->is_in_reserved(start), "not in heap");
-  assert(Universe::heap()->is_in_reserved(start + words - 1), "not in heap");
-}
-
-void CollectedHeap::zap_filler_array(HeapWord* start, size_t words, bool zap)
-{
-  if (ZapFillerObjects && zap) {
-    Copy::fill_to_words(start + filler_array_hdr_size(),
-                        words - filler_array_hdr_size(), 0XDEAFBABE);
-  }
-}
-#endif // ASSERT
 
 void
 CollectedHeap::fill_with_array(HeapWord* start, size_t words, bool zap)

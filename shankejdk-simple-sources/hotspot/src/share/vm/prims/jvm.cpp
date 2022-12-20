@@ -229,63 +229,10 @@ void trace_class_resolution(Klass* to_class) {
 
 // Wrapper to trace JVM functions
 
-#ifdef ASSERT
-  class JVMTraceWrapper : public StackObj {
-   public:
-    JVMTraceWrapper(const char* format, ...) ATTRIBUTE_PRINTF(2, 3) {
-      if (TraceJVMCalls) {
-        va_list ap;
-        va_start(ap, format);
-        tty->print("JVM ");
-        tty->vprint_cr(format, ap);
-        va_end(ap);
-      }
-    }
-  };
-
-  Histogram* JVMHistogram;
-  volatile jint JVMHistogram_lock = 0;
-
-  class JVMHistogramElement : public HistogramElement {
-    public:
-     JVMHistogramElement(const char* name);
-  };
-
-  JVMHistogramElement::JVMHistogramElement(const char* elementName) {
-    _name = elementName;
-    uintx count = 0;
-
-    while (Atomic::cmpxchg(1, &JVMHistogram_lock, 0) != 0) {
-      while (OrderAccess::load_acquire(&JVMHistogram_lock) != 0) {
-        count +=1;
-        if ( (WarnOnStalledSpinLock > 0)
-          && (count % WarnOnStalledSpinLock == 0)) {
-          warning("JVMHistogram_lock seems to be stalled");
-        }
-      }
-     }
-
-    if(JVMHistogram == NULL)
-      JVMHistogram = new Histogram("JVM Call Counts",100);
-
-    JVMHistogram->add_element(this);
-    Atomic::dec(&JVMHistogram_lock);
-  }
-
-  #define JVMCountWrapper(arg) \
-      static JVMHistogramElement* e = new JVMHistogramElement(arg); \
-      if (e != NULL) e->increment_count();  // Due to bug in VC++, we need a NULL check here eventhough it should never happen!
-
-  #define JVMWrapper(arg1)                    JVMCountWrapper(arg1); JVMTraceWrapper(arg1)
-  #define JVMWrapper2(arg1, arg2)             JVMCountWrapper(arg1); JVMTraceWrapper(arg1, arg2)
-  #define JVMWrapper3(arg1, arg2, arg3)       JVMCountWrapper(arg1); JVMTraceWrapper(arg1, arg2, arg3)
-  #define JVMWrapper4(arg1, arg2, arg3, arg4) JVMCountWrapper(arg1); JVMTraceWrapper(arg1, arg2, arg3, arg4)
-#else
   #define JVMWrapper(arg1)
   #define JVMWrapper2(arg1, arg2)
   #define JVMWrapper3(arg1, arg2, arg3)
   #define JVMWrapper4(arg1, arg2, arg3, arg4)
-#endif
 
 
 // Interface version /////////////////////////////////////////////////////////////////////
@@ -632,16 +579,6 @@ JVM_ENTRY(jobject, JVM_Clone(JNIEnv* env, jobject handle))
   const KlassHandle klass (THREAD, obj->klass());
   JvmtiVMObjectAllocEventCollector oam;
 
-#ifdef ASSERT
-  // Just checking that the cloneable flag is set correct
-  if (obj->is_array()) {
-    guarantee(klass->is_cloneable(), "all arrays are cloneable");
-  } else {
-    guarantee(obj->is_instance(), "should be instanceOop");
-    bool cloneable = klass->is_subtype_of(SystemDictionary::Cloneable_klass());
-    guarantee(cloneable == klass->is_cloneable(), "incorrect cloneable flag");
-  }
-#endif
 
   // Check if class of obj supports the Cloneable interface.
   // All arrays are considered to be cloneable (See JLS 20.1.5)
@@ -791,22 +728,6 @@ static inline jlong field_offset_to_byte_offset(jlong field_offset) {
 }
 
 static inline void assert_field_offset_sane(oop p, jlong field_offset) {
-#ifdef ASSERT
-  jlong byte_offset = field_offset_to_byte_offset(field_offset);
-
-  if (p != NULL) {
-    assert(byte_offset >= 0 && byte_offset <= (jlong)MAX_OBJECT_SIZE, "sane offset");
-    if (byte_offset == (jint)byte_offset) {
-      void* ptr_plus_disp = (address)p + byte_offset;
-      assert((void*)p->obj_field_addr<oop>((jint)byte_offset) == ptr_plus_disp,
-             "raw [ptr+disp] must be consistent with oop::field_base");
-    }
-    jlong p_size = HeapWordSize * (jlong)(p->size());
-    assert(byte_offset < p_size, err_msg("Unsafe access: offset " INT64_FORMAT
-                                         " > object's size " INT64_FORMAT,
-                                         (int64_t)byte_offset, (int64_t)p_size));
-  }
-#endif
 }
 
 static inline void* index_oop_from_field_offset_long(oop p, jlong field_offset) {

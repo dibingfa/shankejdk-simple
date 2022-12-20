@@ -58,15 +58,6 @@ public:
   }
 
   char* allocate_bytes(size_t size, AllocFailType alloc_failmode = AllocFailStrategy::EXIT_OOM) {
-#ifdef ASSERT
-    if (_nesting < 1 && !_warned++)
-      fatal("memory leak: allocating without ResourceMark");
-    if (UseMallocOnly) {
-      // use malloc, but save pointer in res. area for later freeing
-      char** save = (char**)internal_malloc_4(sizeof(char*));
-      return (*save = (char*)os::malloc(size, mtThread, CURRENT_PC));
-    }
-#endif
     return (char*)Amalloc(size, alloc_failmode);
   }
 
@@ -87,10 +78,6 @@ protected:
   Chunk *_chunk;                // saved arena chunk
   char *_hwm, *_max;
   size_t _size_in_bytes;
-#ifdef ASSERT
-  Thread* _thread;
-  ResourceMark* _previous_resource_mark;
-#endif //ASSERT
 
   void initialize(Thread *thread) {
     _area = thread->resource_area();
@@ -100,22 +87,13 @@ protected:
     _size_in_bytes = _area->size_in_bytes();
     debug_only(_area->_nesting++;)
     assert( _area->_nesting > 0, "must stack allocate RMs" );
-#ifdef ASSERT
-    _thread = thread;
-    _previous_resource_mark = thread->current_resource_mark();
-    thread->set_current_resource_mark(this);
-#endif // ASSERT
   }
  public:
 
-#ifndef ASSERT
   ResourceMark(Thread *thread) {
     assert(thread == Thread::current(), "not the current thread");
     initialize(thread);
   }
-#else
-  ResourceMark(Thread *thread);
-#endif // ASSERT
 
   ResourceMark()               { initialize(Thread::current()); }
 
@@ -124,17 +102,6 @@ protected:
     _size_in_bytes = r->_size_in_bytes;
     debug_only(_area->_nesting++;)
     assert( _area->_nesting > 0, "must stack allocate RMs" );
-#ifdef ASSERT
-    Thread* thread = ThreadLocalStorage::thread();
-    if (thread != NULL) {
-      _thread = thread;
-      _previous_resource_mark = thread->current_resource_mark();
-      thread->set_current_resource_mark(this);
-    } else {
-      _thread = NULL;
-      _previous_resource_mark = NULL;
-    }
-#endif // ASSERT
   }
 
   void reset_to_mark() {
@@ -161,11 +128,6 @@ protected:
     assert( _area->_nesting > 0, "must stack allocate RMs" );
     debug_only(_area->_nesting--;)
     reset_to_mark();
-#ifdef ASSERT
-    if (_thread != NULL) {
-      _thread->set_current_resource_mark(_previous_resource_mark);
-    }
-#endif // ASSERT
   }
 
 
@@ -222,14 +184,10 @@ protected:
 
  public:
 
-#ifndef ASSERT
   DeoptResourceMark(Thread *thread) {
     assert(thread == Thread::current(), "not the current thread");
     initialize(thread);
   }
-#else
-  DeoptResourceMark(Thread *thread);
-#endif // ASSERT
 
   DeoptResourceMark()               { initialize(Thread::current()); }
 

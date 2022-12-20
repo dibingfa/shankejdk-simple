@@ -286,13 +286,6 @@ Node* PhaseIdealLoop::clone_loop_predicates(Node* old_entry, Node* new_entry,
                                                 bool clone_limit_check,
                                                 PhaseIdealLoop* loop_phase,
                                                 PhaseIterGVN* igvn) {
-#ifdef ASSERT
-  if (new_entry == NULL || !(new_entry->is_Proj() || new_entry->is_Region() || new_entry->is_SafePoint())) {
-    if (new_entry != NULL)
-      new_entry->dump();
-    assert(false, "not IfTrue, IfFalse, Region or SafePoint");
-  }
-#endif
   // Search original predicates
   Node* entry = old_entry;
   ProjNode* limit_check_proj = NULL;

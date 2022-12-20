@@ -194,14 +194,6 @@ class JvmtiGetLoadedClassesClosure : public StackObj {
     return (_list != NULL);
   }
 
-#ifdef ASSERT
-  // For debugging.
-  void check(int limit) {
-    for (int i = 0; i < limit; i += 1) {
-      assert(Universe::heap()->is_in(get_element(i)()), "check fails");
-    }
-  }
-#endif
 
   // Public methods that get called within the scope of the closure
   void allocate() {

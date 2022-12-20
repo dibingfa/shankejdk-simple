@@ -99,16 +99,6 @@ MachConstantBaseNode* Compile::mach_constant_base_node() {
 // Return the index at which m must be inserted (or already exists).
 // The sort order is by the address of the ciMethod, with is_virtual as minor key.
 int Compile::intrinsic_insertion_index(ciMethod* m, bool is_virtual) {
-#ifdef ASSERT
-  for (int i = 1; i < _intrinsics->length(); i++) {
-    CallGenerator* cg1 = _intrinsics->at(i-1);
-    CallGenerator* cg2 = _intrinsics->at(i);
-    assert(cg1->method() != cg2->method()
-           ? cg1->method()     < cg2->method()
-           : cg1->is_virtual() < cg2->is_virtual(),
-           "compiler intrinsics list must stay sorted");
-  }
-#endif
   // Binary search sorted list, in decreasing intervals [lo, hi].
   int lo = 0, hi = _intrinsics->length()-1;
   while (lo <= hi) {
@@ -145,10 +135,6 @@ void Compile::register_intrinsic(CallGenerator* cg) {
   if (index == len) {
     _intrinsics->append(cg);
   } else {
-#ifdef ASSERT
-    CallGenerator* oldcg = _intrinsics->at(index);
-    assert(oldcg->method() != cg->method() || oldcg->is_virtual() != cg->is_virtual(), "don't register twice");
-#endif
     _intrinsics->append(_intrinsics->at(len-1));
     int pos;
     for (pos = len-2; pos >= index; pos--) {
@@ -1164,9 +1150,6 @@ void Compile::Init(int aliaslevel) {
   _expensive_nodes = new(comp_arena()) GrowableArray<Node*>(comp_arena(), 8,  0, NULL);
   _range_check_casts = new(comp_arena()) GrowableArray<Node*>(comp_arena(), 8,  0, NULL);
   register_library_intrinsics();
-#ifdef ASSERT
-  _type_verify_symmetry = true;
-#endif
 }
 
 //---------------------------init_start----------------------------------------
@@ -1219,71 +1202,6 @@ void Compile::set_cached_top_node(Node* tn) {
   assert(_top == NULL || top()->is_top(), "");
 }
 
-#ifdef ASSERT
-uint Compile::count_live_nodes_by_graph_walk() {
-  Unique_Node_List useful(comp_arena());
-  // Get useful node list by walking the graph.
-  identify_useful_nodes(useful);
-  return useful.size();
-}
-
-void Compile::print_missing_nodes() {
-
-  // Return if CompileLog is NULL and PrintIdealNodeCount is false.
-  if ((_log == NULL) && (! PrintIdealNodeCount)) {
-    return;
-  }
-
-  // This is an expensive function. It is executed only when the user
-  // specifies VerifyIdealNodeCount option or otherwise knows the
-  // additional work that needs to be done to identify reachable nodes
-  // by walking the flow graph and find the missing ones using
-  // _dead_node_list.
-
-  Unique_Node_List useful(comp_arena());
-  // Get useful node list by walking the graph.
-  identify_useful_nodes(useful);
-
-  uint l_nodes = C->live_nodes();
-  uint l_nodes_by_walk = useful.size();
-
-  if (l_nodes != l_nodes_by_walk) {
-    if (_log != NULL) {
-      _log->begin_head("mismatched_nodes count='%d'", abs((int) (l_nodes - l_nodes_by_walk)));
-      _log->stamp();
-      _log->end_head();
-    }
-    VectorSet& useful_member_set = useful.member_set();
-    int last_idx = l_nodes_by_walk;
-    for (int i = 0; i < last_idx; i++) {
-      if (useful_member_set.test(i)) {
-        if (_dead_node_list.test(i)) {
-          if (_log != NULL) {
-            _log->elem("mismatched_node_info node_idx='%d' type='both live and dead'", i);
-          }
-          if (PrintIdealNodeCount) {
-            // Print the log message to tty
-              tty->print_cr("mismatched_node idx='%d' both live and dead'", i);
-              useful.at(i)->dump();
-          }
-        }
-      }
-      else if (! _dead_node_list.test(i)) {
-        if (_log != NULL) {
-          _log->elem("mismatched_node_info node_idx='%d' type='neither live nor dead'", i);
-        }
-        if (PrintIdealNodeCount) {
-          // Print the log message to tty
-          tty->print_cr("mismatched_node idx='%d' type='neither live nor dead'", i);
-        }
-      }
-    }
-    if (_log != NULL) {
-      _log->tail("mismatched_nodes");
-    }
-  }
-}
-#endif
 
 #ifndef PRODUCT
 void Compile::verify_top(Node* tn) const {
@@ -1319,12 +1237,6 @@ bool Compile::copy_node_notes_to(Node* dest, Node* source) {
   if (dest->is_Con())
     return false;               // Do not push debug info onto constants.
 
-#ifdef ASSERT
-  // Leave a bread crumb trail pointing to the original node:
-  if (dest != NULL && dest != source && dest->debug_orig() == NULL) {
-    dest->set_debug_orig(source);
-  }
-#endif
 
   if (node_note_array() == NULL)
     return false;               // Not collecting any notes now.
@@ -1683,25 +1595,6 @@ Compile::AliasType* Compile::find_alias_type(const TypePtr* adr_type, bool no_cr
   // Do it the slow way.
   const TypePtr* flat = flatten_alias_type(adr_type);
 
-#ifdef ASSERT
-  {
-    ResourceMark rm;
-    assert(flat == flatten_alias_type(flat),
-           err_msg("not idempotent: adr_type = %s; flat = %s => %s", Type::str(adr_type),
-                   Type::str(flat), Type::str(flatten_alias_type(flat))));
-    assert(flat != TypePtr::BOTTOM,
-           err_msg("cannot alias-analyze an untyped ptr: adr_type = %s", Type::str(adr_type)));
-    if (flat->isa_oopptr() && !flat->isa_klassptr()) {
-      const TypeOopPtr* foop = flat->is_oopptr();
-      // Scalarizable allocations have exact klass always.
-      bool exact = !foop->klass_is_exact() || foop->is_known_instance();
-      const TypePtr* xoop = foop->cast_to_exactness(exact)->is_ptr();
-      assert(foop == flatten_alias_type(xoop),
-             err_msg("exactness must not affect alias type: foop = %s; xoop = %s",
-                     Type::str(foop), Type::str(xoop)));
-    }
-  }
-#endif
 
   int idx = AliasIdxTop;
   for (int i = 0; i < num_alias_types(); i++) {
@@ -1726,11 +1619,6 @@ Compile::AliasType* Compile::find_alias_type(const TypePtr* adr_type, bool no_cr
         alias_type(idx)->set_rewritable(false);
     }
     if (flat->isa_aryptr()) {
-#ifdef ASSERT
-      const int header_size_min  = arrayOopDesc::base_offset_in_bytes(T_BYTE);
-      // (T_BYTE has the weakest alignment and size restrictions...)
-      assert(flat->offset() < header_size_min, "array body reference must be OffsetBot");
-#endif
       if (flat->offset() == TypePtr::OffsetBot) {
         alias_type(idx)->set_element(flat->is_aryptr()->elem());
       }
@@ -2584,14 +2472,6 @@ struct Final_Reshape_Counts : public StackObj {
   int  get_inner_loop_count() const { return _inner_loop_count; }
 };
 
-#ifdef ASSERT
-static bool oop_offset_is_sane(const TypeInstPtr* tp) {
-  ciInstanceKlass *k = tp->klass()->as_instance_klass();
-  // Make sure the offset goes inside the instance layout.
-  return k->contains_field_offset(tp->offset());
-  // Note that OffsetBot and OffsetTop are very negative.
-}
-#endif
 
 // Eliminate trivially redundant StoreCMs and accumulate their
 // precedence edges.
@@ -2669,27 +2549,6 @@ void Compile::final_graph_reshaping_impl( Node *n, Final_Reshape_Counts &frc) {
     }
   }
 
-#ifdef ASSERT
-  if( n->is_Mem() ) {
-    int alias_idx = get_alias_index(n->as_Mem()->adr_type());
-    assert( n->in(0) != NULL || alias_idx != Compile::AliasIdxRaw ||
-            // oop will be recorded in oop map if load crosses safepoint
-            n->is_Load() && (n->as_Load()->bottom_type()->isa_oopptr() ||
-                             LoadNode::is_immutable_value(n->in(MemNode::Address))),
-            "raw memory operations should have control edge");
-  }
-  if (n->is_MemBar()) {
-    MemBarNode* mb = n->as_MemBar();
-    if (mb->trailing_store() || mb->trailing_load_store()) {
-      assert(mb->leading_membar()->trailing_membar() == mb, "bad membar pair");
-      Node* mem = mb->in(MemBarNode::Precedent);
-      assert((mb->trailing_store() && mem->is_Store() && mem->as_Store()->is_release()) ||
-             (mb->trailing_load_store() && mem->is_LoadStore()), "missing mem op");
-    } else if (mb->leading()) {
-      assert(mb->trailing_membar()->leading_membar() == mb, "bad membar pair");
-    }
-  }
-#endif
   // Count FPU ops and common calls, implements item (3)
   switch( nop ) {
   // Count all float operations that may use FPU
@@ -2822,15 +2681,6 @@ void Compile::final_graph_reshaping_impl( Node *n, Final_Reshape_Counts &frc) {
   case Op_LoadRange:
   case Op_LoadS: {
   handle_mem:
-#ifdef ASSERT
-    if( VerifyOptoOopOffsets ) {
-      assert( n->is_Mem(), "" );
-      MemNode *mem  = (MemNode*)n;
-      // Check to see if address types have grounded out somehow.
-      const TypeInstPtr *tp = mem->in(MemNode::Address)->bottom_type()->isa_instptr();
-      assert( !tp || oop_offset_is_sane(tp), "" );
-    }
-#endif
     break;
   }
 
@@ -3082,15 +2932,6 @@ void Compile::final_graph_reshaping_impl( Node *n, Final_Reshape_Counts &frc) {
 
 #endif
 
-#ifdef ASSERT
-  case Op_CastII:
-    // Verify that all range check dependent CastII nodes were removed.
-    if (n->isa_CastII()->has_range_check()) {
-      n->dump(3);
-      assert(false, "Range check dependent CastII node was not removed");
-    }
-    break;
-#endif
 
   case Op_ModI:
     if (UseDivMod) {
@@ -3669,16 +3510,6 @@ Compile::TracePhase::~TracePhase() {
     _log = NULL;
   }
 
-#ifdef ASSERT
-  if (PrintIdealNodeCount) {
-    tty->print_cr("phase name='%s' nodes='%d' live='%d' live_graph_walk='%d'",
-                  _phase_name, C->unique(), C->live_nodes(), C->count_live_nodes_by_graph_walk());
-  }
-
-  if (VerifyIdealNodeCount) {
-    Compile::current()->print_missing_nodes();
-  }
-#endif
 
   if (_log != NULL) {
     _log->done("phase name='%s' nodes='%d' live='%d'", _phase_name, C->unique(), C->live_nodes());
@@ -3732,18 +3563,6 @@ void Compile::ConstantTable::calculate_offsets_and_size() {
   // First, sort the array by frequencies.
   _constants.sort(qsort_comparator);
 
-#ifdef ASSERT
-  // Make sure all jump-table entries were sorted to the end of the
-  // array (they have a negative frequency).
-  bool found_void = false;
-  for (int i = 0; i < _constants.length(); i++) {
-    Constant con = _constants.at(i);
-    if (con.type() == T_VOID)
-      found_void = true;  // jump-tables
-    else
-      assert(!found_void, "wrong sorting");
-  }
-#endif
 
   int offset = 0;
   for (int i = 0; i < _constants.length(); i++) {
@@ -4100,27 +3919,6 @@ void Compile::remove_speculative_types(PhaseIterGVN &igvn) {
     if (modified > 0) {
       igvn.optimize();
     }
-#ifdef ASSERT
-    // Verify that after the IGVN is over no speculative type has resurfaced
-    worklist.clear();
-    worklist.push(root());
-    for (uint next = 0; next < worklist.size(); ++next) {
-      Node *n  = worklist.at(next);
-      const Type* t = igvn.type_or_null(n);
-      assert((t == NULL) || (t == t->remove_speculative()), "no more speculative types");
-      if (n->is_Type()) {
-        t = n->as_Type()->type();
-        assert(t == t->remove_speculative(), "no more speculative types");
-      }
-      uint max = n->len();
-      for( uint i = 0; i < max; ++i ) {
-        Node *m = n->in(i);
-        if (not_a_node(m))  continue;
-        worklist.push(m);
-      }
-    }
-    igvn.check_no_speculative_types();
-#endif
   }
 }
 

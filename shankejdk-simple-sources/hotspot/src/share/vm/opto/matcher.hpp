@@ -114,12 +114,6 @@ class Matcher : public PhaseTransform {
     _nodes.map(n->_idx, nn);
   }
 
-#ifdef ASSERT
-  // Make sure only new nodes are reachable from this node
-  void verify_new_nodes_only(Node* root);
-
-  Node* _mem_node;   // Ideal memory node consumed by mach node
-#endif
 
   // Mach node for ConP #NULL
   MachNode* _mach_null;
@@ -490,13 +484,6 @@ public:
   // Does n lead to an uncommon trap that can cause deoptimization?
   static bool branches_to_uncommon_trap(const Node *n);
 
-#ifdef ASSERT
-  void dump_old2new_map();      // machine-independent to machine-dependent
-
-  Node* find_old_node(Node* new_node) {
-    return _new2old_map[new_node->_idx];
-  }
-#endif
 };
 
 #endif // SHARE_VM_OPTO_MATCHER_HPP

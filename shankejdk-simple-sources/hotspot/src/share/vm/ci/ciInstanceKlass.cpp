@@ -177,14 +177,6 @@ ciConstantPoolCache* ciInstanceKlass::field_cache() {
 // ciInstanceKlass::get_canonical_holder
 //
 ciInstanceKlass* ciInstanceKlass::get_canonical_holder(int offset) {
-  #ifdef ASSERT
-  if (!(offset >= 0 && offset < layout_helper())) {
-    tty->print("*** get_canonical_holder(%d) on ", offset);
-    this->print();
-    tty->print_cr(" ***");
-  };
-  assert(offset >= 0 && offset < layout_helper(), "offset must be tame");
-  #endif
 
   if (offset < instanceOopDesc::base_offset_in_bytes()) {
     // All header offsets belong properly to java/lang/Object.

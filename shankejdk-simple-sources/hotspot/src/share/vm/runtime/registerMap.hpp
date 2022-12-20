@@ -93,11 +93,7 @@ class RegisterMap : public StackObj {
   bool        _update_map;              // Tells if the register map need to be
                                         // updated when traversing the stack
 
-#ifdef ASSERT
-  void check_location_valid();
-#else
   void check_location_valid() {}
-#endif
 
  public:
   debug_only(intptr_t* _update_for_id;) // Assert that RegisterMap is not updated twice for same frame

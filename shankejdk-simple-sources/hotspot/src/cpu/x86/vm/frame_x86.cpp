@@ -43,10 +43,6 @@
 #include "runtime/vframeArray.hpp"
 #endif
 
-#ifdef ASSERT
-void RegisterMap::check_location_valid() {
-}
-#endif
 
 PRAGMA_FORMAT_MUTE_WARNINGS_FOR_GCC
 
@@ -388,19 +384,6 @@ frame frame::sender_for_entry_frame(RegisterMap* map) const {
 //
 // Verifies the calculated original PC of a deoptimization PC for the
 // given unextended SP.
-#ifdef ASSERT
-void frame::verify_deopt_original_pc(nmethod* nm, intptr_t* unextended_sp) {
-  frame fr;
-
-  // This is ugly but it's better than to change {get,set}_original_pc
-  // to take an SP value as argument.  And it's only a debugging
-  // method anyway.
-  fr._unextended_sp = unextended_sp;
-
-  address original_pc = nm->get_original_pc(&fr);
-  assert(nm->insts_contains(original_pc), "original PC must be in nmethod");
-}
-#endif
 
 //------------------------------------------------------------------------------
 // frame::adjust_unextended_sp

@@ -213,9 +213,6 @@ void JvmtiThreadState::leave_interp_only_mode() {
 
 // Helper routine used in several places
 int JvmtiThreadState::count_frames() {
-#ifdef ASSERT
-  uint32_t debug_bits = 0;
-#endif
   assert(SafepointSynchronize::is_at_safepoint() ||
          JvmtiEnv::is_thread_fully_suspended(get_thread(), false, &debug_bits),
          "at safepoint or must be suspended");

@@ -401,25 +401,6 @@ const Type *ConstraintCastNode::Value( PhaseTransform *phase ) const {
   if( in(0) && phase->type(in(0)) == Type::TOP ) return Type::TOP;
 const Type* ft = phase->type(in(1))->filter_speculative(_type);
 
-#ifdef ASSERT
-  // Previous versions of this function had some special case logic,
-  // which is no longer necessary.  Make sure of the required effects.
-  switch (Opcode()) {
-  case Op_CastII:
-    {
-      const Type* t1 = phase->type(in(1));
-      if( t1 == Type::TOP )  assert(ft == Type::TOP, "special case #1");
-      const Type* rt = t1->join_speculative(_type);
-      if (rt->empty())       assert(ft == Type::TOP, "special case #2");
-      break;
-    }
-  case Op_CastPP:
-    if (phase->type(in(1)) == TypePtr::NULL_PTR &&
-        _type->isa_ptr() && _type->is_ptr()->_ptr == TypePtr::NotNull)
-      assert(ft == Type::TOP, "special case #3");
-    break;
-  }
-#endif //ASSERT
 
   return ft;
 }

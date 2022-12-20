@@ -354,14 +354,6 @@ static void prepare_for_emergency_dump(Thread* thread) {
     ((JavaThread*)thread)->set_thread_state(_thread_in_vm);
   }
 
-#ifdef ASSERT
-  Monitor* owned_lock = thread->owned_locks();
-  while (owned_lock != NULL) {
-    Monitor* next = owned_lock->next();
-    owned_lock->unlock();
-    owned_lock = next;
-  }
-#endif // ASSERT
 
   if (Threads_lock->owned_by_self()) {
     Threads_lock->unlock();

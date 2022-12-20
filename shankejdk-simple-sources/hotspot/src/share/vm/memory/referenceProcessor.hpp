@@ -118,9 +118,6 @@ public:
     _prev_next(refs_list.adr_head()),
     _prev(NULL),
     _ref(refs_list.head()),
-#ifdef ASSERT
-    _first_seen(refs_list.head()),
-#endif
 #ifndef PRODUCT
     _processed(0),
     _removed(0),

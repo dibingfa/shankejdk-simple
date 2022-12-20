@@ -72,15 +72,6 @@ void ReferenceProcessor::init_statics() {
 }
 
 void ReferenceProcessor::enable_discovery(bool verify_disabled, bool check_no_refs) {
-#ifdef ASSERT
-  // Verify that we're not currently discovering refs
-  assert(!verify_disabled || !_discovering_refs, "nested call?");
-
-  if (check_no_refs) {
-    // Verify that the discovered lists are empty
-    verify_no_references_recorded();
-  }
-#endif // ASSERT
 
   // Someone could have modified the value of the static
   // field in the j.l.r.SoftReference class that holds the
@@ -868,20 +859,6 @@ void ReferenceProcessor::balance_queues(DiscoveredList ref_lists[])
       }
     }
   }
-#ifdef ASSERT
-  size_t balanced_total_refs = 0;
-  for (uint i = 0; i < _max_num_q; ++i) {
-    balanced_total_refs += ref_lists[i].length();
-    if (TraceReferenceGC && PrintGCDetails) {
-      gclog_or_tty->print("%d ", ref_lists[i].length());
-    }
-  }
-  if (TraceReferenceGC && PrintGCDetails) {
-    gclog_or_tty->print_cr(" = %d", balanced_total_refs);
-    gclog_or_tty->flush();
-  }
-  assert(total_refs == balanced_total_refs, "Balancing was incomplete");
-#endif
 }
 
 void ReferenceProcessor::balance_all_queues() {

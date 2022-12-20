@@ -64,7 +64,6 @@
 # include "os_bsd.inline.hpp"
 #endif
 
-#ifndef ASSERT
 #  ifdef _DEBUG
    // NOTE: don't turn the lines below into a comment -- if you're getting
    // a compile error here, change the settings to define ASSERT
@@ -72,13 +71,10 @@
    functions that do not slow down the system too much and thus can be left in optimized code.
    On the other hand, the code should not be included in a production version.
 #  endif // _DEBUG
-#endif // ASSERT
 
 
 #ifdef _DEBUG
-#  ifndef ASSERT
      configuration error: ASSERT must be defined in debug version
-#  endif // ASSERT
 #endif // _DEBUG
 
 

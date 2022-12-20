@@ -58,15 +58,6 @@ Metachunk::Metachunk(size_t word_size,
     _container(container)
 {
   _top = initial_top();
-#ifdef ASSERT
-  set_is_tagged_free(false);
-  size_t data_word_size = pointer_delta(end(),
-                                        _top,
-                                        sizeof(MetaWord));
-  Copy::fill_to_words((HeapWord*)_top,
-                      data_word_size,
-                      metadata_chunk_initialize);
-#endif
 }
 
 MetaWord* Metachunk::allocate(size_t word_size) {
@@ -110,13 +101,6 @@ void Metachunk::mangle() {
 #endif // PRODUCT
 
 void Metachunk::verify() {
-#ifdef ASSERT
-  // Cannot walk through the blocks unless the blocks have
-  // headers with sizes.
-  assert(bottom() <= _top &&
-         _top <= (MetaWord*)end(),
-         "Chunk has been smashed");
-#endif
   return;
 }
 

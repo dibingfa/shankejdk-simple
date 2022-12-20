@@ -63,11 +63,6 @@ void G1MarkSweep::invoke_at_safepoint(ReferenceProcessor* rp,
   assert(SafepointSynchronize::is_at_safepoint(), "must be at a safepoint");
 
   SharedHeap* sh = SharedHeap::heap();
-#ifdef ASSERT
-  if (sh->collector_policy()->should_clear_all_soft_refs()) {
-    assert(clear_all_softrefs, "Policy should have been checked earler");
-  }
-#endif
   // hook up weak ref data so it can be used during Mark-Sweep
   assert(GenMarkSweep::ref_processor() == NULL, "no stomping");
   assert(rp != NULL, "should be non-NULL");

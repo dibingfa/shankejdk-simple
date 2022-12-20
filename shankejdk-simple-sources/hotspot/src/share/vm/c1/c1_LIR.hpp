@@ -739,26 +739,6 @@ class LIR_OprFact: public AllStatic {
       default:       ShouldNotReachHere(); res = illegalOpr;
     }
 
-#ifdef ASSERT
-    res->validate_type();
-    assert(res->vreg_number() == index, "conversion check");
-    assert(index >= LIR_OprDesc::vreg_base, "must start at vreg_base");
-    assert(index <= (max_jint >> LIR_OprDesc::data_shift), "index is too big");
-
-    // old-style calculation; check if old and new method are equal
-    LIR_OprDesc::OprType t = as_OprType(type);
-#ifdef __SOFTFP__
-    LIR_Opr old_res = (LIR_Opr)(intptr_t)((index << LIR_OprDesc::data_shift) |
-                               t |
-                               LIR_OprDesc::cpu_register |
-                               LIR_OprDesc::size_for(type) | LIR_OprDesc::virtual_mask);
-#else // __SOFTFP__
-    LIR_Opr old_res = (LIR_Opr)(intptr_t)((index << LIR_OprDesc::data_shift) | t |
-                                          ((type == T_FLOAT || type == T_DOUBLE) ?  LIR_OprDesc::fpu_register : LIR_OprDesc::cpu_register) |
-                               LIR_OprDesc::size_for(type) | LIR_OprDesc::virtual_mask);
-    assert(res == old_res, "old and new method not equal");
-#endif // __SOFTFP__
-#endif // ASSERT
 
     return res;
   }
@@ -820,16 +800,6 @@ class LIR_OprFact: public AllStatic {
       default:       ShouldNotReachHere(); res = illegalOpr;
     }
 
-#ifdef ASSERT
-    assert(index >= 0, "index must be positive");
-    assert(index <= (max_jint >> LIR_OprDesc::data_shift), "index is too big");
-
-    LIR_Opr old_res = (LIR_Opr)(intptr_t)((index << LIR_OprDesc::data_shift) |
-                                          LIR_OprDesc::stack_value           |
-                                          as_OprType(type)                   |
-                                          LIR_OprDesc::size_for(type));
-    assert(res == old_res, "old and new method not equal");
-#endif
 
     return res;
   }
@@ -885,9 +855,6 @@ class    LIR_OpTypeCheck;
 class    LIR_OpCompareAndSwap;
 class    LIR_OpProfileCall;
 class    LIR_OpProfileType;
-#ifdef ASSERT
-class    LIR_OpAssert;
-#endif
 
 // LIR operation codes
 enum LIR_Code {
@@ -1053,11 +1020,6 @@ enum LIR_MoveKind {
 class LIR_Op: public CompilationResourceObj {
  friend class LIR_OpVisitState;
 
-#ifdef ASSERT
- private:
-  const char *  _file;
-  int           _line;
-#endif
 
  protected:
   LIR_Opr       _result;
@@ -1079,10 +1041,6 @@ class LIR_Op: public CompilationResourceObj {
     , _code(lir_none)
     , _flags(0)
     , _info(NULL)
-#ifdef ASSERT
-    , _file(NULL)
-    , _line(0)
-#endif
     , _fpu_pop_count(0)
     , _source(NULL)
     , _id(-1)                             {}
@@ -1092,10 +1050,6 @@ class LIR_Op: public CompilationResourceObj {
     , _code(code)
     , _flags(0)
     , _info(info)
-#ifdef ASSERT
-    , _file(NULL)
-    , _line(0)
-#endif
     , _fpu_pop_count(0)
     , _source(NULL)
     , _id(-1)                             {}
@@ -1105,12 +1059,6 @@ class LIR_Op: public CompilationResourceObj {
   LIR_Opr result_opr() const                  { return _result; }
   void    set_result_opr(LIR_Opr opr)         { _result = opr;  }
 
-#ifdef ASSERT
-  void set_file_and_line(const char * file, int line) {
-    _file = file;
-    _line = line;
-  }
-#endif
 
   virtual const char * name() const PRODUCT_RETURN0;
 
@@ -1151,9 +1099,6 @@ class LIR_Op: public CompilationResourceObj {
   virtual LIR_OpCompareAndSwap* as_OpCompareAndSwap() { return NULL; }
   virtual LIR_OpProfileCall* as_OpProfileCall() { return NULL; }
   virtual LIR_OpProfileType* as_OpProfileType() { return NULL; }
-#ifdef ASSERT
-  virtual LIR_OpAssert* as_OpAssert() { return NULL; }
-#endif
 
   virtual void verify() const {}
 };
@@ -1859,30 +1804,6 @@ class LIR_OpDelay: public LIR_Op {
   CodeEmitInfo* call_info() const { return info(); }
 };
 
-#ifdef ASSERT
-// LIR_OpAssert
-class LIR_OpAssert : public LIR_Op2 {
- friend class LIR_OpVisitState;
-
- private:
-  const char* _msg;
-  bool        _halt;
-
- public:
-  LIR_OpAssert(LIR_Condition condition, LIR_Opr opr1, LIR_Opr opr2, const char* msg, bool halt)
-    : LIR_Op2(lir_assert, condition, opr1, opr2)
-    , _halt(halt)
-    , _msg(msg) {
-  }
-
-  const char* msg() const                        { return _msg; }
-  bool        halt() const                       { return _halt; }
-
-  virtual void emit_code(LIR_Assembler* masm);
-  virtual LIR_OpAssert* as_OpAssert()            { return this; }
-  virtual void print_instr(outputStream* out) const PRODUCT_RETURN;
-};
-#endif
 
 // LIR_OpCompareAndSwap
 class LIR_OpCompareAndSwap : public LIR_Op {
@@ -2011,10 +1932,6 @@ class LIR_List: public CompilationResourceObj {
 #ifndef PRODUCT
   BlockBegin*   _block;
 #endif
-#ifdef ASSERT
-  const char *  _file;
-  int           _line;
-#endif
 
   void append(LIR_Op* op) {
     if (op->source() == NULL)
@@ -2028,20 +1945,11 @@ class LIR_List: public CompilationResourceObj {
 
     _operations.append(op);
 
-#ifdef ASSERT
-    op->verify();
-    op->set_file_and_line(_file, _line);
-    _file = NULL;
-    _line = 0;
-#endif
   }
 
  public:
   LIR_List(Compilation* compilation, BlockBegin* block = NULL);
 
-#ifdef ASSERT
-  void set_file_and_line(const char * file, int line);
-#endif
 
   //---------- accessors ---------------
   LIR_OpList* instructions_list()                { return &_operations; }
@@ -2307,9 +2215,6 @@ class LIR_List: public CompilationResourceObj {
 
   void xadd(LIR_Opr src, LIR_Opr add, LIR_Opr res, LIR_Opr tmp) { append(new LIR_Op2(lir_xadd, src, add, res, tmp)); }
   void xchg(LIR_Opr src, LIR_Opr set, LIR_Opr res, LIR_Opr tmp) { append(new LIR_Op2(lir_xchg, src, set, res, tmp)); }
-#ifdef ASSERT
-  void lir_assert(LIR_Condition condition, LIR_Opr opr1, LIR_Opr opr2, const char* msg, bool halt) { append(new LIR_OpAssert(condition, opr1, opr2, msg, halt)); }
-#endif
 };
 
 void print_LIR(BlockList* blocks);
@@ -2330,9 +2235,6 @@ class LIR_InsertionBuffer : public CompilationResourceObj {
   void set_index_at(int i, int value)    { _index_and_count.at_put((i << 1),     value); }
   void set_count_at(int i, int value)    { _index_and_count.at_put((i << 1) + 1, value); }
 
-#ifdef ASSERT
-  void verify();
-#endif
  public:
   LIR_InsertionBuffer() : _lir(NULL), _index_and_count(8), _ops(8) { }
 
@@ -2489,10 +2391,6 @@ class LIR_OpVisitState: public StackObj {
   // collects all register operands of the instruction
   void visit(LIR_Op* op);
 
-#ifdef ASSERT
-  // check that an operation has no operands
-  bool no_operands(LIR_Op* op);
-#endif
 
   // LIR_Op visitor functions use these to fill in the state
   void do_input(LIR_Opr& opr)             { append(opr, LIR_OpVisitState::inputMode); }

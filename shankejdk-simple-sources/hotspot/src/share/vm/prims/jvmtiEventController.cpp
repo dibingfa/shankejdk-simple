@@ -898,14 +898,6 @@ JvmtiEventControllerPrivate::event_init() {
 
   EC_TRACE(("JVMTI [-] # VM live"));
 
-#ifdef ASSERT
-  // check that our idea and the spec's idea of threaded events match
-  for (int ei = JVMTI_MIN_EVENT_TYPE_VAL; ei <= JVMTI_MAX_EVENT_TYPE_VAL; ++ei) {
-    jlong bit = JvmtiEventEnabled::bit_for((jvmtiEvent)ei);
-    assert(((THREAD_FILTERED_EVENT_BITS & bit) != 0) == JvmtiUtil::event_threaded(ei),
-           "thread filtered event list does not match");
-  }
-#endif
 
   _initialized = true;
 }

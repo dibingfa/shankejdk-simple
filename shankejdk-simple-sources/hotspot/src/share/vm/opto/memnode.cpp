@@ -67,12 +67,10 @@ bool MemNode::check_if_adr_maybe_raw(Node* adr) {
 #ifndef PRODUCT
 void MemNode::dump_spec(outputStream *st) const {
   if (in(Address) == NULL)  return; // node is dead
-#ifndef ASSERT
   // fake the missing field
   const TypePtr* _adr_type = NULL;
   if (in(Address) != NULL)
     _adr_type = in(Address)->bottom_type()->isa_ptr();
-#endif
   dump_adr_type(this, _adr_type, st);
 
   Compile* C = Compile::current();
@@ -208,35 +206,6 @@ Node *MemNode::optimize_memory_chain(Node *mchain, const TypePtr *t_adr, Node *l
 static Node *step_through_mergemem(PhaseGVN *phase, MergeMemNode *mmem,  const TypePtr *tp, const TypePtr *adr_check, outputStream *st) {
   uint alias_idx = phase->C->get_alias_index(tp);
   Node *mem = mmem;
-#ifdef ASSERT
-  {
-    // Check that current type is consistent with the alias index used during graph construction
-    assert(alias_idx >= Compile::AliasIdxRaw, "must not be a bad alias_idx");
-    bool consistent =  adr_check == NULL || adr_check->empty() ||
-                       phase->C->must_alias(adr_check, alias_idx );
-    // Sometimes dead array references collapse to a[-1], a[-2], or a[-3]
-    if( !consistent && adr_check != NULL && !adr_check->empty() &&
-               tp->isa_aryptr() &&        tp->offset() == Type::OffsetBot &&
-        adr_check->isa_aryptr() && adr_check->offset() != Type::OffsetBot &&
-        ( adr_check->offset() == arrayOopDesc::length_offset_in_bytes() ||
-          adr_check->offset() == oopDesc::klass_offset_in_bytes() ||
-          adr_check->offset() == oopDesc::mark_offset_in_bytes() ) ) {
-      // don't assert if it is dead code.
-      consistent = true;
-    }
-    if( !consistent ) {
-      st->print("alias_idx==%d, adr_check==", alias_idx);
-      if( adr_check == NULL ) {
-        st->print("NULL");
-      } else {
-        adr_check->dump();
-      }
-      st->cr();
-      print_alias_types();
-      assert(consistent, "adr_check must match alias idx");
-    }
-  }
-#endif
   // TypeOopPtr::NOTNULL+any is an OOP with unknown offset - generally
   // means an array I have not precisely typed yet.  Do not do any
   // alias stuff with it any time soon.
@@ -650,24 +619,6 @@ const TypePtr* MemNode::calculate_adr_type(const Type* t, const TypePtr* cross_c
     assert(cross_check == NULL || cross_check == TypePtr::BOTTOM, "expected memory type must be wide");
     return TypePtr::BOTTOM;           // touches lots of memory
   } else {
-    #ifdef ASSERT
-    // %%%% [phh] We don't check the alias index if cross_check is
-    //            TypeRawPtr::BOTTOM.  Needs to be investigated.
-    if (cross_check != NULL &&
-        cross_check != TypePtr::BOTTOM &&
-        cross_check != TypeRawPtr::BOTTOM) {
-      // Recheck the alias index, to see if it has changed (due to a bug).
-      Compile* C = Compile::current();
-      assert(C->get_alias_index(cross_check) == C->get_alias_index(tp),
-             "must stay in the original alias category");
-      // The type of the address must be contained in the adr_type,
-      // disregarding "null"-ness.
-      // (We make an exception for TypeRawPtr::BOTTOM, which is a bit bucket.)
-      const TypePtr* tp_notnull = tp->join(TypePtr::NOTNULL)->is_ptr();
-      assert(cross_check->meet(tp_notnull) == cross_check->remove_speculative(),
-             "real address must not escape from expected memory type");
-    }
-    #endif
     return tp;
   }
 }
@@ -849,27 +800,6 @@ Node *MemNode::Ideal_common_DU_postCCP( PhaseCCP *ccp, Node* n, Node* adr ) {
 
       case Op_Proj:             // Direct call to an allocation routine
       case Op_SCMemProj:        // Memory state from store conditional ops
-#ifdef ASSERT
-        {
-          assert(adr->as_Proj()->_con == TypeFunc::Parms, "must be return value");
-          const Node* call = adr->in(0);
-          if (call->is_CallJava()) {
-            const CallJavaNode* call_java = call->as_CallJava();
-            const TypeTuple *r = call_java->tf()->range();
-            assert(r->cnt() > TypeFunc::Parms, "must return value");
-            const Type* ret_type = r->field_at(TypeFunc::Parms);
-            assert(ret_type && ret_type->isa_ptr(), "must return pointer");
-            // We further presume that this is one of
-            // new_instance_Java, new_array_Java, or
-            // the like, but do not assert for this.
-          } else if (call->is_Allocate()) {
-            // similar case to new_instance_Java, etc.
-          } else if (!call->is_CallLeaf()) {
-            // Projections from fetch_oop (OSR) are allowed as well.
-            ShouldNotReachHere();
-          }
-        }
-#endif
         break;
       default:
         ShouldNotReachHere();
@@ -908,16 +838,6 @@ void LoadNode::dump_spec(outputStream *st) const {
 }
 #endif
 
-#ifdef ASSERT
-//----------------------------is_immutable_value-------------------------------
-// Helper function to allow a raw load without control edge for some cases
-bool LoadNode::is_immutable_value(Node* adr) {
-  return (adr->is_AddP() && adr->in(AddPNode::Base)->is_top() &&
-          adr->in(AddPNode::Address)->Opcode() == Op_ThreadLocal &&
-          (adr->in(AddPNode::Offset)->find_intptr_t_con(-1) ==
-           in_bytes(JavaThread::osthread_offset())));
-}
-#endif
 
 //----------------------------LoadNode::make-----------------------------------
 // Polymorphic factory method:
@@ -1732,23 +1652,6 @@ const Type *LoadNode::Value( PhaseTransform *phase ) const {
           // This can happen if a interface-typed array narrows to a class type.
           jt = _type;
         }
-#ifdef ASSERT
-        if (phase->C->eliminate_boxing() && adr->is_AddP()) {
-          // The pointers in the autobox arrays are always non-null
-          Node* base = adr->in(AddPNode::Base);
-          if ((base != NULL) && base->is_DecodeN()) {
-            // Get LoadN node which loads IntegerCache.cache field
-            base = base->in(1);
-          }
-          if ((base != NULL) && base->is_Con()) {
-            const TypeAryPtr* base_type = base->bottom_type()->isa_aryptr();
-            if ((base_type != NULL) && base_type->is_autobox_cache()) {
-              // It could be narrow oop
-              assert(jt->make_ptr()->ptr() == TypePtr::NotNull,"sanity");
-            }
-          }
-        }
-#endif
         return jt;
       }
     }
@@ -2597,10 +2500,6 @@ Node *StoreNode::Identity( PhaseTransform *phase ) {
   if (result != this && phase->is_IterGVN() != NULL) {
     MemBarNode* trailing = trailing_membar();
     if (trailing != NULL) {
-#ifdef ASSERT
-      const TypeOopPtr* t_oop = phase->type(in(Address))->isa_oopptr();
-      assert(t_oop == NULL || t_oop->is_known_instance_field(), "only for non escaping objects");
-#endif
       PhaseIterGVN* igvn = phase->is_IterGVN();
       trailing->remove(igvn);
     }
@@ -2695,12 +2594,6 @@ MemBarNode* StoreNode::trailing_membar() const {
           assert(u->Opcode() == Op_MemBarVolatile, "");
           assert(trailing_mb == NULL, "only one");
           trailing_mb = u->as_MemBar();
-#ifdef ASSERT
-          Node* leading = u->as_MemBar()->leading_membar();
-          assert(leading->Opcode() == Op_MemBarRelease, "incorrect membar");
-          assert(leading->as_MemBar()->leading_store(), "incorrect membar pair");
-          assert(leading->as_MemBar()->trailing_membar() == u, "incorrect membar pair");
-#endif
         } else {
           assert(u->as_MemBar()->standalone(), "");
         }
@@ -2832,12 +2725,6 @@ MemBarNode* LoadStoreNode::trailing_membar() const {
         assert(u->Opcode() == Op_MemBarAcquire, "");
         assert(trailing == NULL, "only one");
         trailing = u->as_MemBar();
-#ifdef ASSERT
-        Node* leading = trailing->leading_membar();
-        assert(support_IRIW_for_not_multiple_copy_atomic_cpu || leading->Opcode() == Op_MemBarRelease, "incorrect membar");
-        assert(leading->as_MemBar()->leading_load_store(), "incorrect membar pair");
-        assert(leading->as_MemBar()->trailing_membar() == trailing, "incorrect membar pair");
-#endif
       } else {
         assert(u->as_MemBar()->standalone(), "wrong barrier kind");
       }
@@ -3082,9 +2969,6 @@ const Type *EncodeISOArrayNode::Value(PhaseTransform *phase) const {
 MemBarNode::MemBarNode(Compile* C, int alias_idx, Node* precedent)
   : MultiNode(TypeFunc::Parms + (precedent == NULL? 0: 1)),
   _adr_type(C->get_adr_type(alias_idx)), _kind(Standalone)
-#ifdef ASSERT
-  , _pair_idx(0)
-#endif
 {
   init_class_id(Class_MemBar);
   Node* top = C->top();
@@ -3221,19 +3105,11 @@ Node *MemBarNode::match( const ProjNode *proj, const Matcher *m ) {
 void MemBarNode::set_store_pair(MemBarNode* leading, MemBarNode* trailing) {
   trailing->_kind = TrailingStore;
   leading->_kind = LeadingStore;
-#ifdef ASSERT
-  trailing->_pair_idx = leading->_idx;
-  leading->_pair_idx = leading->_idx;
-#endif
 }
 
 void MemBarNode::set_load_store_pair(MemBarNode* leading, MemBarNode* trailing) {
   trailing->_kind = TrailingLoadStore;
   leading->_kind = LeadingLoadStore;
-#ifdef ASSERT
-  trailing->_pair_idx = leading->_idx;
-  leading->_pair_idx = leading->_idx;
-#endif
 }
 
 MemBarNode* MemBarNode::trailing_membar() const {
@@ -3312,33 +3188,6 @@ MemBarNode* MemBarNode::leading_membar() const {
       leading = leading->in(0);
     }
   }
-#ifdef ASSERT
-  Unique_Node_List wq;
-  wq.push((Node*)this);
-  uint found = 0;
-  for (uint i = 0; i < wq.size(); i++) {
-    Node* n = wq.at(i);
-    if (n->is_Region()) {
-      for (uint j = 1; j < n->req(); j++) {
-        Node* in = n->in(j);
-        if (in != NULL && !in->is_top()) {
-          wq.push(in);
-        }
-      }
-    } else {
-      if (n->is_MemBar() && n->as_MemBar()->leading()) {
-        assert(n == leading, "consistency check failed");
-        found++;
-      } else {
-        Node* in = n->in(0);
-        if (in != NULL && !in->is_top()) {
-          wq.push(in);
-        }
-      }
-    }
-  }
-  assert(found == 1 || (found == 0 && leading == NULL), "consistency check failed");
-#endif
   if (leading == NULL) {
     return NULL;
   }
@@ -4168,12 +4017,6 @@ Node* InitializeNode::complete_stores(Node* rawctl, Node* rawmem, Node* rawptr,
 
   Node* zmem = zero_memory();   // initially zero memory state
   Node* inits = zmem;           // accumulating a linearized chain of inits
-  #ifdef ASSERT
-  intptr_t first_offset = allocation()->minimum_header_size();
-  intptr_t last_init_off = first_offset;  // previous init offset
-  intptr_t last_init_end = first_offset;  // previous init offset+size
-  intptr_t last_tile_end = first_offset;  // previous tile offset+size
-  #endif
   intptr_t zeroes_done = header_size;
 
   bool do_zeroing = true;       // we might give up if inits are very sparse
@@ -4256,25 +4099,6 @@ Node* InitializeNode::complete_stores(Node* rawctl, Node* rawmem, Node* rawptr,
 
     assert(!do_zeroing || zeroes_done >= next_init_off, "don't miss any");
 
-    #ifdef ASSERT
-    // Various order invariants.  Weaker than stores_are_sane because
-    // a large constant tile can be filled in by smaller non-constant stores.
-    assert(st_off >= last_init_off, "inits do not reverse");
-    last_init_off = st_off;
-    const Type* val = NULL;
-    if (st_size >= BytesPerInt &&
-        (val = phase->type(st->in(MemNode::ValueIn)))->singleton() &&
-        (int)val->basic_type() < (int)T_OBJECT) {
-      assert(st_off >= last_tile_end, "tiles do not overlap");
-      assert(st_off >= last_init_end, "tiles do not overwrite inits");
-      last_tile_end = MAX2(last_tile_end, next_init_off);
-    } else {
-      intptr_t st_tile_end = align_size_up(next_init_off, BytesPerLong);
-      assert(st_tile_end >= last_tile_end, "inits stay with tiles");
-      assert(st_off      >= last_init_end, "inits do not overlap");
-      last_init_end = next_init_off;  // it's a non-tile
-    }
-    #endif //ASSERT
   }
 
   remove_extra_zeroes();        // clear out all the zmems left over
@@ -4306,27 +4130,6 @@ Node* InitializeNode::complete_stores(Node* rawctl, Node* rawmem, Node* rawptr,
 }
 
 
-#ifdef ASSERT
-bool InitializeNode::stores_are_sane(PhaseTransform* phase) {
-  if (is_complete())
-    return true;                // stores could be anything at this point
-  assert(allocation() != NULL, "must be present");
-  intptr_t last_off = allocation()->minimum_header_size();
-  for (uint i = InitializeNode::RawStores; i < req(); i++) {
-    Node* st = in(i);
-    intptr_t st_off = get_store_offset(st, phase);
-    if (st_off < 0)  continue;  // ignore dead garbage
-    if (last_off > st_off) {
-      tty->print_cr("*** bad store offset at %d: " INTX_FORMAT " > " INTX_FORMAT, i, last_off, st_off);
-      this->dump(2);
-      assert(false, "ascending store offsets");
-      return false;
-    }
-    last_off = st_off + st->as_Store()->memory_size();
-  }
-  return true;
-}
-#endif //ASSERT
 
 
 
@@ -4704,52 +4507,7 @@ void MergeMemNode::dump_spec(outputStream *st) const {
 #endif // !PRODUCT
 
 
-#ifdef ASSERT
-static bool might_be_same(Node* a, Node* b) {
-  if (a == b)  return true;
-  if (!(a->is_Phi() || b->is_Phi()))  return false;
-  // phis shift around during optimization
-  return true;  // pretty stupid...
-}
-
-// verify a narrow slice (either incoming or outgoing)
-static void verify_memory_slice(const MergeMemNode* m, int alias_idx, Node* n) {
-  if (!VerifyAliases)       return;  // don't bother to verify unless requested
-  if (is_error_reported())  return;  // muzzle asserts when debugging an error
-  if (Node::in_dump())      return;  // muzzle asserts when printing
-  assert(alias_idx >= Compile::AliasIdxRaw, "must not disturb base_memory or sentinel");
-  assert(n != NULL, "");
-  // Elide intervening MergeMem's
-  while (n->is_MergeMem()) {
-    n = n->as_MergeMem()->memory_at(alias_idx);
-  }
-  Compile* C = Compile::current();
-  const TypePtr* n_adr_type = n->adr_type();
-  if (n == m->empty_memory()) {
-    // Implicit copy of base_memory()
-  } else if (n_adr_type != TypePtr::BOTTOM) {
-    assert(n_adr_type != NULL, "new memory must have a well-defined adr_type");
-    assert(C->must_alias(n_adr_type, alias_idx), "new memory must match selected slice");
-  } else {
-    // A few places like make_runtime_call "know" that VM calls are narrow,
-    // and can be used to update only the VM bits stored as TypeRawPtr::BOTTOM.
-    bool expected_wide_mem = false;
-    if (n == m->base_memory()) {
-      expected_wide_mem = true;
-    } else if (alias_idx == Compile::AliasIdxRaw ||
-               n == m->memory_at(Compile::AliasIdxRaw)) {
-      expected_wide_mem = true;
-    } else if (!C->alias_type(alias_idx)->is_rewritable()) {
-      // memory can "leak through" calls on channels that
-      // are write-once.  Allow this also.
-      expected_wide_mem = true;
-    }
-    assert(expected_wide_mem, "expected narrow slice replacement");
-  }
-}
-#else // !ASSERT
 #define verify_memory_slice(m,i,n) (void)(0)  // PRODUCT version is no-op
-#endif
 
 
 //-----------------------------memory_at---------------------------------------
@@ -4775,15 +4533,6 @@ Node* MergeMemNode::memory_at(uint alias_idx) const {
     // See verify_memory_slice for comments on TypeRawPtr::BOTTOM.
   } else {
     // make sure the stored slice is sane
-    #ifdef ASSERT
-    if (is_error_reported() || Node::in_dump()) {
-    } else if (might_be_same(n, base_memory())) {
-      // Give it a pass:  It is a mostly harmless repetition of the base.
-      // This can arise normally from node subsumption during optimization.
-    } else {
-      verify_memory_slice(this, alias_idx, n);
-    }
-    #endif
   }
   return n;
 }
@@ -4811,11 +4560,6 @@ void MergeMemNode::iteration_setup(const MergeMemNode* other) {
   if (other != NULL) {
     grow_to_match(other);
     // invariant:  the finite support of mm2 is within mm->req()
-    #ifdef ASSERT
-    for (uint i = req(); i < other->req(); i++) {
-      assert(other->is_empty_memory(other->in(i)), "slice left uncovered");
-    }
-    #endif
   }
   // Replace spurious copies of base_memory by top.
   Node* base_mem = base_memory();

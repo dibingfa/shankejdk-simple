@@ -365,9 +365,6 @@ PhaseCFG::PhaseCFG(Arena* arena, RootNode* root, Matcher& matcher)
 #ifndef PRODUCT
 , _trace_opto_pipelining(TraceOptoPipelining || C->method_has_option("TraceOptoPipelining"))
 #endif
-#ifdef ASSERT
-, _raw_oops(arena)
-#endif
 {
   ResourceMark rm;
   // I'll need a few machine-specific GotoNodes.  Make an Ideal GotoNode,
@@ -1002,22 +999,6 @@ void PhaseCFG::postalloc_expand(PhaseRegAlloc* _ra) {
     for (uint j = 0; j < b->number_of_nodes(); j++) {
       Node *n = b->get_node(j);
       if (n->is_Mach() && n->as_Mach()->requires_postalloc_expand()) {
-#ifdef ASSERT
-        if (TracePostallocExpand) {
-          if (!foundNode) {
-            foundNode = true;
-            tty->print("POSTALLOC EXPANDING %d %s\n", C->compile_id(),
-                       C->method() ? C->method()->name()->as_utf8() : C->stub_name());
-          }
-          tty->print("  postalloc expanding "); n->dump();
-          if (Verbose) {
-            tty->print("    with ins:\n");
-            for (uint k = 0; k < n->len(); ++k) {
-              if (n->in(k)) { tty->print("        "); n->in(k)->dump(); }
-            }
-          }
-        }
-#endif
         new_nodes.clear();
         // Collect nodes that have to be removed from the block later on.
         uint req = n->req();
@@ -1054,21 +1035,6 @@ void PhaseCFG::postalloc_expand(PhaseRegAlloc* _ra) {
           }
         }
 
-#ifdef ASSERT
-        // Check that all nodes have proper operands.
-        for (int k = 0; k < new_nodes.length(); ++k) {
-          if (new_nodes.at(k)->_idx < max_idx || !new_nodes.at(k)->is_Mach()) continue; // old node, Proj ...
-          MachNode *m = new_nodes.at(k)->as_Mach();
-          for (unsigned int l = 0; l < m->num_opnds(); ++l) {
-            if (MachOper::notAnOper(m->_opnds[l])) {
-              outputStream *os = tty;
-              os->print("Node %s ", m->Name());
-              os->print("has invalid opnd %d: %p\n", l, m->_opnds[l]);
-              assert(0, "Invalid operands, see inline trace in hs_err_pid file.");
-            }
-          }
-        }
-#endif
 
         // Collect succs of old node in remove (for projections) and in succs (for
         // all other nodes) do _not_ collect projections in remove (but in succs)
@@ -1111,18 +1077,6 @@ void PhaseCFG::postalloc_expand(PhaseRegAlloc* _ra) {
         // Add old node n to remove and remove them all from block.
         remove.push(n);
         j--;
-#ifdef ASSERT
-        if (TracePostallocExpand && Verbose) {
-          tty->print("    removing:\n");
-          for (int k = 0; k < remove.length(); ++k) {
-            tty->print("        "); remove.at(k)->dump();
-          }
-          tty->print("    inserting:\n");
-          for (int k = 0; k < new_nodes.length(); ++k) {
-            tty->print("        "); new_nodes.at(k)->dump();
-          }
-        }
-#endif
         for (int k = 0; k < remove.length(); ++k) {
           if (b->contains(remove.at(k))) {
             b->find_remove(remove.at(k));
@@ -1138,13 +1092,6 @@ void PhaseCFG::postalloc_expand(PhaseRegAlloc* _ra) {
     }
   }
 
-#ifdef ASSERT
-  if (foundNode) {
-    tty->print("FINISHED %d %s\n", C->compile_id(),
-               C->method() ? C->method()->name()->as_utf8() : C->stub_name());
-    tty->flush();
-  }
-#endif
 }
 
 
@@ -1196,61 +1143,6 @@ void PhaseCFG::dump_headers() {
 }
 
 void PhaseCFG::verify() const {
-#ifdef ASSERT
-  // Verify sane CFG
-  for (uint i = 0; i < number_of_blocks(); i++) {
-    Block* block = get_block(i);
-    uint cnt = block->number_of_nodes();
-    uint j;
-    for (j = 0; j < cnt; j++)  {
-      Node *n = block->get_node(j);
-      assert(get_block_for_node(n) == block, "");
-      if (j >= 1 && n->is_Mach() && n->as_Mach()->ideal_Opcode() == Op_CreateEx) {
-        assert(j == 1 || block->get_node(j-1)->is_Phi(), "CreateEx must be first instruction in block");
-      }
-      if (n->needs_anti_dependence_check()) {
-        verify_anti_dependences(block, n);
-      }
-      for (uint k = 0; k < n->req(); k++) {
-        Node *def = n->in(k);
-        if (def && def != n) {
-          assert(get_block_for_node(def) || def->is_Con(), "must have block; constants for debug info ok");
-          // Verify that instructions in the block is in correct order.
-          // Uses must follow their definition if they are at the same block.
-          // Mostly done to check that MachSpillCopy nodes are placed correctly
-          // when CreateEx node is moved in build_ifg_physical().
-          if (get_block_for_node(def) == block && !(block->head()->is_Loop() && n->is_Phi()) &&
-              // See (+++) comment in reg_split.cpp
-              !(n->jvms() != NULL && n->jvms()->is_monitor_use(k))) {
-            bool is_loop = false;
-            if (n->is_Phi()) {
-              for (uint l = 1; l < def->req(); l++) {
-                if (n == def->in(l)) {
-                  is_loop = true;
-                  break; // Some kind of loop
-                }
-              }
-            }
-            assert(is_loop || block->find_node(def) < j, "uses must follow definitions");
-          }
-        }
-      }
-    }
-
-    j = block->end_idx();
-    Node* bp = (Node*)block->get_node(block->number_of_nodes() - 1)->is_block_proj();
-    assert(bp, "last instruction must be a block proj");
-    assert(bp == block->get_node(j), "wrong number of successors for this block");
-    if (bp->is_Catch()) {
-      while (block->get_node(--j)->is_MachProj()) {
-        ;
-      }
-      assert(block->get_node(j)->is_MachCall(), "CatchProj must follow call");
-    } else if (bp->is_Mach() && bp->as_Mach()->ideal_Opcode() == Op_If) {
-      assert(block->_num_succs == 2, "Conditional branch must have two targets");
-    }
-  }
-#endif
 }
 #endif
 

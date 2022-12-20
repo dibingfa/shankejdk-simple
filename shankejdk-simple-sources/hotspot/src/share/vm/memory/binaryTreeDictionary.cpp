@@ -564,18 +564,6 @@ BinaryTreeDictionary<Chunk_t, FreeList_t>::remove_chunk_from_tree(TreeChunk<Chun
     assert(replacementTL->parent() == NULL, "Incorrectly replacing root");
     set_root(replacementTL);
   }
-#ifdef ASSERT
-    if (tl != replacementTL) {
-      assert(replacementTL->head() != NULL,
-        "If the tree list was replaced, it should not be a NULL list");
-      TreeList<Chunk_t, FreeList_t>* rhl = replacementTL->head_as_TreeChunk()->list();
-      TreeList<Chunk_t, FreeList_t>* rtl =
-        TreeChunk<Chunk_t, FreeList_t>::as_TreeChunk(replacementTL->tail())->list();
-      assert(rhl == replacementTL, "Broken head");
-      assert(rtl == replacementTL, "Broken tail");
-      assert(replacementTL->size() == tc->size(),  "Broken size");
-    }
-#endif
 
   // Does the tree need to be repaired?
   if (replacementTL->count() == 0) {
@@ -780,12 +768,6 @@ template <class Chunk_t, class FreeList_t>
 size_t BinaryTreeDictionary<Chunk_t, FreeList_t>::total_list_length(TreeList<Chunk_t, FreeList_t>* tl) const {
   size_t res;
   res = tl->count();
-#ifdef ASSERT
-  size_t cnt;
-  Chunk_t* tc = tl->head();
-  for (cnt = 0; tc != NULL; tc = tc->next(), cnt++);
-  assert(res == cnt, "The count is not being maintained correctly");
-#endif
   return res;
 }
 

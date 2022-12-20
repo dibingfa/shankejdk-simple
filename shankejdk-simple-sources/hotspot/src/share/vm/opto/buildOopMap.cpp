@@ -368,42 +368,11 @@ OopMap *OopFlow::build_oop_map( Node *n, int max_reg, PhaseRegAlloc *regalloc, i
     } else {
       // Other - some reaching non-oop value
       omap->set_value( r);
-#ifdef ASSERT
-      if( t->isa_rawptr() && C->cfg()->_raw_oops.member(def) ) {
-        def->dump();
-        n->dump();
-        assert(false, "there should be a oop in OopMap instead of a live raw oop at safepoint");
-      }
-#endif
     }
 
   }
 
-#ifdef ASSERT
-  /* Nice, Intel-only assert
-  int cnt_callee_saves=0;
-  int reg2 = 0;
-  while (OptoReg::is_reg(reg2)) {
-    if( dup_check[reg2] != 0) cnt_callee_saves++;
-    assert( cnt_callee_saves==3 || cnt_callee_saves==5, "missed some callee-save" );
-    reg2++;
-  }
-  */
-#endif
 
-#ifdef ASSERT
-  for( OopMapStream oms1(omap, OopMapValue::derived_oop_value); !oms1.is_done(); oms1.next()) {
-    OopMapValue omv1 = oms1.current();
-    bool found = false;
-    for( OopMapStream oms2(omap,OopMapValue::oop_value); !oms2.is_done(); oms2.next()) {
-      if( omv1.content_reg() == oms2.current().reg() ) {
-        found = true;
-        break;
-      }
-    }
-    assert( found, "derived with no base in oopmap" );
-  }
-#endif
 
   return omap;
 }

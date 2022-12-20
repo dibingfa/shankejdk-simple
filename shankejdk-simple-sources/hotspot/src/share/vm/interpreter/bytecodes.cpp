@@ -56,11 +56,6 @@ u_char          Bytecodes::_lengths       [Bytecodes::number_of_codes];
 Bytecodes::Code Bytecodes::_java_code     [Bytecodes::number_of_codes];
 u_short         Bytecodes::_flags         [(1<<BitsPerByte)*2];
 
-#ifdef ASSERT
-bool Bytecodes::check_method(const Method* method, address bcp) {
-  return method->contains(bcp);
-}
-#endif
 
 bool Bytecodes::check_must_rewrite(Bytecodes::Code code) {
   assert(can_rewrite(code), "post-check only");
@@ -544,18 +539,6 @@ void Bytecodes::initialize() {
   // compare can_trap information for each bytecode with the
   // can_trap information for the corresponding base bytecode
   // (if a rewritten bytecode can trap, so must the base bytecode)
-  #ifdef ASSERT
-    { for (int i = 0; i < number_of_codes; i++) {
-        if (is_defined(i)) {
-          Code code = cast(i);
-          Code java = java_code(code);
-          if (can_trap(code) && !can_trap(java))
-            fatal(err_msg("%s can trap => %s can trap, too", name(code),
-                          name(java)));
-        }
-      }
-    }
-  #endif
 
   // initialization successful
   _is_initialized = true;

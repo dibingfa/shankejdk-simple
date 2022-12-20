@@ -205,12 +205,6 @@ void PSPromotionManager::reset() {
 void PSPromotionManager::drain_stacks_depth(bool totally_drain) {
   totally_drain = totally_drain || _totally_drain;
 
-#ifdef ASSERT
-  ParallelScavengeHeap* heap = (ParallelScavengeHeap*)Universe::heap();
-  assert(heap->kind() == CollectedHeap::ParallelScavengeHeap, "Sanity");
-  MutableSpace* to_space = heap->young_gen()->to_space();
-  MutableSpace* old_space = heap->old_gen()->object_space();
-#endif /* ASSERT */
 
   OopStarTaskQueue* const tq = claimed_stack_depth();
   do {

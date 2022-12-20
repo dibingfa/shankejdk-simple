@@ -166,15 +166,6 @@ void CardTableExtension::scavenge_contents_parallel(ObjectStartArray* start_arra
     HeapWord* slice_start = addr_for(worker_start_card);
     HeapWord* slice_end = MIN2((HeapWord*) sp_top, addr_for(worker_end_card));
 
-#ifdef ASSERT
-    if (GCWorkerDelayMillis > 0) {
-      // Delay 1 worker so that it proceeds after all the work
-      // has been completed.
-      if (stripe_number < 2) {
-        os::sleep(Thread::current(), GCWorkerDelayMillis, false);
-      }
-    }
-#endif
 
     // If there are not objects starting within the chunk, skip it.
     if (!start_array->object_starts_in_range(slice_start, slice_end)) {
@@ -452,14 +443,6 @@ void CardTableExtension::resize_covered_region_by_end(int changed_region,
   assert(SafepointSynchronize::is_at_safepoint(),
     "Only expect an expansion at the low end at a GC");
   debug_only(verify_guard();)
-#ifdef ASSERT
-  for (int k = 0; k < _cur_covered_regions; k++) {
-    if (_covered[k].end() == new_region.end()) {
-      assert(changed_region == k, "Changed region is incorrect");
-      break;
-    }
-  }
-#endif
 
   // Commit new or uncommit old pages, if necessary.
   if (resize_commit_uncommit(changed_region, new_region)) {
@@ -519,13 +502,6 @@ bool CardTableExtension::resize_commit_uncommit(int changed_region,
         MemRegion(min_prev_start, cur_committed.end());
     cur_committed = new_committed;
   }
-#ifdef ASSERT
-  ParallelScavengeHeap* heap = (ParallelScavengeHeap*)Universe::heap();
-  assert(cur_committed.start() ==
-    (HeapWord*) align_size_up((uintptr_t) cur_committed.start(),
-                              os::vm_page_size()),
-    "Starts should have proper alignment");
-#endif
 
   jbyte* new_start = byte_for(new_region.start());
   // Round down because this is for the start address
@@ -648,14 +624,6 @@ void CardTableExtension::resize_update_covered_table(int changed_region,
       break;
     }
   }
-#ifdef ASSERT
-  for (int m = 0; m < _cur_covered_regions-1; m++) {
-    assert(_covered[m].start() <= _covered[m+1].start(),
-      "Covered regions out of order");
-    assert(_committed[m].start() <= _committed[m+1].start(),
-      "Committed regions out of order");
-  }
-#endif
 }
 
 // Returns the start of any committed region that is lower than

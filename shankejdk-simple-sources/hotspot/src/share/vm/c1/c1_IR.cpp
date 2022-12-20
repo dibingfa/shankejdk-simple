@@ -879,12 +879,6 @@ void ComputeLinearScanOrder::sort_into_work_list(BlockBegin* cur) {
   TRACE_LINEAR_SCAN(3, tty->print_cr("Sorted B%d into worklist. new worklist:", cur->block_id()));
   TRACE_LINEAR_SCAN(3, for (int i = 0; i < _work_list.length(); i++) tty->print_cr("%8d B%2d  weight:%6x", i, _work_list.at(i)->block_id(), _work_list.at(i)->linear_scan_number()));
 
-#ifdef ASSERT
-  for (int i = 0; i < _work_list.length(); i++) {
-    assert(_work_list.at(i)->linear_scan_number() > 0, "weight not set");
-    assert(i == 0 || _work_list.at(i - 1)->linear_scan_number() <= _work_list.at(i)->linear_scan_number(), "incorrect order in worklist");
-  }
-#endif
 }
 
 void ComputeLinearScanOrder::append_block(BlockBegin* cur) {
@@ -1097,83 +1091,6 @@ void ComputeLinearScanOrder::print_blocks() {
 }
 #endif
 
-#ifdef ASSERT
-void ComputeLinearScanOrder::verify() {
-  assert(_linear_scan_order->length() == _num_blocks, "wrong number of blocks in list");
-
-  if (StressLinearScan) {
-    // blocks are scrambled when StressLinearScan is used
-    return;
-  }
-
-  // check that all successors of a block have a higher linear-scan-number
-  // and that all predecessors of a block have a lower linear-scan-number
-  // (only backward branches of loops are ignored)
-  int i;
-  for (i = 0; i < _linear_scan_order->length(); i++) {
-    BlockBegin* cur = _linear_scan_order->at(i);
-
-    assert(cur->linear_scan_number() == i, "incorrect linear_scan_number");
-    assert(cur->linear_scan_number() >= 0 && cur->linear_scan_number() == _linear_scan_order->index_of(cur), "incorrect linear_scan_number");
-
-    int j;
-    for (j = cur->number_of_sux() - 1; j >= 0; j--) {
-      BlockBegin* sux = cur->sux_at(j);
-
-      assert(sux->linear_scan_number() >= 0 && sux->linear_scan_number() == _linear_scan_order->index_of(sux), "incorrect linear_scan_number");
-      if (!sux->is_set(BlockBegin::backward_branch_target_flag)) {
-        assert(cur->linear_scan_number() < sux->linear_scan_number(), "invalid order");
-      }
-      if (cur->loop_depth() == sux->loop_depth()) {
-        assert(cur->loop_index() == sux->loop_index() || sux->is_set(BlockBegin::linear_scan_loop_header_flag), "successing blocks with same loop depth must have same loop index");
-      }
-    }
-
-    for (j = cur->number_of_preds() - 1; j >= 0; j--) {
-      BlockBegin* pred = cur->pred_at(j);
-
-      assert(pred->linear_scan_number() >= 0 && pred->linear_scan_number() == _linear_scan_order->index_of(pred), "incorrect linear_scan_number");
-      if (!cur->is_set(BlockBegin::backward_branch_target_flag)) {
-        assert(cur->linear_scan_number() > pred->linear_scan_number(), "invalid order");
-      }
-      if (cur->loop_depth() == pred->loop_depth()) {
-        assert(cur->loop_index() == pred->loop_index() || cur->is_set(BlockBegin::linear_scan_loop_header_flag), "successing blocks with same loop depth must have same loop index");
-      }
-
-      assert(cur->dominator()->linear_scan_number() <= cur->pred_at(j)->linear_scan_number(), "dominator must be before predecessors");
-    }
-
-    // check dominator
-    if (i == 0) {
-      assert(cur->dominator() == NULL, "first block has no dominator");
-    } else {
-      assert(cur->dominator() != NULL, "all but first block must have dominator");
-    }
-    // Assertion does not hold for exception handlers
-    assert(cur->number_of_preds() != 1 || cur->dominator() == cur->pred_at(0) || cur->is_set(BlockBegin::exception_entry_flag), "Single predecessor must also be dominator");
-  }
-
-  // check that all loops are continuous
-  for (int loop_idx = 0; loop_idx < _num_loops; loop_idx++) {
-    int block_idx = 0;
-    assert(!is_block_in_loop(loop_idx, _linear_scan_order->at(block_idx)), "the first block must not be present in any loop");
-
-    // skip blocks before the loop
-    while (block_idx < _num_blocks && !is_block_in_loop(loop_idx, _linear_scan_order->at(block_idx))) {
-      block_idx++;
-    }
-    // skip blocks of loop
-    while (block_idx < _num_blocks && is_block_in_loop(loop_idx, _linear_scan_order->at(block_idx))) {
-      block_idx++;
-    }
-    // after the first non-loop block, there must not be another loop-block
-    while (block_idx < _num_blocks) {
-      assert(!is_block_in_loop(loop_idx, _linear_scan_order->at(block_idx)), "loop not continuous in linear-scan order");
-      block_idx++;
-    }
-  }
-}
-#endif
 
 
 void IR::compute_code() {
@@ -1351,11 +1268,6 @@ public:
 };
 
 void IR::verify() {
-#ifdef ASSERT
-  PredecessorValidator pv(this);
-  VerifyBlockBeginField verifier;
-  this->iterate_postorder(&verifier);
-#endif
 }
 
 #endif // PRODUCT
@@ -1370,17 +1282,6 @@ void SubstitutionResolver::visit(Value* v) {
   }
 }
 
-#ifdef ASSERT
-class SubstitutionChecker: public ValueVisitor {
-  void visit(Value* v) {
-    Value v0 = *v;
-    if (v0) {
-      Value vs = v0->subst();
-      assert(vs == v0, "missed substitution");
-    }
-  }
-};
-#endif
 
 
 void SubstitutionResolver::block_do(BlockBegin* block) {
@@ -1397,10 +1298,4 @@ void SubstitutionResolver::block_do(BlockBegin* block) {
     n = last->next();
   }
 
-#ifdef ASSERT
-  SubstitutionChecker check_substitute;
-  if (block->state()) block->state()->values_do(&check_substitute);
-  block->block_values_do(&check_substitute);
-  if (block->end() && block->end()->state()) block->end()->state()->values_do(&check_substitute);
-#endif
 }

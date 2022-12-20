@@ -51,12 +51,6 @@ void DebugInfoWriteStream::write_metadata(Metadata* h) {
 
 ScopeValue* DebugInfoReadStream::read_object_value() {
   int id = read_int();
-#ifdef ASSERT
-  assert(_obj_pool != NULL, "object pool does not exist");
-  for (int i = _obj_pool->length() - 1; i >= 0; i--) {
-    assert(((ObjectValue*) _obj_pool->at(i))->id() != id, "should not be read twice");
-  }
-#endif
   ObjectValue* result = new ObjectValue(id);
   // Cache the object since an object field could reference it.
   _obj_pool->push(result);
@@ -206,16 +200,6 @@ void ConstantDoubleValue::print_on(outputStream* st) const {
 // ConstantOopWriteValue
 
 void ConstantOopWriteValue::write_on(DebugInfoWriteStream* stream) {
-#ifdef ASSERT
-  {
-    // cannot use ThreadInVMfromNative here since in case of JVMCI compiler,
-    // thread is already in VM state.
-    ThreadInVMfromUnknown tiv;
-    assert(JNIHandles::resolve(value()) == NULL ||
-           Universe::heap()->is_in_reserved(JNIHandles::resolve(value())),
-           "Should be in heap");
- }
-#endif
   stream->write_int(CONSTANT_OOP_CODE);
   stream->write_handle(value());
 }

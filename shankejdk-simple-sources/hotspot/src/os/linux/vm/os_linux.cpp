@@ -971,9 +971,6 @@ bool os::create_main_thread(JavaThread* thread) {
 }
 
 bool os::create_attached_thread(JavaThread* thread) {
-#ifdef ASSERT
-    thread->verify_not_published();
-#endif
 
   // Allocate the OSThread object
   OSThread* osthread = new OSThread(NULL, NULL);
@@ -6289,13 +6286,6 @@ void Parker::park(bool isAbsolute, jlong time) {
     return;
   }
 
-#ifdef ASSERT
-  // Don't catch signals while blocked; let the running threads have the signals.
-  // (This allows a debugger to break into the running thread.)
-  sigset_t oldsigs;
-  sigset_t* allowdebug_blocked = os::Linux::allowdebug_blocked_signals();
-  pthread_sigmask(SIG_BLOCK, allowdebug_blocked, &oldsigs);
-#endif
 
   OSThreadWaitState osts(thread->osthread(), false /* not Object.wait() */);
   jt->set_suspend_equivalent();
@@ -6318,9 +6308,6 @@ void Parker::park(bool isAbsolute, jlong time) {
                 status == ETIME || status == ETIMEDOUT,
                 status, "cond_timedwait");
 
-#ifdef ASSERT
-  pthread_sigmask(SIG_SETMASK, &oldsigs, NULL);
-#endif
 
   _counter = 0 ;
   status = pthread_mutex_unlock(_mutex) ;

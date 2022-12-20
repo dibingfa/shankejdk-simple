@@ -89,11 +89,6 @@ void PSPromotionLAB::flush() {
   assert( (array_length * (HeapWordSize/sizeof(jint))) < (size_t)max_jint, "array too big in PSPromotionLAB");
   filler_oop->set_length((int)(array_length * (HeapWordSize/sizeof(jint))));
 
-#ifdef ASSERT
-  // Note that we actually DO NOT want to use the aligned header size!
-  HeapWord* elt_words = ((HeapWord*)filler_oop) + typeArrayOopDesc::header_size(T_INT);
-  Copy::fill_to_words(elt_words, array_length, 0xDEAABABE);
-#endif
 
   set_bottom(NULL);
   set_end(NULL);
@@ -134,34 +129,3 @@ void PSOldPromotionLAB::flush() {
   _start_array->allocate_block(obj);
 }
 
-#ifdef ASSERT
-
-bool PSYoungPromotionLAB::lab_is_valid(MemRegion lab) {
-  ParallelScavengeHeap* heap = (ParallelScavengeHeap*)Universe::heap();
-  assert(heap->kind() == CollectedHeap::ParallelScavengeHeap, "Sanity");
-
-  MutableSpace* to_space = heap->young_gen()->to_space();
-  MemRegion used = to_space->used_region();
-  if (used.contains(lab)) {
-    return true;
-  }
-
-  return false;
-}
-
-bool PSOldPromotionLAB::lab_is_valid(MemRegion lab) {
-  ParallelScavengeHeap* heap = (ParallelScavengeHeap*)Universe::heap();
-  assert(heap->kind() == CollectedHeap::ParallelScavengeHeap, "Sanity");
-  assert(_start_array->covered_region().contains(lab), "Sanity");
-
-  PSOldGen* old_gen = heap->old_gen();
-  MemRegion used = old_gen->object_space()->used_region();
-
-  if (used.contains(lab)) {
-    return true;
-  }
-
-  return false;
-}
-
-#endif /* ASSERT */

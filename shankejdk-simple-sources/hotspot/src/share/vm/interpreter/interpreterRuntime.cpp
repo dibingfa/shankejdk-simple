@@ -134,14 +134,6 @@ IRT_ENTRY(void, InterpreterRuntime::resolve_ldc(JavaThread* thread, Bytecodes::C
   methodHandle m (thread, method(thread));
   Bytecode_loadconstant ldc(m, bci(thread));
   oop result = ldc.resolve_constant(CHECK);
-#ifdef ASSERT
-  {
-    // The bytecode wrappers aren't GC-safe so construct a new one
-    Bytecode_loadconstant ldc2(m, bci(thread));
-    oop coop = m->constants()->resolved_references()->obj_at(ldc2.cache_index());
-    assert(result == coop, "expected result for assembly code");
-  }
-#endif
   thread->set_vm_result(result);
 }
 IRT_END
@@ -438,15 +430,6 @@ IRT_ENTRY(address, InterpreterRuntime::exception_handler_for_exception(JavaThrea
     should_repeat = false;
 
     // assertions
-#ifdef ASSERT
-    assert(h_exception.not_null(), "NULL exceptions should be handled by athrow");
-    assert(h_exception->is_oop(), "just checking");
-    // Check that exception is a subclass of Throwable, otherwise we have a VerifyError
-    if (!(h_exception->is_a(SystemDictionary::Throwable_klass()))) {
-      if (ExitVMOnVerifyError) vm_exit(-1);
-      ShouldNotReachHere();
-    }
-#endif
 
     // tracing
     if (TraceExceptions) {
@@ -618,9 +601,6 @@ IRT_END
 
 //%note monitor_1
 IRT_ENTRY_NO_ASYNC(void, InterpreterRuntime::monitorenter(JavaThread* thread, BasicObjectLock* elem))
-#ifdef ASSERT
-  thread->last_frame().interpreter_frame_verify_monitor(elem);
-#endif
   if (PrintBiasedLockingStatistics) {
     Atomic::inc(BiasedLocking::slow_path_entry_count_addr());
   }
@@ -635,17 +615,11 @@ IRT_ENTRY_NO_ASYNC(void, InterpreterRuntime::monitorenter(JavaThread* thread, Ba
   }
   assert(Universe::heap()->is_in_reserved_or_null(elem->obj()),
          "must be NULL or an object");
-#ifdef ASSERT
-  thread->last_frame().interpreter_frame_verify_monitor(elem);
-#endif
 IRT_END
 
 
 //%note monitor_1
 IRT_ENTRY_NO_ASYNC(void, InterpreterRuntime::monitorexit(JavaThread* thread, BasicObjectLock* elem))
-#ifdef ASSERT
-  thread->last_frame().interpreter_frame_verify_monitor(elem);
-#endif
   Handle h_obj(thread, elem->obj());
   assert(Universe::heap()->is_in_reserved_or_null(h_obj()),
          "must be NULL or an object");
@@ -656,9 +630,6 @@ IRT_ENTRY_NO_ASYNC(void, InterpreterRuntime::monitorexit(JavaThread* thread, Bas
   // Free entry. This must be done here, since a pending exception might be installed on
   // exit. If it is not cleared, the exception handling code will try to unlock the monitor again.
   elem->set_obj(NULL);
-#ifdef ASSERT
-  thread->last_frame().interpreter_frame_verify_monitor(elem);
-#endif
 IRT_END
 
 
@@ -751,33 +722,6 @@ IRT_ENTRY(void, InterpreterRuntime::resolve_invoke(JavaThread* thread, Bytecodes
       tty->print_cr("Resolving: klass: %s to method: %s", info.resolved_klass()->name()->as_C_string(), info.resolved_method()->name()->as_C_string());
     }
   }
-#ifdef ASSERT
-  if (bytecode == Bytecodes::_invokeinterface) {
-    if (info.resolved_method()->method_holder() ==
-                                            SystemDictionary::Object_klass()) {
-      // NOTE: THIS IS A FIX FOR A CORNER CASE in the JVM spec
-      // (see also CallInfo::set_interface for details)
-      assert(info.call_kind() == CallInfo::vtable_call ||
-             info.call_kind() == CallInfo::direct_call, "");
-      methodHandle rm = info.resolved_method();
-      assert(rm->is_final() || info.has_vtable_index(),
-             "should have been set already");
-    } else if (!info.resolved_method()->has_itable_index()) {
-      // Resolved something like CharSequence.toString.  Use vtable not itable.
-      assert(info.call_kind() != CallInfo::itable_call, "");
-    } else {
-      // Setup itable entry
-      assert(info.call_kind() == CallInfo::itable_call, "");
-      int index = info.resolved_method()->itable_index();
-      assert(info.itable_index() == index, "");
-    }
-  } else if (bytecode == Bytecodes::_invokespecial) {
-    assert(info.call_kind() == CallInfo::direct_call, "must be direct call");
-  } else {
-    assert(info.call_kind() == CallInfo::direct_call ||
-           info.call_kind() == CallInfo::vtable_call, "");
-  }
-#endif
   // Get sender or sender's host_klass, and only set cpCache entry to resolved if
   // it is not an interface.  The receiver for invokespecial calls within interface
   // methods must be checked for every call.
@@ -948,36 +892,6 @@ IRT_ENTRY(void, InterpreterRuntime::profile_method(JavaThread* thread))
 IRT_END
 
 
-#ifdef ASSERT
-IRT_LEAF(void, InterpreterRuntime::verify_mdp(Method* method, address bcp, address mdp))
-  assert(ProfileInterpreter, "must be profiling interpreter");
-
-  MethodData* mdo = method->method_data();
-  assert(mdo != NULL, "must not be null");
-
-  int bci = method->bci_from(bcp);
-
-  address mdp2 = mdo->bci_to_dp(bci);
-  if (mdp != mdp2) {
-    ResourceMark rm;
-    ResetNoHandleMark rnm; // In a LEAF entry.
-    HandleMark hm;
-    tty->print_cr("FAILED verify : actual mdp %p   expected mdp %p @ bci %d", mdp, mdp2, bci);
-    int current_di = mdo->dp_to_di(mdp);
-    int expected_di  = mdo->dp_to_di(mdp2);
-    tty->print_cr("  actual di %d   expected di %d", current_di, expected_di);
-    int expected_approx_bci = mdo->data_at(expected_di)->bci();
-    int approx_bci = -1;
-    if (current_di >= 0) {
-      approx_bci = mdo->data_at(current_di)->bci();
-    }
-    tty->print_cr("  actual bci is %d  expected bci %d", approx_bci, expected_approx_bci);
-    mdo->print_on(tty);
-    method->print_codes();
-  }
-  assert(mdp == mdp2, "wrong mdp");
-IRT_END
-#endif // ASSERT
 
 IRT_ENTRY(void, InterpreterRuntime::update_mdp_for_ret(JavaThread* thread, int return_bci))
   assert(ProfileInterpreter, "must be profiling interpreter");
@@ -1247,23 +1161,6 @@ void SignatureHandlerLibrary::add(methodHandle method) {
       method->set_signature_handler(Interpreter::slow_signature_handler());
     }
   }
-#ifdef ASSERT
-  int handler_index = -1;
-  int fingerprint_index = -2;
-  {
-    // '_handlers' and '_fingerprints' are 'GrowableArray's and are NOT synchronized
-    // in any way if accessed from multiple threads. To avoid races with another
-    // thread which may change the arrays in the above, mutex protected block, we
-    // have to protect this read access here with the same mutex as well!
-    MutexLocker mu(SignatureHandlerLibrary_lock);
-    if (_handlers != NULL) {
-    handler_index = _handlers->find(method->signature_handler());
-    fingerprint_index = _fingerprints->find(Fingerprinter(method).fingerprint());
-  }
-  }
-  assert(method->signature_handler() == Interpreter::slow_signature_handler() ||
-         handler_index == fingerprint_index, "sanity check");
-#endif // ASSERT
 }
 
 

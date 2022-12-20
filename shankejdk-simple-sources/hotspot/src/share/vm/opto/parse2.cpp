@@ -504,23 +504,6 @@ void Parse::jump_switch_ranges(Node* key_val, SwitchRange *lo, SwitchRange *hi, 
     assert(hi->hi() == max_jint, "initial range must exhaust Type::INT");
 
     // Decrement pred-numbers for the unique set of nodes.
-#ifdef ASSERT
-    // Ensure that the block's successors are a (duplicate-free) set.
-    int successors_counted = 0;  // block occurrences in [hi..lo]
-    int unique_successors = switch_block->num_successors();
-    for (int i = 0; i < unique_successors; i++) {
-      Block* target = switch_block->successor_at(i);
-
-      // Check that the set of successors is the same in both places.
-      int successors_found = 0;
-      for (SwitchRange* p = lo; p <= hi; p++) {
-        if (p->dest() == target->start())  successors_found++;
-      }
-      assert(successors_found > 0, "successor must be known");
-      successors_counted += successors_found;
-    }
-    assert(successors_counted == (hi-lo)+1, "no unexpected successors");
-#endif
 
     // Maybe prune the inputs, based on the type of key_val.
     jint min_val = min_jint;
@@ -669,10 +652,6 @@ void Parse::modd() {
                               d1, top(), d2, top());
   Node* res_d   = _gvn.transform(new (C) ProjNode(c, TypeFunc::Parms + 0));
 
-#ifdef ASSERT
-  Node* res_top = _gvn.transform(new (C) ProjNode(c, TypeFunc::Parms + 1));
-  assert(res_top == top(), "second value must be top");
-#endif
 
   push_pair(res_d);
 }
@@ -1416,14 +1395,6 @@ void Parse::do_one_bytecode() {
     return;
   }
 
-#ifdef ASSERT
-  // for setting breakpoints
-  if (TraceOptoParse) {
-    tty->print(" @");
-    dump_bci(bci());
-    tty->cr();
-  }
-#endif
 
   switch (bc()) {
   case Bytecodes::_nop:

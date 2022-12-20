@@ -1873,15 +1873,6 @@ void ConstantPool::patch_resolved_references(
       DEBUG_ONLY(cp_patches->at_put(index, Handle());)
     }
   }
-#ifdef ASSERT
-  // Ensure that all the patches have been used.
-  for (int index = 0; index < cp_patches->length(); index++) {
-    assert(cp_patches->at(index).is_null(),
-           err_msg("Unused constant pool patch at %d in class file %s",
-                   index,
-                   pool_holder()->external_name()));
-  }
-#endif // ASSERT
 }
 
 #ifndef PRODUCT

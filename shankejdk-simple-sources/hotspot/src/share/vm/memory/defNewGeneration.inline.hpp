@@ -33,15 +33,6 @@
 
 template <class T>
 inline void DefNewGeneration::KeepAliveClosure::do_oop_work(T* p) {
-#ifdef ASSERT
-  {
-    // We never expect to see a null reference being processed
-    // as a weak reference.
-    assert (!oopDesc::is_null(*p), "expected non-null ref");
-    oop obj = oopDesc::load_decode_heap_oop_not_null(p);
-    assert (obj->is_oop(), "expected an oop while scanning weak refs");
-  }
-#endif // ASSERT
 
   _cl->do_oop_nv(p);
 
@@ -66,15 +57,6 @@ inline void DefNewGeneration::KeepAliveClosure::do_oop_work(T* p) {
 
 template <class T>
 inline void DefNewGeneration::FastKeepAliveClosure::do_oop_work(T* p) {
-#ifdef ASSERT
-  {
-    // We never expect to see a null reference being processed
-    // as a weak reference.
-    assert (!oopDesc::is_null(*p), "expected non-null ref");
-    oop obj = oopDesc::load_decode_heap_oop_not_null(p);
-    assert (obj->is_oop(), "expected an oop while scanning weak refs");
-  }
-#endif // ASSERT
 
   _cl->do_oop_nv(p);
 

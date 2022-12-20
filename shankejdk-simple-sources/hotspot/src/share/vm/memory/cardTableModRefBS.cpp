@@ -301,12 +301,6 @@ void CardTableModRefBS::resize_covered_region(MemRegion new_region) {
         }
       }
     }
-#ifdef ASSERT
-    for (++ri; ri < _cur_covered_regions; ri++) {
-      assert(!_committed[ri].contains(new_end_aligned),
-        "New end of committed region is in a second committed region");
-    }
-#endif
     // The guard page is always committed and should not be committed over.
     // "guarded" is used for assertion checking below and recalls the fact
     // that the would-be end of the new committed region would have
@@ -356,18 +350,6 @@ void CardTableModRefBS::resize_covered_region(MemRegion new_region) {
     // In any case, we can reset the end of the current committed entry.
     _committed[ind].set_end(new_end_aligned);
 
-#ifdef ASSERT
-    // Check that the last card in the new region is committed according
-    // to the tables.
-    bool covered = false;
-    for (int cr = 0; cr < _cur_covered_regions; cr++) {
-      if (_committed[cr].contains(new_end - 1)) {
-        covered = true;
-        break;
-      }
-    }
-    assert(covered, "Card for end of new region not committed");
-#endif
 
     // The default of 0 is not necessarily clean cards.
     jbyte* entry;
@@ -385,18 +367,6 @@ void CardTableModRefBS::resize_covered_region(MemRegion new_region) {
     assert((end >= byte_after(new_region.last())) || collided || guarded,
       "Expect to be beyond new region unless impacting another region");
     // do nothing if we resized downward.
-#ifdef ASSERT
-    for (int ri = 0; ri < _cur_covered_regions; ri++) {
-      if (ri != ind) {
-        // The end of the new committed region should not
-        // be in any existing region unless it matches
-        // the start of the next region.
-        assert(!_committed[ri].contains(end) ||
-               (_committed[ri].start() == (HeapWord*) end),
-               "Overlapping committed regions");
-      }
-    }
-#endif
     if (entry < end) {
       memset(entry, clean_card, pointer_delta(end, entry, sizeof(jbyte)));
     }

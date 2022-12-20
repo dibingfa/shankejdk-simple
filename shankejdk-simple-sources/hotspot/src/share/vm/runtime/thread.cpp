@@ -260,9 +260,6 @@ Thread::Thread() {
   omInUseList = NULL ;
   omInUseCount = 0 ;
 
-#ifdef ASSERT
-  _visited_for_critical_count = false;
-#endif
 
   _SR_lock = new Monitor(Mutex::suspend_resume, "SR_lock", true);
   _suspend_flags = 0;
@@ -295,14 +292,6 @@ Thread::Thread() {
     _unhandled_oops = new UnhandledOops(this);
   }
 #endif // CHECK_UNHANDLED_OOPS
-#ifdef ASSERT
-  if (UseBiasedLocking) {
-    assert((((uintptr_t) this) & (markOopDesc::biased_lock_alignment - 1)) == 0, "forced alignment of thread object failed");
-    assert(this == _real_malloc_address ||
-           this == (void*) align_size_up((intptr_t) _real_malloc_address, markOopDesc::biased_lock_alignment),
-           "bug in forced alignment of thread objects");
-  }
-#endif /* ASSERT */
 }
 
 void Thread::initialize_thread_local_storage() {
@@ -352,9 +341,6 @@ Thread::~Thread() {
   if (_stack_base != NULL) {
     address low_stack_addr = stack_base() - stack_size();
     MemTracker::release_thread_stack(low_stack_addr, stack_size());
-#ifdef ASSERT
-    set_stack_base(NULL);
-#endif
   }
 #endif // INCLUDE_NMT
 
@@ -398,13 +384,6 @@ void Thread::run() {
   ShouldNotReachHere();
 }
 
-#ifdef ASSERT
-// Private method to check for dangling thread pointer
-void check_for_dangling_thread_pointer(Thread *thread) {
- assert(!thread->is_Java_thread() || Thread::current() == thread || Threads_lock->owned_by_self(),
-         "possibility of dangling Thread pointer");
-}
-#endif
 
 
 #ifndef PRODUCT
@@ -889,31 +868,6 @@ void Thread::print_on_error(outputStream* st, char* buf, int buflen) const {
   }
 }
 
-#ifdef ASSERT
-void Thread::print_owned_locks_on(outputStream* st) const {
-  Monitor *cur = _owned_locks;
-  if (cur == NULL) {
-    st->print(" (no locks) ");
-  } else {
-    st->print_cr(" Locks owned:");
-    while(cur) {
-      cur->print_on(st);
-      cur = cur->next();
-    }
-  }
-}
-
-static int ref_use_count  = 0;
-
-bool Thread::owns_locks_but_compiled_lock() const {
-  for(Monitor *cur = _owned_locks; cur; cur = cur->next()) {
-    if (cur != Compile_lock) return true;
-  }
-  return false;
-}
-
-
-#endif
 
 #ifndef PRODUCT
 
@@ -928,32 +882,6 @@ void Thread::check_for_valid_safepoint_state(bool potential_vm_operation) {
       fatal("LEAF method calling lock?");
     }
 
-#ifdef ASSERT
-    if (potential_vm_operation && is_Java_thread()
-        && !Universe::is_bootstrapping()) {
-      // Make sure we do not hold any locks that the VM thread also uses.
-      // This could potentially lead to deadlocks
-      for(Monitor *cur = _owned_locks; cur; cur = cur->next()) {
-        // Threads_lock is special, since the safepoint synchronization will not start before this is
-        // acquired. Hence, a JavaThread cannot be holding it at a safepoint. So is VMOperationRequest_lock,
-        // since it is used to transfer control between JavaThreads and the VMThread
-        // Do not *exclude* any locks unless you are absolutly sure it is correct. Ask someone else first!
-        if ( (cur->allow_vm_block() &&
-              cur != Threads_lock &&
-              cur != Compile_lock &&               // Temporary: should not be necessary when we get spearate compilation
-              cur != VMOperationRequest_lock &&
-              cur != VMOperationQueue_lock) ||
-              cur->rank() == Mutex::special) {
-          fatal(err_msg("Thread holding lock at safepoint that vm can block on: %s", cur->name()));
-        }
-      }
-    }
-
-    if (GCALotAtAllSafepoints) {
-      // We could enter a safepoint here and thus have a gc
-      InterfaceSupport::check_gc_alot();
-    }
-#endif
 }
 #endif
 
@@ -2327,21 +2255,6 @@ int JavaThread::java_suspend_self() {
   return ret;
 }
 
-#ifdef ASSERT
-// verify the JavaThread has not yet been published in the Threads::list, and
-// hence doesn't need protection from concurrent access at this stage
-void JavaThread::verify_not_published() {
-  if (!Threads_lock->owned_by_self()) {
-   MutexLockerEx ml(Threads_lock,  Mutex::_no_safepoint_check_flag);
-   assert( !Threads::includes(this),
-           "java thread shouldn't have been published yet!");
-  }
-  else {
-   assert( !Threads::includes(this),
-           "java thread shouldn't have been published yet!");
-  }
-}
-#endif
 
 // Slow path when the native==>VM/Java barriers detect a safepoint is in
 // progress or when _suspend_flags is non-zero.
@@ -2909,17 +2822,6 @@ void JavaThread::verify() {
 // if vm exit occurs during initialization). These cases can all be accounted
 // for such that this method never returns NULL.
 const char* JavaThread::get_thread_name() const {
-#ifdef ASSERT
-  // early safepoints can hit while current thread does not yet have TLS
-  if (!SafepointSynchronize::is_at_safepoint()) {
-    Thread *cur = Thread::current();
-    if (!(cur->is_Java_thread() && cur == this)) {
-      // Current JavaThreads are allowed to get their own name without
-      // the Threads_lock.
-      assert_locked_or_safepoint(Threads_lock);
-    }
-  }
-#endif // ASSERT
     return get_thread_name_string();
 }
 
@@ -3160,25 +3062,6 @@ void JavaThread::trace_oops() {
 }
 
 
-#ifdef ASSERT
-// Print or validate the layout of stack frames
-void JavaThread::print_frame_layout(int depth, bool validate_only) {
-  ResourceMark rm;
-  PRESERVE_EXCEPTION_MARK;
-  FrameValues values;
-  int frame_no = 0;
-  for(StackFrameStream fst(this, false); !fst.is_done(); fst.next()) {
-    fst.current()->describe(values, ++frame_no);
-    if (depth == frame_no) break;
-  }
-  if (validate_only) {
-    values.validate();
-  } else {
-    tty->print_cr("[Describe stack layout]");
-    values.print(this);
-  }
-}
-#endif
 
 void JavaThread::trace_stack_from(vframe* start_vf) {
   ResourceMark rm;
@@ -3277,9 +3160,6 @@ int         Threads::_number_of_threads = 0;
 int         Threads::_number_of_non_daemon_threads = 0;
 int         Threads::_return_code = 0;
 size_t      JavaThread::_stack_size_at_create = 0;
-#ifdef ASSERT
-bool        Threads::_vm_complete = false;
-#endif
 
 // All JavaThreads
 #define ALL_JAVA_THREADS(X) for (JavaThread* X = _thread_list; X; X = X->next())
@@ -3704,9 +3584,6 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   }
 
   create_vm_timer.end();
-#ifdef ASSERT
-  _vm_complete = true;
-#endif
   return JNI_OK;
 }
 
@@ -3979,9 +3856,6 @@ void JavaThread::invoke_shutdown_hooks() {
 bool Threads::destroy_vm() {
   JavaThread* thread = JavaThread::current();
 
-#ifdef ASSERT
-  _vm_complete = false;
-#endif
   // Wait until we are the last non-daemon thread to execute
   { MutexLocker nu(Threads_lock);
     while (Threads::number_of_non_daemon_threads() > 1 )

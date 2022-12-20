@@ -146,21 +146,11 @@ bool Klass::compute_is_subtype_of(Klass* k) {
 }
 
 Klass* Klass::find_field(Symbol* name, Symbol* sig, fieldDescriptor* fd) const {
-#ifdef ASSERT
-  tty->print_cr("Error: find_field called on a klass oop."
-                " Likely error: reflection method does not correctly"
-                " wrap return value in a mirror object.");
-#endif
   ShouldNotReachHere();
   return NULL;
 }
 
 Method* Klass::uncached_lookup_method(Symbol* name, Symbol* signature, OverpassLookupMode overpass_mode) const {
-#ifdef ASSERT
-  tty->print_cr("Error: uncached_lookup_method called on a klass oop."
-                " Likely error: reflection method does not correctly"
-                " wrap return value in a mirror object.");
-#endif
   ShouldNotReachHere();
   return NULL;
 }
@@ -271,26 +261,6 @@ void Klass::initialize_supers(Klass* k, TRAPS) {
     }
     set_super_check_offset((address)super_check_cell - (address) this);
 
-#ifdef ASSERT
-    {
-      juint j = super_depth();
-      assert(j == my_depth, "computed accessor gets right answer");
-      Klass* t = this;
-      while (!t->can_be_primary_super()) {
-        t = t->super();
-        j = t->super_depth();
-      }
-      for (juint j1 = j+1; j1 < primary_super_limit(); j1++) {
-        assert(primary_super_of_depth(j1) == NULL, "super list padding");
-      }
-      while (t != NULL) {
-        assert(primary_super_of_depth(j) == t, "super list initialization");
-        t = t->super();
-        --j;
-      }
-      assert(j == (juint)-1, "correct depth count");
-    }
-#endif
   }
 
   if (secondary_supers() == NULL) {
@@ -347,12 +317,6 @@ void Klass::initialize_supers(Klass* k, TRAPS) {
       s2->at_put(j+fill_p, secondaries->at(j));  // add secondaries on the end.
     }
 
-  #ifdef ASSERT
-      // We must not copy any NULL placeholders left over from bootstrap.
-    for (int j = 0; j < s2->length(); j++) {
-      assert(s2->at(j) != NULL, "correct bootstrapping order");
-    }
-  #endif
 
     this_kh->set_secondary_supers(s2);
   }
@@ -407,11 +371,6 @@ void Klass::append_to_sibling_list() {
 }
 
 bool Klass::is_loader_alive(BoolObjectClosure* is_alive) {
-#ifdef ASSERT
-  // The class is alive iff the class loader is alive.
-  oop loader = class_loader();
-  bool loader_alive = (loader == NULL) || is_alive->do_object_b(loader);
-#endif // ASSERT
 
   // The class is alive if it's mirror is alive (which should be marked if the
   // loader is alive) unless it's an anoymous class.

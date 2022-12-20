@@ -59,11 +59,6 @@ bool HeapRegionManager::is_available(uint region) const {
   return _available_map.at(region);
 }
 
-#ifdef ASSERT
-bool HeapRegionManager::is_free(HeapRegion* hr) const {
-  return _free_list.contains(hr);
-}
-#endif
 
 HeapRegion* HeapRegionManager::new_heap_region(uint hrm_index) {
   G1CollectedHeap* g1h = G1CollectedHeap::heap();
@@ -268,13 +263,6 @@ uint HeapRegionManager::find_unavailable_from_idx(uint start_idx, uint* res_idx)
     cur++;
   }
   num_regions = cur - *res_idx;
-#ifdef ASSERT
-  for (uint i = *res_idx; i < (*res_idx + num_regions); i++) {
-    assert(!is_available(i), "just checking");
-  }
-  assert(cur == max_length() || num_regions == 0 || is_available(cur),
-         err_msg("The region at the current position %u must be available or at the end of the heap.", cur));
-#endif
   return num_regions;
 }
 
@@ -404,11 +392,6 @@ uint HeapRegionManager::find_empty_from_idx_reverse(uint start_idx, uint* res_id
   *res_idx = cur + 1;
   num_regions_found = old_cur - cur;
 
-#ifdef ASSERT
-  for (uint i = *res_idx; i < (*res_idx + num_regions_found); i++) {
-    assert(at(i)->is_empty(), "just checking");
-  }
-#endif
   return num_regions_found;
 }
 

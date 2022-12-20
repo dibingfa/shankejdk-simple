@@ -198,17 +198,6 @@ class Parse : public GraphKit {
     // True after any predecessor flows control into this block
     bool is_merged() const                 { return _start_map != NULL; }
 
-#ifdef ASSERT
-    // True after backedge predecessor flows control into this block
-    bool has_merged_backedge() const       { return _has_merged_backedge; }
-    void mark_merged_backedge(Block* pred) {
-      assert(is_SEL_head(), "should be loop head");
-      if (pred != NULL && is_SEL_backedge(pred)) {
-        assert(is_parsed(), "block should be parsed before merging backedges");
-        _has_merged_backedge = true;
-      }
-    }
-#endif
 
     // True when all non-exception predecessors have been parsed.
     bool is_ready() const                  { return preds_parsed() == pred_count(); }

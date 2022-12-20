@@ -1994,15 +1994,6 @@ void CompactibleFreeListSpace::save_marks() {
   // note, however, that promoted objects from this point
   // on are tracked in the _promoInfo below.
   set_saved_mark_word(unallocated_block());
-#ifdef ASSERT
-  // Check the sanity of save_marks() etc.
-  MemRegion ur    = used_region();
-  MemRegion urasm = used_region_at_save_marks();
-  assert(ur.contains(urasm),
-         err_msg(" Error at save_marks(): [" PTR_FORMAT "," PTR_FORMAT ")"
-                 " should contain [" PTR_FORMAT "," PTR_FORMAT ")",
-                 p2i(ur.start()), p2i(ur.end()), p2i(urasm.start()), p2i(urasm.end())));
-#endif
   // inform allocator that promotions should be tracked.
   assert(_promoInfo.noPromotions(), "_promoInfo inconsistency");
   _promoInfo.startTrackingPromotions();

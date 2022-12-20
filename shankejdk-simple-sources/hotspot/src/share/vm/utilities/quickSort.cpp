@@ -34,17 +34,6 @@
 #include "memory/allocation.inline.hpp"
 #include <stdlib.h>
 
-#ifdef ASSERT
-static int test_comparator(int a, int b) {
-  if (a == b) {
-    return 0;
-  }
-  if (a < b) {
-    return -1;
-  }
-  return 1;
-}
-#endif // ASSERT
 
 static int test_even_odd_comparator(int a, int b) {
   bool a_is_odd = (a % 2) == 1;

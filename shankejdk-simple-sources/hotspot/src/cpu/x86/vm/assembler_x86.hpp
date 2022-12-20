@@ -264,34 +264,6 @@ class Address VALUE_OBJ_CLASS_SPEC {
   // are mapped to the same type and thus the compiler cannot make a
   // distinction anymore (=> compiler errors).
 
-#ifdef ASSERT
-  Address(Register base, ByteSize disp)
-    : _base(base),
-      _index(noreg),
-      _scale(no_scale),
-      _disp(in_bytes(disp)) {
-  }
-
-  Address(Register base, Register index, ScaleFactor scale, ByteSize disp)
-    : _base(base),
-      _index(index),
-      _scale(scale),
-      _disp(in_bytes(disp)) {
-    assert(!index->is_valid() == (scale == Address::no_scale),
-           "inconsistent address");
-  }
-
-  Address(Register base, RegisterOrConstant index, ScaleFactor scale, ByteSize disp)
-    : _base (base),
-      _index(index.register_or_noreg()),
-      _scale(scale),
-      _disp (in_bytes(disp) + (index.constant_or_zero() * scale_size(scale))) {
-    if (!index.is_register())  scale = Address::no_scale;
-    assert(!_index->is_valid() == (scale == Address::no_scale),
-           "inconsistent address");
-  }
-
-#endif // ASSERT
 
   // accessors
   bool        uses(Register reg) const { return _base == reg || _index == reg; }
@@ -731,9 +703,6 @@ private:
 
 
  protected:
-  #ifdef ASSERT
-  void check_relocation(RelocationHolder const& rspec, int format);
-  #endif
 
   void emit_data(jint data, relocInfo::relocType    rtype, int format);
   void emit_data(jint data, RelocationHolder const& rspec, int format);

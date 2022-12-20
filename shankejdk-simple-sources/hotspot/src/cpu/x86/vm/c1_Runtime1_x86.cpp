@@ -85,19 +85,6 @@ int StubAssembler::call_RT(Register oop_result1, Register metadata_result, addre
     call_offset = offset();
   }
   // verify callee-saved register
-#ifdef ASSERT
-  guarantee(thread != rax, "change this code");
-  push(rax);
-  { Label L;
-    get_thread(rax);
-    cmpptr(thread, rax);
-    jcc(Assembler::equal, L);
-    int3();
-    stop("StubAssembler::call_RT: rdi not callee saved?");
-    bind(L);
-  }
-  pop(rax);
-#endif
   reset_last_Java_frame(thread, true);
 
   // discard thread and arguments
@@ -415,9 +402,6 @@ static OopMap* save_live_registers(StubAssembler* sasm, int num_rt_args,
 
   __ subptr(rsp, extra_space_offset * VMRegImpl::stack_slot_size);
 
-#ifdef ASSERT
-  __ movptr(Address(rsp, marker * VMRegImpl::stack_slot_size), (int32_t)0xfeedbeef);
-#endif
 
   if (save_fpu_registers) {
     if (UseSSE < 2) {
@@ -425,13 +409,6 @@ static OopMap* save_live_registers(StubAssembler* sasm, int num_rt_args,
       __ fnsave(Address(rsp, fpu_state_off * VMRegImpl::stack_slot_size));
       __ fwait();
 
-#ifdef ASSERT
-      Label ok;
-      __ cmpw(Address(rsp, fpu_state_off * VMRegImpl::stack_slot_size), StubRoutines::fpu_cntrl_wrd_std());
-      __ jccb(Assembler::equal, ok);
-      __ stop("corrupted control word detected");
-      __ bind(ok);
-#endif
 
       // Reset the control word to guard against exceptions being unmasked
       // since fstp_d can cause FPU stack underflow exceptions.  Write it
@@ -541,15 +518,6 @@ static void restore_fpu(StubAssembler* sasm, bool restore_fpu_registers = true) 
     __ verify_FPU(0, "restore_live_registers");
   }
 
-#ifdef ASSERT
-  {
-    Label ok;
-    __ cmpptr(Address(rsp, marker * VMRegImpl::stack_slot_size), (int32_t)0xfeedbeef);
-    __ jcc(Assembler::equal, ok);
-    __ stop("bad offsets in frame");
-    __ bind(ok);
-  }
-#endif // ASSERT
 
   __ addptr(rsp, extra_space_offset * VMRegImpl::stack_slot_size);
 }
@@ -704,21 +672,6 @@ OopMapSet* Runtime1::generate_handle_exception(StubID id, StubAssembler *sasm) {
   // load address of JavaThread object for thread-local data
   NOT_LP64(__ get_thread(thread);)
 
-#ifdef ASSERT
-  // check that fields in JavaThread for exception oop and issuing pc are
-  // empty before writing to them
-  Label oop_empty;
-  __ cmpptr(Address(thread, JavaThread::exception_oop_offset()), (int32_t) NULL_WORD);
-  __ jcc(Assembler::equal, oop_empty);
-  __ stop("exception oop already set");
-  __ bind(oop_empty);
-
-  Label pc_empty;
-  __ cmpptr(Address(thread, JavaThread::exception_pc_offset()), 0);
-  __ jcc(Assembler::equal, pc_empty);
-  __ stop("exception pc already set");
-  __ bind(pc_empty);
-#endif
 
   // save exception oop and issuing pc into JavaThread
   // (exception handler will load it from here)
@@ -779,21 +732,6 @@ void Runtime1::generate_unwind_exception(StubAssembler *sasm) {
   // verify that only rax, is valid at this time
   __ invalidate_registers(false, true, true, true, true, true);
 
-#ifdef ASSERT
-  // check that fields in JavaThread for exception oop and issuing pc are empty
-  NOT_LP64(__ get_thread(thread);)
-  Label oop_empty;
-  __ cmpptr(Address(thread, JavaThread::exception_oop_offset()), 0);
-  __ jcc(Assembler::equal, oop_empty);
-  __ stop("exception oop must be empty");
-  __ bind(oop_empty);
-
-  Label pc_empty;
-  __ cmpptr(Address(thread, JavaThread::exception_pc_offset()), 0);
-  __ jcc(Assembler::equal, pc_empty);
-  __ stop("exception pc must be empty");
-  __ bind(pc_empty);
-#endif
 
   // clear the FPU stack in case any FPU results are left behind
   __ empty_FPU_stack();
@@ -870,18 +808,6 @@ OopMapSet* Runtime1::generate_patching(StubAssembler* sasm, address target) {
   OopMapSet* oop_maps = new OopMapSet();
   oop_maps->add_gc_map(__ offset(), oop_map);
   // verify callee-saved register
-#ifdef ASSERT
-  guarantee(thread != rax, "change this code");
-  __ push(rax);
-  { Label L;
-    __ get_thread(rax);
-    __ cmpptr(thread, rax);
-    __ jcc(Assembler::equal, L);
-    __ stop("StubAssembler::call_RT: rdi/r15 not callee saved?");
-    __ bind(L);
-  }
-  __ pop(rax);
-#endif
   __ reset_last_Java_frame(thread, true);
 #ifndef _LP64
   __ pop(rcx); // discard thread arg
@@ -911,20 +837,6 @@ OopMapSet* Runtime1::generate_patching(StubAssembler* sasm, address target) {
     // load throwing pc: this is the return address of the stub
     __ movptr(rdx, Address(rsp, return_off * VMRegImpl::stack_slot_size));
 
-#ifdef ASSERT
-    // check that fields in JavaThread for exception oop and issuing pc are empty
-    Label oop_empty;
-    __ cmpptr(Address(thread, JavaThread::exception_oop_offset()), (int32_t)NULL_WORD);
-    __ jcc(Assembler::equal, oop_empty);
-    __ stop("exception oop must be empty");
-    __ bind(oop_empty);
-
-    Label pc_empty;
-    __ cmpptr(Address(thread, JavaThread::exception_pc_offset()), (int32_t)NULL_WORD);
-    __ jcc(Assembler::equal, pc_empty);
-    __ stop("exception pc must be empty");
-    __ bind(pc_empty);
-#endif
 
     // store exception oop and throwing pc to JavaThread
     __ movptr(Address(thread, JavaThread::exception_oop_offset()), rax);
@@ -1021,21 +933,6 @@ OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
             __ jcc(Assembler::notEqual, slow_path);
           }
 
-#ifdef ASSERT
-          // assert object can be fast path allocated
-          {
-            Label ok, not_ok;
-            __ movl(obj_size, Address(klass, Klass::layout_helper_offset()));
-            __ cmpl(obj_size, 0);  // make sure it's an instance (LH > 0)
-            __ jcc(Assembler::lessEqual, not_ok);
-            __ testl(obj_size, Klass::_lh_instance_slow_path_bit);
-            __ jcc(Assembler::zero, ok);
-            __ bind(not_ok);
-            __ stop("assert(can be fast path allocated)");
-            __ should_not_reach_here();
-            __ bind(ok);
-          }
-#endif // ASSERT
 
           // if we got here then the TLAB allocation failed, so try
           // refilling the TLAB or allocating directly from eden.
@@ -1120,23 +1017,6 @@ OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
           __ set_info("new_object_array", dont_gc_arguments);
         }
 
-#ifdef ASSERT
-        // assert object type is really an array of the proper kind
-        {
-          Label ok;
-          Register t0 = obj;
-          __ movl(t0, Address(klass, Klass::layout_helper_offset()));
-          __ sarl(t0, Klass::_lh_array_tag_shift);
-          int tag = ((id == new_type_array_id)
-                     ? Klass::_lh_array_tag_type_value
-                     : Klass::_lh_array_tag_obj_value);
-          __ cmpl(t0, tag);
-          __ jcc(Assembler::equal, ok);
-          __ stop("assert(is an array klass)");
-          __ should_not_reach_here();
-          __ bind(ok);
-        }
-#endif // ASSERT
 
         if (UseTLAB && FastTLABRefill) {
           Register arr_size = rsi;

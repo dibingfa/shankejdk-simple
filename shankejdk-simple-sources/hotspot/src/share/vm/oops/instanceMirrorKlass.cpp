@@ -51,36 +51,10 @@
 
 int InstanceMirrorKlass::_offset_of_static_fields = 0;
 
-#ifdef ASSERT
-template <class T> void assert_is_in(T *p) {
-  T heap_oop = oopDesc::load_heap_oop(p);
-  if (!oopDesc::is_null(heap_oop)) {
-    oop o = oopDesc::decode_heap_oop_not_null(heap_oop);
-    assert(Universe::heap()->is_in(o), "should be in heap");
-  }
-}
-template <class T> void assert_is_in_closed_subset(T *p) {
-  T heap_oop = oopDesc::load_heap_oop(p);
-  if (!oopDesc::is_null(heap_oop)) {
-    oop o = oopDesc::decode_heap_oop_not_null(heap_oop);
-    assert(Universe::heap()->is_in_closed_subset(o), "should be in closed");
-  }
-}
-template <class T> void assert_is_in_reserved(T *p) {
-  T heap_oop = oopDesc::load_heap_oop(p);
-  if (!oopDesc::is_null(heap_oop)) {
-    oop o = oopDesc::decode_heap_oop_not_null(heap_oop);
-    assert(Universe::heap()->is_in_reserved(o), "should be in reserved");
-  }
-}
-template <class T> void assert_nothing(T *p) {}
-
-#else
 template <class T> void assert_is_in(T *p) {}
 template <class T> void assert_is_in_closed_subset(T *p) {}
 template <class T> void assert_is_in_reserved(T *p) {}
 template <class T> void assert_nothing(T *p) {}
-#endif // ASSERT
 
 #define InstanceMirrorKlass_SPECIALIZED_OOP_ITERATE( \
   T, start_p, count, do_oop,                         \

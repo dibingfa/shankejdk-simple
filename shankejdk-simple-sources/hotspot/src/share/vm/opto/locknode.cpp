@@ -110,22 +110,6 @@ bool BoxLockNode::is_simple_lock_region(LockNode** unique_lock, Node* obj) {
       }
     }
   }
-#ifdef ASSERT
-  // Verify that FastLock and Safepoint reference only this lock region.
-  for (uint i = 0; i < this->outcnt(); i++) {
-    Node* n = this->raw_out(i);
-    if (n->is_FastLock()) {
-      FastLockNode* flock = n->as_FastLock();
-      assert((flock->box_node() == this) && flock->obj_node()->eqv_uncast(obj),"");
-    }
-    // Don't check monitor info in safepoints since the referenced object could
-    // be different from the locked object. It could be Phi node of different
-    // cast nodes which point to this locked object.
-    // We assume that no other objects could be referenced in monitor info
-    // associated with this BoxLock node because all associated locks and
-    // unlocks are reference only this one object.
-  }
-#endif
   if (unique_lock != NULL && has_one_lock) {
     *unique_lock = lock;
   }

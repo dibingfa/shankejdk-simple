@@ -295,20 +295,6 @@ void os::Solaris::try_enable_extended_io() {
 }
 
 
-#ifdef ASSERT
-
-JavaThread* os::Solaris::setup_interruptible_native() {
-  JavaThread* thread = (JavaThread*)ThreadLocalStorage::thread();
-  JavaThreadState thread_state = thread->thread_state();
-  assert(thread_state == _thread_in_native, "Assumed thread_in_native");
-  return thread;
-}
-
-void os::Solaris::cleanup_interruptible_native(JavaThread* thread) {
-  JavaThreadState thread_state = thread->thread_state();
-  assert(thread_state == _thread_in_native, "Assumed thread_in_native");
-}
-#endif
 
 // cleanup_interruptible reverses the effects of setup_interruptible
 // setup_interruptible_already_blocked() does not need any cleanup.
@@ -943,9 +929,6 @@ void os::Solaris::hotspot_sigmask(Thread* thread) {
 }
 
 bool os::create_attached_thread(JavaThread* thread) {
-#ifdef ASSERT
-  thread->verify_not_published();
-#endif
   OSThread* osthread = create_os_thread(thread, thr_self());
   if (osthread == NULL) {
      return false;
@@ -963,9 +946,6 @@ bool os::create_attached_thread(JavaThread* thread) {
 }
 
 bool os::create_main_thread(JavaThread* thread) {
-#ifdef ASSERT
-  thread->verify_not_published();
-#endif
   if (_starting_thread == NULL) {
     _starting_thread = create_os_thread(thread, main_thread);
      if (_starting_thread == NULL) {
@@ -3509,9 +3489,6 @@ typedef struct {
 
 static SchedInfo tsLimits, iaLimits, rtLimits, fxLimits;
 
-#ifdef ASSERT
-static int  ReadBackValidate = 1;
-#endif
 static int  myClass     = 0;
 static int  myMin       = 0;
 static int  myMax       = 0;
@@ -3691,9 +3668,6 @@ int set_lwp_class_and_priority(int ThreadID, int lwpid,
   int rslt;
   int Actual, Expected, prv;
   pcparms_t ParmInfo;                   // for GET-SET
-#ifdef ASSERT
-  pcparms_t ReadBack;                   // for readback
-#endif
 
   // Set priority via PC_GETPARMS, update, PC_SETPARMS
   // Query current values.
@@ -3801,49 +3775,6 @@ int set_lwp_class_and_priority(int ThreadID, int lwpid,
   }
   if (rslt < 0) return errno;
 
-#ifdef ASSERT
-  // Sanity check: read back what we just attempted to set.
-  // In theory it could have changed in the interim ...
-  //
-  // The priocntl system call is tricky.
-  // Sometimes it'll validate the priority value argument and
-  // return EINVAL if unhappy.  At other times it fails silently.
-  // Readbacks are prudent.
-
-  if (!ReadBackValidate) return 0;
-
-  memset(&ReadBack, 0, sizeof(pcparms_t));
-  ReadBack.pc_cid = PC_CLNULL;
-  rslt = priocntl(P_LWPID, lwpid, PC_GETPARMS, (caddr_t)&ReadBack);
-  assert(rslt >= 0, "priocntl failed");
-  Actual = Expected = 0xBAD;
-  assert(ParmInfo.pc_cid == ReadBack.pc_cid, "cid's don't match");
-  if (ParmInfo.pc_cid == rtLimits.schedPolicy) {
-    Actual   = RTPRI(ReadBack)->rt_pri;
-    Expected = RTPRI(ParmInfo)->rt_pri;
-  } else if (ParmInfo.pc_cid == iaLimits.schedPolicy) {
-    Actual   = IAPRI(ReadBack)->ia_upri;
-    Expected = IAPRI(ParmInfo)->ia_upri;
-  } else if (ParmInfo.pc_cid == tsLimits.schedPolicy) {
-    Actual   = TSPRI(ReadBack)->ts_upri;
-    Expected = TSPRI(ParmInfo)->ts_upri;
-  } else if (ParmInfo.pc_cid == fxLimits.schedPolicy) {
-    Actual   = FXPRI(ReadBack)->fx_upri;
-    Expected = FXPRI(ParmInfo)->fx_upri;
-  } else {
-    if (ThreadPriorityVerbose) {
-      tty->print_cr("set_lwp_class_and_priority: unexpected class in readback: %d\n",
-                    ParmInfo.pc_cid);
-    }
-  }
-
-  if (Actual != Expected) {
-    if (ThreadPriorityVerbose) {
-      tty->print_cr ("set_lwp_class_and_priority(%d %d) Class=%d: actual=%d vs expected=%d\n",
-                     lwpid, newPrio, ReadBack.pc_cid, Actual, Expected);
-    }
-  }
-#endif
 
   return 0;
 }
@@ -6144,13 +6075,6 @@ void Parker::park(bool isAbsolute, jlong time) {
     return;
   }
 
-#ifdef ASSERT
-  // Don't catch signals while blocked; let the running threads have the signals.
-  // (This allows a debugger to break into the running thread.)
-  sigset_t oldsigs;
-  sigset_t* allowdebug_blocked = os::Solaris::allowdebug_blocked_signals();
-  thr_sigsetmask(SIG_BLOCK, allowdebug_blocked, &oldsigs);
-#endif
 
   OSThreadWaitState osts(thread->osthread(), false /* not Object.wait() */);
   jt->set_suspend_equivalent();
@@ -6175,9 +6099,6 @@ void Parker::park(bool isAbsolute, jlong time) {
                 status == ETIME || status == ETIMEDOUT,
                 status, "cond_timedwait");
 
-#ifdef ASSERT
-  thr_sigsetmask(SIG_SETMASK, &oldsigs, NULL);
-#endif
   _counter = 0 ;
   status = os::Solaris::mutex_unlock(_mutex);
   assert_status(status == 0, status, "mutex_unlock") ;

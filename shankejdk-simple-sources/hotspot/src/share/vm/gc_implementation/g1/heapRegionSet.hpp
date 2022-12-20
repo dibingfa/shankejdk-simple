@@ -216,11 +216,6 @@ public:
 
   void verify_list();
 
-#ifdef ASSERT
-  bool contains(HeapRegion* hr) const {
-    return hr->containing_set() == this;
-  }
-#endif
 
   static void set_unrealistically_long_length(uint len);
 

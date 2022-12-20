@@ -64,46 +64,6 @@ void LIR_Assembler::patching_epilog(PatchingStub* patch, LIR_PatchCode patch_cod
   patch->install(_masm, patch_code, obj, info);
   append_code_stub(patch);
 
-#ifdef ASSERT
-  Bytecodes::Code code = info->scope()->method()->java_code_at_bci(info->stack()->bci());
-  if (patch->id() == PatchingStub::access_field_id) {
-    switch (code) {
-      case Bytecodes::_putstatic:
-      case Bytecodes::_getstatic:
-      case Bytecodes::_putfield:
-      case Bytecodes::_getfield:
-        break;
-      default:
-        ShouldNotReachHere();
-    }
-  } else if (patch->id() == PatchingStub::load_klass_id) {
-    switch (code) {
-      case Bytecodes::_new:
-      case Bytecodes::_anewarray:
-      case Bytecodes::_multianewarray:
-      case Bytecodes::_instanceof:
-      case Bytecodes::_checkcast:
-        break;
-      default:
-        ShouldNotReachHere();
-    }
-  } else if (patch->id() == PatchingStub::load_mirror_id) {
-    switch (code) {
-      case Bytecodes::_putstatic:
-      case Bytecodes::_getstatic:
-      case Bytecodes::_ldc:
-      case Bytecodes::_ldc_w:
-        break;
-      default:
-        ShouldNotReachHere();
-    }
-  } else if (patch->id() == PatchingStub::load_appendix_id) {
-    Bytecodes::Code bc_raw = info->scope()->method()->raw_code_at_bci(info->stack()->bci());
-    assert(Bytecodes::has_optional_appendix(bc_raw), "unexpected appendix resolution");
-  } else {
-    ShouldNotReachHere();
-  }
-#endif
 }
 
 PatchingStub::PatchID LIR_Assembler::patching_id(CodeEmitInfo* info) {
@@ -169,11 +129,6 @@ void LIR_Assembler::emit_stubs(CodeStubList* stub_list) {
     }
 #endif
     s->emit_code(this);
-#ifdef ASSERT
-#ifndef AARCH64
-    s->assert_no_unbound_labels();
-#endif
-#endif
   }
 }
 
@@ -331,18 +286,6 @@ void LIR_Assembler::emit_lir_list(LIR_List* list) {
   }
 }
 
-#ifdef ASSERT
-void LIR_Assembler::check_no_unbound_labels() {
-  CHECK_BAILOUT();
-
-  for (int i = 0; i < _branch_target_blocks.length() - 1; i++) {
-    if (!_branch_target_blocks.at(i)->label()->is_bound()) {
-      tty->print_cr("label of block B%d is not bound", _branch_target_blocks.at(i)->block_id());
-      assert(false, "unbound label");
-    }
-  }
-}
-#endif
 
 //----------------------------------debug info--------------------------------
 

@@ -192,9 +192,6 @@ void* CodeHeap::allocate(size_t instance_size, bool is_critical) {
   if (block != NULL) {
     assert(block->length() >= number_of_segments && block->length() < number_of_segments + CodeCacheMinBlockLength, "sanity check");
     assert(!block->free(), "must be marked free");
-#ifdef ASSERT
-    memset((void *)block->allocated_space(), badCodeHeapNewVal, instance_size);
-#endif
     return block->allocated_space();
   }
 
@@ -217,9 +214,6 @@ void* CodeHeap::allocate(size_t instance_size, bool is_critical) {
     HeapBlock* b =  block_at(_next_segment);
     b->initialize(number_of_segments);
     _next_segment += number_of_segments;
-#ifdef ASSERT
-    memset((void *)b->allocated_space(), badCodeHeapNewVal, instance_size);
-#endif
     return b->allocated_space();
   } else {
     return NULL;
@@ -232,11 +226,6 @@ void CodeHeap::deallocate(void* p) {
   // Find start of HeapBlock
   HeapBlock* b = (((HeapBlock *)p) - 1);
   assert(b->allocated_space() == p, "sanity check");
-#ifdef ASSERT
-  memset((void *)b->allocated_space(),
-         badCodeHeapFreeVal,
-         segments_to_size(b->length()) - sizeof(HeapBlock));
-#endif
   add_to_freelist(b);
 
   debug_only(if (VerifyCodeCacheOften) verify());

@@ -933,32 +933,6 @@ void DefNewGeneration::gc_epilogue(bool full) {
       clear_should_allocate_from_space(); // if set
     }
   } else {
-#ifdef ASSERT
-    // It is possible that incremental_collection_failed() == true
-    // here, because an attempted scavenge did not succeed. The policy
-    // is normally expected to cause a full collection which should
-    // clear that condition, so we should not be here twice in a row
-    // with incremental_collection_failed() == true without having done
-    // a full collection in between.
-    if (!seen_incremental_collection_failed &&
-        gch->incremental_collection_failed()) {
-      if (Verbose && PrintGCDetails) {
-        gclog_or_tty->print("DefNewEpilogue: cause(%s), not full, not_seen_failed, failed, set_seen_failed",
-                            GCCause::to_string(gch->gc_cause()));
-      }
-      seen_incremental_collection_failed = true;
-    } else if (seen_incremental_collection_failed) {
-      if (Verbose && PrintGCDetails) {
-        gclog_or_tty->print("DefNewEpilogue: cause(%s), not full, seen_failed, will_clear_seen_failed",
-                            GCCause::to_string(gch->gc_cause()));
-      }
-      assert(gch->gc_cause() == GCCause::_scavenge_alot ||
-             (gch->gc_cause() == GCCause::_java_lang_system_gc && UseConcMarkSweepGC && ExplicitGCInvokesConcurrent) ||
-             !gch->incremental_collection_failed(),
-             "Twice in a row");
-      seen_incremental_collection_failed = false;
-    }
-#endif // ASSERT
   }
 
   if (ZapUnusedHeapArea) {

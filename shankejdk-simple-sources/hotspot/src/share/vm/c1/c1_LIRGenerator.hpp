@@ -172,12 +172,6 @@ class LIRGenerator: public InstructionVisitor, public BlockClosure {
 
   void print_if_not_loaded(const NewInstance* new_instance) PRODUCT_RETURN;
 
-#ifdef ASSERT
-  LIR_List* lir(const char * file, int line) const {
-    _lir->set_file_and_line(file, line);
-    return _lir;
-  }
-#endif
   LIR_List* lir() const {
     return _lir;
   }
@@ -553,9 +547,6 @@ class LIRGenerator: public InstructionVisitor, public BlockClosure {
   virtual void do_RuntimeCall    (RuntimeCall*     x);
   virtual void do_MemBar         (MemBar*          x);
   virtual void do_RangeCheckPredicate(RangeCheckPredicate* x);
-#ifdef ASSERT
-  virtual void do_Assert         (Assert*          x);
-#endif
 
 #ifdef C1_LIRGENERATOR_MD_HPP
 #include C1_LIRGENERATOR_MD_HPP

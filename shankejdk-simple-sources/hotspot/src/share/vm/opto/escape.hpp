@@ -270,10 +270,6 @@ public:
   int base_count()              const { return _bases.length(); }
   PointsToNode* base(int e)     const { return _bases.at(e); }
   bool add_base(PointsToNode* base)    { return _bases.append_if_missing(base); }
-#ifdef ASSERT
-  // Return true if bases points to this java object.
-  bool has_base(JavaObjectNode* ptn) const;
-#endif
 
 };
 
@@ -385,12 +381,6 @@ private:
                                  GrowableArray<JavaObjectNode*>& java_objects_worklist,
                                  GrowableArray<FieldNode*>&      oop_fields_worklist);
 
-#ifdef ASSERT
-  void verify_connection_graph(GrowableArray<PointsToNode*>&   ptnodes_worklist,
-                               GrowableArray<JavaObjectNode*>& non_escaped_worklist,
-                               GrowableArray<JavaObjectNode*>& java_objects_worklist,
-                               GrowableArray<Node*>& addp_worklist);
-#endif
 
   // Add all references to this JavaObject node.
   int add_java_object_edges(JavaObjectNode* jobj, bool populate_worklist);

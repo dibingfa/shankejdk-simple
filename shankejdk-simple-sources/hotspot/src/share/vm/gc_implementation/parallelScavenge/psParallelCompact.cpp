@@ -115,9 +115,6 @@ double PSParallelCompact::_dwl_mean;
 double PSParallelCompact::_dwl_std_dev;
 double PSParallelCompact::_dwl_first_term;
 double PSParallelCompact::_dwl_adjustment;
-#ifdef  ASSERT
-bool   PSParallelCompact::_dwl_initialized = false;
-#endif  // #ifdef ASSERT
 
 void SplitInfo::record(size_t src_region_idx, size_t partial_obj_size,
                        HeapWord* destination)
@@ -172,17 +169,6 @@ void SplitInfo::clear()
   assert(!is_valid(), "sanity");
 }
 
-#ifdef  ASSERT
-void SplitInfo::verify_clear()
-{
-  assert(_src_region_idx == 0, "not clear");
-  assert(_partial_obj_size == 0, "not clear");
-  assert(_destination == NULL, "not clear");
-  assert(_destination_count == 0, "not clear");
-  assert(_dest_region_addr == NULL, "not clear");
-  assert(_first_src_addr == NULL, "not clear");
-}
-#endif  // #ifdef ASSERT
 
 
 void PSParallelCompact::print_on_error(outputStream* st) {
@@ -364,12 +350,6 @@ print_initial_summary_data(ParallelCompactData& summary_data,
 }
 #endif  // #ifndef PRODUCT
 
-#ifdef  ASSERT
-size_t add_obj_count;
-size_t add_obj_size;
-size_t mark_bitmap_count;
-size_t mark_bitmap_size;
-#endif  // #ifdef ASSERT
 
 ParallelCompactData::ParallelCompactData()
 {
@@ -790,22 +770,6 @@ HeapWord* ParallelCompactData::calc_new_pointer(HeapWord* addr) {
   return result;
 }
 
-#ifdef ASSERT
-void ParallelCompactData::verify_clear(const PSVirtualSpace* vspace)
-{
-  const size_t* const beg = (const size_t*)vspace->committed_low_addr();
-  const size_t* const end = (const size_t*)vspace->committed_high_addr();
-  for (const size_t* p = beg; p < end; ++p) {
-    assert(*p == 0, "not zero");
-  }
-}
-
-void ParallelCompactData::verify_clear()
-{
-  verify_clear(_region_vspace);
-  verify_clear(_block_vspace);
-}
-#endif  // #ifdef ASSERT
 
 STWGCTimer          PSParallelCompact::_gc_timer;
 ParallelOldTracer   PSParallelCompact::_gc_tracer;
@@ -1853,16 +1817,6 @@ void PSParallelCompact::summary_phase(ParCompactionManager* cm,
   GCTraceTime tm("summary phase", print_phases(), true, &_gc_timer, _gc_tracer.gc_id());
   // trace("2");
 
-#ifdef  ASSERT
-  if (TraceParallelOldGCMarkingPhase) {
-    tty->print_cr("add_obj_count=" SIZE_FORMAT " "
-                  "add_obj_bytes=" SIZE_FORMAT,
-                  add_obj_count, add_obj_size * HeapWordSize);
-    tty->print_cr("mark_bitmap_count=" SIZE_FORMAT " "
-                  "mark_bitmap_bytes=" SIZE_FORMAT,
-                  mark_bitmap_count, mark_bitmap_size * HeapWordSize);
-  }
-#endif  // #ifdef ASSERT
 
   // Quick summarization of each space into itself, to see how much is live.
   summarize_spaces_quick();
@@ -2202,14 +2156,6 @@ bool PSParallelCompact::invoke_no_policy(bool maximum_heap_compaction) {
     gc_task_manager()->release_idle_workers();
   }
 
-#ifdef ASSERT
-  for (size_t i = 0; i < ParallelGCThreads + 1; ++i) {
-    ParCompactionManager* const cm =
-      ParCompactionManager::manager_array(int(i));
-    assert(cm->marking_stack()->is_empty(),       "should be empty");
-    assert(ParCompactionManager::region_list(int(i))->is_empty(), "should be empty");
-  }
-#endif // ASSERT
 
   if (VerifyAfterGC && heap->total_collections() >= VerifyGCStartAt) {
     HandleMark hm;  // Discard invalid handles created during verification
@@ -2650,40 +2596,6 @@ void PSParallelCompact::enqueue_region_stealing_tasks(
   }
 }
 
-#ifdef ASSERT
-// Write a histogram of the number of times the block table was filled for a
-// region.
-void PSParallelCompact::write_block_fill_histogram(outputStream* const out)
-{
-  if (!TraceParallelOldGCCompactionPhase) return;
-
-  typedef ParallelCompactData::RegionData rd_t;
-  ParallelCompactData& sd = summary_data();
-
-  for (unsigned int id = old_space_id; id < last_space_id; ++id) {
-    MutableSpace* const spc = _space_info[id].space();
-    if (spc->bottom() != spc->top()) {
-      const rd_t* const beg = sd.addr_to_region_ptr(spc->bottom());
-      HeapWord* const top_aligned_up = sd.region_align_up(spc->top());
-      const rd_t* const end = sd.addr_to_region_ptr(top_aligned_up);
-
-      size_t histo[5] = { 0, 0, 0, 0, 0 };
-      const size_t histo_len = sizeof(histo) / sizeof(size_t);
-      const size_t region_cnt = pointer_delta(end, beg, sizeof(rd_t));
-
-      for (const rd_t* cur = beg; cur < end; ++cur) {
-        ++histo[MIN2(cur->blocks_filled_count(), histo_len - 1)];
-      }
-      out->print("%u %-4s" SIZE_FORMAT_W(5), id, space_names[id], region_cnt);
-      for (size_t i = 0; i < histo_len; ++i) {
-        out->print(" " SIZE_FORMAT_W(5) " %5.1f%%",
-                   histo[i], 100.0 * histo[i] / region_cnt);
-      }
-      out->cr();
-    }
-  }
-}
-#endif // #ifdef ASSERT
 
 void PSParallelCompact::compact() {
   // trace("5");
@@ -2708,12 +2620,6 @@ void PSParallelCompact::compact() {
 
     gc_task_manager()->execute_and_wait(q);
 
-#ifdef  ASSERT
-    // Verify that all regions have been processed before the deferred updates.
-    for (unsigned int id = old_space_id; id < last_space_id; ++id) {
-      verify_complete(SpaceId(id));
-    }
-#endif
   }
 
   {
@@ -2728,47 +2634,6 @@ void PSParallelCompact::compact() {
   DEBUG_ONLY(write_block_fill_histogram(gclog_or_tty));
 }
 
-#ifdef  ASSERT
-void PSParallelCompact::verify_complete(SpaceId space_id) {
-  // All Regions between space bottom() to new_top() should be marked as filled
-  // and all Regions between new_top() and top() should be available (i.e.,
-  // should have been emptied).
-  ParallelCompactData& sd = summary_data();
-  SpaceInfo si = _space_info[space_id];
-  HeapWord* new_top_addr = sd.region_align_up(si.new_top());
-  HeapWord* old_top_addr = sd.region_align_up(si.space()->top());
-  const size_t beg_region = sd.addr_to_region_idx(si.space()->bottom());
-  const size_t new_top_region = sd.addr_to_region_idx(new_top_addr);
-  const size_t old_top_region = sd.addr_to_region_idx(old_top_addr);
-
-  bool issued_a_warning = false;
-
-  size_t cur_region;
-  for (cur_region = beg_region; cur_region < new_top_region; ++cur_region) {
-    const RegionData* const c = sd.region(cur_region);
-    if (!c->completed()) {
-      warning("region " SIZE_FORMAT " not filled:  "
-              "destination_count=" SIZE_FORMAT,
-              cur_region, c->destination_count());
-      issued_a_warning = true;
-    }
-  }
-
-  for (cur_region = new_top_region; cur_region < old_top_region; ++cur_region) {
-    const RegionData* const c = sd.region(cur_region);
-    if (!c->available()) {
-      warning("region " SIZE_FORMAT " not empty:   "
-              "destination_count=" SIZE_FORMAT,
-              cur_region, c->destination_count());
-      issued_a_warning = true;
-    }
-  }
-
-  if (issued_a_warning) {
-    print_region_ranges();
-  }
-}
-#endif  // #ifdef ASSERT
 
 // Update interior oops in the ranges of regions [beg_region, end_region).
 void
@@ -2784,13 +2649,6 @@ PSParallelCompact::update_and_deadwood_in_dense_prefix(ParCompactionManager* cm,
   assert(beg_region <= end_region, "bad region range");
   assert(end_addr <= dense_prefix(space_id), "not in the dense prefix");
 
-#ifdef  ASSERT
-  // Claim the regions to avoid triggering an assert when they are marked as
-  // filled.
-  for (size_t claim_region = beg_region; claim_region < end_region; ++claim_region) {
-    assert(sd.region(claim_region)->claim_unsafe(), "claim() failed");
-  }
-#endif  // #ifdef ASSERT
 
   if (beg_addr != space(space_id)->bottom()) {
     // Find the first live object or block of dead space that *starts* in this
@@ -2981,14 +2839,6 @@ void PSParallelCompact::decrement_destination_counts(ParCompactionManager* cm,
 {
   ParallelCompactData& sd = summary_data();
 
-#ifdef ASSERT
-  MutableSpace* const src_space = _space_info[src_space_id].space();
-  HeapWord* const beg_addr = sd.region_to_addr(beg_region);
-  assert(src_space->contains(beg_addr) || beg_addr == src_space->end(),
-         "src_space_id does not match beg_addr");
-  assert(src_space->contains(end_addr) || end_addr == src_space->end(),
-         "src_space_id does not match end_addr");
-#endif // #ifdef ASSERT
 
   RegionData* const beg = sd.region(beg_region);
   RegionData* const end = sd.addr_to_region_ptr(sd.region_align_up(end_addr));

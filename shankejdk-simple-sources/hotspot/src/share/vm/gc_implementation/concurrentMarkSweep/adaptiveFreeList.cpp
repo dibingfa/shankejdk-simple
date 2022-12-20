@@ -113,11 +113,6 @@ void AdaptiveFreeList<Chunk>::return_chunk_at_head(Chunk* chunk) {
 template <class Chunk>
 void AdaptiveFreeList<Chunk>::return_chunk_at_head(Chunk* chunk, bool record_return) {
   FreeList<Chunk>::return_chunk_at_head(chunk, record_return);
-#ifdef ASSERT
-  if (record_return) {
-    increment_returned_bytes_by(size()*HeapWordSize);
-  }
-#endif
 }
 
 template <class Chunk>
@@ -128,11 +123,6 @@ void AdaptiveFreeList<Chunk>::return_chunk_at_tail(Chunk* chunk) {
 template <class Chunk>
 void AdaptiveFreeList<Chunk>::return_chunk_at_tail(Chunk* chunk, bool record_return) {
   FreeList<Chunk>::return_chunk_at_tail(chunk, record_return);
-#ifdef ASSERT
-  if (record_return) {
-    increment_returned_bytes_by(size()*HeapWordSize);
-  }
-#endif
 }
 
 #ifndef PRODUCT

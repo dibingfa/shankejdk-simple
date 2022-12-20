@@ -250,24 +250,10 @@ void TemplateTable::patch_bytecode(Bytecodes::Code bc, Register bc_reg,
     __ get_method(temp_reg);
     // Let breakpoint table handling rewrite to quicker bytecode
     __ call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::set_original_bytecode_at), temp_reg, rsi, bc_reg);
-#ifndef ASSERT
     __ jmpb(L_patch_done);
-#else
-    __ jmp(L_patch_done);
-#endif
     __ bind(L_fast_patch);
   }
 
-#ifdef ASSERT
-  Label L_okay;
-  __ load_unsigned_byte(temp_reg, at_bcp(0));
-  __ cmpl(temp_reg, (int)Bytecodes::java_code(bc));
-  __ jccb(Assembler::equal, L_okay);
-  __ cmpl(temp_reg, bc_reg);
-  __ jcc(Assembler::equal, L_okay);
-  __ stop("patching the wrong bytecode");
-  __ bind(L_okay);
-#endif
 
   // patch bytecode
   __ movb(at_bcp(0), bc_reg);
@@ -394,15 +380,6 @@ void TemplateTable::ldc(bool wide) {
   __ jmp(Done);
 
   __ bind(notFloat);
-#ifdef ASSERT
-  { Label L;
-    __ cmpl(rdx, JVM_CONSTANT_Integer);
-    __ jcc(Assembler::equal, L);
-    // String and Object are rewritten to fast_aldc
-    __ stop("unexpected tag type in ldc");
-    __ bind(L);
-  }
-#endif
   // itos JVM_CONSTANT_Integer only
   __ movl(rax, Address(rcx, rbx, Address::times_ptr, base_offset));
   __ push(itos);
@@ -1400,48 +1377,6 @@ void TemplateTable::wide_iinc() {
 
 void TemplateTable::convert() {
   // Checking
-#ifdef ASSERT
-  { TosState tos_in  = ilgl;
-    TosState tos_out = ilgl;
-    switch (bytecode()) {
-      case Bytecodes::_i2l: // fall through
-      case Bytecodes::_i2f: // fall through
-      case Bytecodes::_i2d: // fall through
-      case Bytecodes::_i2b: // fall through
-      case Bytecodes::_i2c: // fall through
-      case Bytecodes::_i2s: tos_in = itos; break;
-      case Bytecodes::_l2i: // fall through
-      case Bytecodes::_l2f: // fall through
-      case Bytecodes::_l2d: tos_in = ltos; break;
-      case Bytecodes::_f2i: // fall through
-      case Bytecodes::_f2l: // fall through
-      case Bytecodes::_f2d: tos_in = ftos; break;
-      case Bytecodes::_d2i: // fall through
-      case Bytecodes::_d2l: // fall through
-      case Bytecodes::_d2f: tos_in = dtos; break;
-      default             : ShouldNotReachHere();
-    }
-    switch (bytecode()) {
-      case Bytecodes::_l2i: // fall through
-      case Bytecodes::_f2i: // fall through
-      case Bytecodes::_d2i: // fall through
-      case Bytecodes::_i2b: // fall through
-      case Bytecodes::_i2c: // fall through
-      case Bytecodes::_i2s: tos_out = itos; break;
-      case Bytecodes::_i2l: // fall through
-      case Bytecodes::_f2l: // fall through
-      case Bytecodes::_d2l: tos_out = ltos; break;
-      case Bytecodes::_i2f: // fall through
-      case Bytecodes::_l2f: // fall through
-      case Bytecodes::_d2f: tos_out = ftos; break;
-      case Bytecodes::_i2d: // fall through
-      case Bytecodes::_l2d: // fall through
-      case Bytecodes::_f2d: tos_out = dtos; break;
-      default             : ShouldNotReachHere();
-    }
-    transition(tos_in, tos_out);
-  }
-#endif // ASSERT
 
   // Conversion
   // (Note: use push(rcx)/pop(rcx) for 1/2-word stack-ptr manipulation)
@@ -2632,10 +2567,6 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
   }
 
   __ bind(notFloat);
-#ifdef ASSERT
-  __ cmpl(flags, dtos);
-  __ jcc(Assembler::notEqual, notDouble);
-#endif
 
   // dtos
   {
@@ -2648,10 +2579,6 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static) {
     __ jmp(Done);
   }
 
-#ifdef ASSERT
-  __ bind(notDouble);
-  __ stop("Bad state");
-#endif
 
   __ bind(Done);
 
@@ -3373,15 +3300,6 @@ void TemplateTable::_new() {
     __ shrl(rdx, LogBytesPerLong); // divide by 2*oopSize and set carry flag if odd
 
     // rdx must have been multiple of 8
-#ifdef ASSERT
-    // make sure rdx was multiple of 8
-    Label L;
-    // Ignore partial flag stall after shrl() since it is debug VM
-    __ jccb(Assembler::carryClear, L);
-    __ stop("object size is not multiple of 2 - adjust this code");
-    __ bind(L);
-    // rdx must be > 0, no extra check needed here
-#endif
 
     // initialize remaining object fields: rdx was a multiple of 8
     { Label loop;

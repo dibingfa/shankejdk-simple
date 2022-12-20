@@ -170,14 +170,6 @@ class StackMapFrame : public ResourceObj {
       const StackMapFrame* target, ErrorContext* ctx, TRAPS) const;
 
   inline void set_mark() {
-#ifdef ASSERT
-    // Put bogus type to indicate it's no longer valid.
-    if (_stack_mark != -1) {
-      for (int i = _stack_mark - 1; i >= _stack_size; --i) {
-        _stack[i] = VerificationType::bogus_type();
-      }
-    }
-#endif // def ASSERT
     _stack_mark = _stack_size;
   }
 

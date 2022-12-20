@@ -35,9 +35,7 @@
 
 // Simple TaskQueue stats that are collected by default in debug builds.
 
-#if !defined(TASKQUEUE_STATS) && defined(ASSERT)
-#define TASKQUEUE_STATS 1
-#elif !defined(TASKQUEUE_STATS)
+#if   !defined(TASKQUEUE_STATS)
 #define TASKQUEUE_STATS 0
 #endif
 

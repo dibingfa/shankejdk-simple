@@ -573,9 +573,6 @@ class PhaseCFG : public Phase {
   // is uncommon.
   bool is_uncommon(const Block* block);
 
-#ifdef ASSERT
-  Unique_Node_List _raw_oops;
-#endif
 
   // Do global code motion by first building dominator tree and estimate block frequency
   // Returns true on success

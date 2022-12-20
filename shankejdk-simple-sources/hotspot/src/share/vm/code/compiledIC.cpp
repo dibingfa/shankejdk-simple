@@ -100,10 +100,6 @@ void CompiledIC::internal_set_ic_destination(address entry_point, bool is_icstub
 
   {
     MutexLockerEx pl(SafepointSynchronize::is_at_safepoint() ? NULL : Patching_lock, Mutex::_no_safepoint_check_flag);
-#ifdef ASSERT
-    CodeBlob* cb = CodeCache::find_blob_unsafe(_ic_call);
-    assert(cb != NULL && cb->is_nmethod(), "must be nmethod");
-#endif
      _ic_call->set_destination_mt_safe(entry_point);
   }
 
@@ -225,12 +221,6 @@ bool CompiledIC::set_to_megamorphic(CallInfo* call_info, Bytecodes::Code bytecod
     if (entry == false) {
       return false;
     }
-#ifdef ASSERT
-    int index = call_info->resolved_method()->itable_index();
-    assert(index == itable_index, "CallInfo pre-computes this");
-    InstanceKlass* k = call_info->resolved_method()->method_holder();
-    assert(k->verify_itable_index(itable_index), "sanity check");
-#endif //ASSERT
     CompiledICHolder* holder = new CompiledICHolder(call_info->resolved_method()->method_holder(),
                                                     call_info->resolved_klass()(), false);
     holder->claim();
@@ -284,15 +274,6 @@ bool CompiledIC::is_call_to_compiled() const {
   // Check that the cached_value is a klass for non-optimized monomorphic calls
   // This assertion is invalid for compiler1: a call that does not look optimized (no static stub) can be used
   // for calling directly to vep without using the inline cache (i.e., cached_value == NULL)
-#ifdef ASSERT
-  CodeBlob* caller = CodeCache::find_blob_unsafe(instruction_address());
-  bool is_c1_method = caller->is_compiled_by_c1();
-  assert( is_c1_method ||
-         !is_monomorphic ||
-         is_optimized() ||
-         !caller->is_alive() ||
-         (cached_metadata() != NULL && cached_metadata()->is_klass()), "sanity check");
-#endif // ASSERT
   return is_monomorphic;
 }
 
@@ -313,12 +294,6 @@ bool CompiledIC::is_call_to_interpreted() const {
     // Check if we are calling into our own codeblob (i.e., to a stub)
     CodeBlob* cb = CodeCache::find_blob(_ic_call->instruction_address());
     address dest = ic_destination();
-#ifdef ASSERT
-    {
-      CodeBlob* db = CodeCache::find_blob_unsafe(dest);
-      assert(!db->is_adapter_blob(), "must use stub!");
-    }
-#endif /* ASSERT */
     is_call_to_interpreted = cb->contains(dest);
   }
   return is_call_to_interpreted;
@@ -421,10 +396,6 @@ void CompiledIC::set_to_monomorphic(CompiledICInfo& info) {
   } else {
     // Call to compiled code
     bool static_bound = info.is_optimized() || (info.cached_metadata() == NULL);
-#ifdef ASSERT
-    CodeBlob* cb = CodeCache::find_blob_unsafe(info.entry());
-    assert (cb->is_nmethod(), "must be compiled!");
-#endif /* ASSERT */
 
     // This is MT safe if we come from a clean-cache and go through a
     // non-verified entry point
@@ -504,13 +475,6 @@ void CompiledIC::compute_monomorphic_entry(methodHandle method,
     // analysis (static_bound is only based on "final" etc.)
 #ifdef COMPILER2
 #ifdef TIERED
-#if defined(ASSERT)
-    // can't check the assert because we don't have the CompiledIC with which to
-    // find the address if the call instruction.
-    //
-    // CodeBlob* cb = find_blob_unsafe(instruction_address());
-    // assert(cb->is_compiled_by_c1() || !static_bound || is_optimized, "static_bound should imply is_optimized");
-#endif // ASSERT
 #else
     assert(!static_bound || is_optimized, "static_bound should imply is_optimized");
 #endif // TIERED
@@ -548,10 +512,6 @@ void CompiledStaticCall::set_to_clean() {
   assert (CompiledIC_lock->is_locked() || SafepointSynchronize::is_at_safepoint(), "mt unsafe call");
   // Reset call site
   MutexLockerEx pl(SafepointSynchronize::is_at_safepoint() ? NULL : Patching_lock, Mutex::_no_safepoint_check_flag);
-#ifdef ASSERT
-  CodeBlob* cb = CodeCache::find_blob_unsafe(this);
-  assert(cb != NULL && cb->is_nmethod(), "must be nmethod");
-#endif
   set_destination_mt_safe(SharedRuntime::get_resolve_static_call_stub());
 
   // Do not reset stub here:  It is too expensive to call find_stub.

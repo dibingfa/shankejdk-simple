@@ -131,11 +131,6 @@ void CollectionSetChooser::sort_regions() {
   }
   _regions.sort(order_regions);
   assert(_length <= regions_length(), "Requirement");
-#ifdef ASSERT
-  for (uint i = 0; i < _length; i++) {
-    assert(regions_at(i) != NULL, "Should be true by sorting!");
-  }
-#endif // ASSERT
   if (G1PrintRegionLivenessInfo) {
     G1PrintRegionLivenessInfoClosure cl(gclog_or_tty, "Post-Sorting");
     for (uint i = 0; i < _length; ++i) {

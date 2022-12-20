@@ -62,9 +62,7 @@
    ASSERT signifies debugging. It is much easier to step thru bytecodes if we
    don't use the computed goto approach.
 */
-#ifndef ASSERT
 #define USELABELS
-#endif
 #endif
 
 #undef CASE
@@ -472,41 +470,6 @@ BytecodeInterpreter::run(interpreterState istate) {
 
   static int _compiling;  // (UseCompiler || CountCompiledCalls)
 
-#ifdef ASSERT
-  if (istate->_msg != initialize) {
-    // We have a problem here if we are running with a pre-hsx24 JDK (for example during bootstrap)
-    // because in that case, EnableInvokeDynamic is true by default but will be later switched off
-    // if java_lang_invoke_MethodHandle::compute_offsets() detects that the JDK only has the classes
-    // for the old JSR292 implementation.
-    // This leads to a situation where 'istate->_stack_limit' always accounts for
-    // methodOopDesc::extra_stack_entries() because it is computed in
-    // CppInterpreterGenerator::generate_compute_interpreter_state() which was generated while
-    // EnableInvokeDynamic was still true. On the other hand, istate->_method->max_stack() doesn't
-    // account for extra_stack_entries() anymore because at the time when it is called
-    // EnableInvokeDynamic was already set to false.
-    // So we have a second version of the assertion which handles the case where EnableInvokeDynamic was
-    // switched off because of the wrong classes.
-    if (EnableInvokeDynamic || FLAG_IS_CMDLINE(EnableInvokeDynamic)) {
-      assert(labs(istate->_stack_base - istate->_stack_limit) == (istate->_method->max_stack() + 1), "bad stack limit");
-    } else {
-      const int extra_stack_entries = Method::extra_stack_entries_for_jsr292;
-      assert(labs(istate->_stack_base - istate->_stack_limit) == (istate->_method->max_stack() + extra_stack_entries
-                                                                                               + 1), "bad stack limit");
-    }
-#ifndef SHARK
-    IA32_ONLY(assert(istate->_stack_limit == istate->_thread->last_Java_sp() + 1, "wrong"));
-#endif // !SHARK
-  }
-  // Verify linkages.
-  interpreterState l = istate;
-  do {
-    assert(l == l->_self_link, "bad link");
-    l = l->_prev_link;
-  } while (l != NULL);
-  // Screwups with stack management usually cause us to overwrite istate
-  // save a copy so we can verify it.
-  interpreterState orig = istate;
-#endif
 
   register intptr_t*        topOfStack = (intptr_t *)istate->stack(); /* access with STACK macros */
   register address          pc = istate->bcp();
@@ -606,13 +569,6 @@ BytecodeInterpreter::run(interpreterState istate) {
   register uintptr_t *dispatch_table = (uintptr_t*)&opclabels_data[0];
 #endif /* USELABELS */
 
-#ifdef ASSERT
-  // this will trigger a VERIFY_OOP on entry
-  if (istate->msg() != initialize && ! METHOD->is_static()) {
-    oop rcvr = LOCALS_OBJECT(0);
-    VERIFY_OOP(rcvr);
-  }
-#endif
 // #define HACK
 #ifdef HACK
   bool interesting = false;

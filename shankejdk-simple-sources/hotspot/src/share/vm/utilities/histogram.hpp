@@ -78,38 +78,5 @@
 //
 // To print the results, invoke print() on your Histogram*.
 
-#ifdef ASSERT
-
-class HistogramElement : public CHeapObj<mtInternal> {
- protected:
-  jint _count;
-  const char* _name;
-
- public:
-  HistogramElement();
-  virtual int count();
-  virtual const char* name();
-  virtual void increment_count();
-  void print_on(outputStream* st) const;
-  virtual int compare(HistogramElement* e1,HistogramElement* e2);
-};
-
-class Histogram : public CHeapObj<mtInternal> {
- protected:
-  GrowableArray<HistogramElement*>* _elements;
-  GrowableArray<HistogramElement*>* elements() { return _elements; }
-  const char* _title;
-  const char* title() { return _title; }
-  static int sort_helper(HistogramElement** e1,HistogramElement** e2);
-  virtual void print_header(outputStream* st);
-  virtual void print_elements(outputStream* st);
-
- public:
-  Histogram(const char* title,int estimatedSize);
-  virtual void add_element(HistogramElement* element);
-  void print_on(outputStream* st) const;
-};
-
-#endif
 
 #endif // SHARE_VM_UTILITIES_HISTOGRAM_HPP

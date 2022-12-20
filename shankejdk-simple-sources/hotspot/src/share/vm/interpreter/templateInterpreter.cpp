@@ -545,10 +545,6 @@ void TemplateInterpreterGenerator::generate_and_dispatch(Template* t, TosState t
   t->generate(_masm);
   // advance
   if (t->does_dispatch()) {
-#ifdef ASSERT
-    // make sure execution doesn't go beyond this point if code is broken
-    __ should_not_reach_here();
-#endif // ASSERT
   } else {
     // dispatch to next bytecode
     __ dispatch_epilog(tos_out, step);

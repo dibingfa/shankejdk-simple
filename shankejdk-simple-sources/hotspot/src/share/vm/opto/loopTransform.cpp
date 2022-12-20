@@ -80,11 +80,6 @@ void IdealLoopTree::compute_exact_trip_count( PhaseIdealLoop *phase ) {
   if (!phase->is_member(this, phase->get_ctrl(cl->loopexit()->in(CountedLoopEndNode::TestValue))))
     return; // Infinite loop
 
-#ifdef ASSERT
-  BoolTest::mask bt = cl->loopexit()->test_trip();
-  assert(bt == BoolTest::lt || bt == BoolTest::gt ||
-         bt == BoolTest::ne, "canonical test is expected");
-#endif
 
   Node* init_n = cl->init_trip();
   Node* limit_n = cl->limit();
@@ -1879,12 +1874,6 @@ void PhaseIdealLoop::do_range_check( IdealLoopTree *loop, Node_List &old_new ) {
       if( offset_c == ctrl ) {
         continue; // Don't rce this check but continue looking for other candidates.
       }
-#ifdef ASSERT
-      if (TraceRangeLimitCheck) {
-        tty->print_cr("RC bool node%s", flip ? " flipped:" : ":");
-        bol->dump(2);
-      }
-#endif
       // At this point we have the expression as:
       //   scale_con * trip_counter + offset :: limit
       // where scale_con, offset and limit are loop invariant.  Trip_counter
@@ -2096,18 +2085,6 @@ bool IdealLoopTree::policy_do_remove_empty_loop( PhaseIdealLoop *phase ) {
   if (!phase->is_member(this, phase->get_ctrl(cl->loopexit()->in(CountedLoopEndNode::TestValue))))
     return false;             // Infinite loop
 
-#ifdef ASSERT
-  // Ensure only one phi which is the iv.
-  Node* iv = NULL;
-  for (DUIterator_Fast imax, i = cl->fast_outs(imax); i < imax; i++) {
-    Node* n = cl->fast_out(i);
-    if (n->Opcode() == Op_Phi) {
-      assert(iv == NULL, "Too many phis" );
-      iv = n;
-    }
-  }
-  assert(iv == cl->phi(), "Wrong phi" );
-#endif
 
   // main and post loops have explicitly created zero trip guard
   bool needs_guard = !cl->is_main_loop() && !cl->is_post_loop();
@@ -2203,10 +2180,6 @@ bool IdealLoopTree::policy_do_one_iteration_loop( PhaseIdealLoop *phase ) {
 #endif
 
   Node *init_n = cl->init_trip();
-#ifdef ASSERT
-  // Loop boundaries should be constant since trip count is exact.
-  assert(init_n->get_int() + cl->stride_con() >= cl->limit()->get_int(), "should be one iteration");
-#endif
   // Replace the phi at loop head with the value of the init_trip.
   // Then the CountedLoopEnd will collapse (backedge will not be taken)
   // and all loop-invariant uses of the exit values will be correct.
@@ -2623,20 +2596,6 @@ bool PhaseIdealLoop::match_fill_loop(IdealLoopTree* lpt, Node*& store, Node*& st
     }
   }
 
-#ifdef ASSERT
-  if (TraceOptimizeFill) {
-    if (msg != NULL) {
-      tty->print_cr("no fill intrinsic: %s", msg);
-      if (msg_node != NULL) msg_node->dump();
-    } else {
-      tty->print_cr("fill intrinsic for:");
-    }
-    store->dump();
-    if (Verbose) {
-      lpt->_body.dump();
-    }
-  }
-#endif
 
   return msg == NULL;
 }

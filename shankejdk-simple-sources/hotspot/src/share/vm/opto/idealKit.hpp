@@ -132,11 +132,6 @@ class IdealKit: public StackObj {
   // and Memory slots. (So far.)
   static const uint first_var; // = TypeFunc::Parms + 1;
 
-#ifdef ASSERT
-  enum State { NullS=0, BlockS=1, LoopS=2, IfThenS=4, ElseS=8, EndifS= 16 };
-  GrowableArray<int>* _state;
-  State state() { return (State)(_state->top()); }
-#endif
 
   // Users should not care about slices only MergedMem so no access for them.
   Node* memory(uint alias_idx);

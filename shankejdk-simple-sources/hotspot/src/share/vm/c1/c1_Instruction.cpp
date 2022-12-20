@@ -258,17 +258,6 @@ bool ArithmeticOp::can_trap() const {
 // Implementation of LogicOp
 
 bool LogicOp::is_commutative() const {
-#ifdef ASSERT
-  switch (op()) {
-    case Bytecodes::_iand: // fall through
-    case Bytecodes::_land: // fall through
-    case Bytecodes::_ior : // fall through
-    case Bytecodes::_lor : // fall through
-    case Bytecodes::_ixor: // fall through
-    case Bytecodes::_lxor: break;
-    default              : ShouldNotReachHere();
-  }
-#endif
   // all LogicOps are commutative
   return true;
 }
@@ -335,10 +324,6 @@ Invoke::Invoke(Bytecodes::Code code, ValueType* result_type, Value recv, Values*
   set_flag(TargetIsStrictfpFlag, target_is_loaded() && target->is_strict());
 
   assert(args != NULL, "args must exist");
-#ifdef ASSERT
-  AssertValues assert_value;
-  values_do(&assert_value);
-#endif
 
   // provide an initial guess of signature size.
   _signature = new BasicTypeList(number_of_arguments() + (has_receiver() ? 1 : 0));
@@ -824,15 +809,6 @@ bool BlockBegin::try_merge(ValueStack* new_state) {
         }
       }
 
-#ifdef ASSERT
-      // check that all necessary phi functions are present
-      for_each_stack_value(existing_state, index, existing_value) {
-        assert(existing_value->as_Phi() != NULL && existing_value->as_Phi()->block() == this, "phi function required");
-      }
-      for_each_local_value(existing_state, index, existing_value) {
-        assert(existing_value == new_state->local_at(index) || (existing_value->as_Phi() != NULL && existing_value->as_Phi()->as_Phi()->block() == this), "phi function required");
-      }
-#endif
 
     } else {
       TRACE_PHI(tty->print_cr("creating phi functions on demand"));
@@ -989,34 +965,6 @@ int Phi::operand_count() const {
   }
 }
 
-#ifdef ASSERT
-// Constructor of Assert
-Assert::Assert(Value x, Condition cond, bool unordered_is_true, Value y) : Instruction(illegalType)
-  , _x(x)
-  , _cond(cond)
-  , _y(y)
-{
-  set_flag(UnorderedIsTrueFlag, unordered_is_true);
-  assert(x->type()->tag() == y->type()->tag(), "types must match");
-  pin();
-
-  stringStream strStream;
-  Compilation::current()->method()->print_name(&strStream);
-
-  stringStream strStream1;
-  InstructionPrinter ip1(1, &strStream1);
-  ip1.print_instr(x);
-
-  stringStream strStream2;
-  InstructionPrinter ip2(1, &strStream2);
-  ip2.print_instr(y);
-
-  stringStream ss;
-  ss.print("Assertion %s %s %s in method %s", strStream1.as_string(), ip2.cond_name(cond), strStream2.as_string(), strStream.as_string());
-
-  _message = ss.as_string();
-}
-#endif
 
 void RangeCheckPredicate::check_state() {
   assert(state()->kind() != ValueStack::EmptyExceptionState && state()->kind() != ValueStack::ExceptionState, "will deopt with empty state");

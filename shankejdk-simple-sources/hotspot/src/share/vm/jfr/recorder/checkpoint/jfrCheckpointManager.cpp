@@ -149,25 +149,6 @@ void JfrCheckpointManager::unlock() {
   _lock->unlock();
 }
 
-#ifdef ASSERT
-
-bool JfrCheckpointManager::is_locked() const {
-  return _lock->owned_by_self();
-}
-
-static void assert_free_lease(const BufferPtr buffer) {
-  assert(buffer != NULL, "invariant");
-  assert(buffer->acquired_by_self(), "invariant");
-  assert(buffer->lease(), "invariant");
-}
-
-static void assert_release(const BufferPtr buffer) {
-  assert(buffer != NULL, "invariant");
-  assert(buffer->lease(), "invariant");
-  assert(buffer->acquired_by_self(), "invariant");
-}
-
-#endif // ASSERT
 
 static BufferPtr lease_free(size_t size, JfrCheckpointMspace* mspace, size_t retry_count, Thread* thread) {
   static const size_t max_elem_size = mspace->min_elem_size(); // min is max

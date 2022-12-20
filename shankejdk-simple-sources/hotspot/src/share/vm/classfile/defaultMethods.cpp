@@ -1027,15 +1027,6 @@ static void sort_methods(GrowableArray<Method*>* methods) {
     if (sorted) break;
     sorted = true;
   }
-#ifdef ASSERT
-  uintptr_t prev = 0;
-  for (int i = 0; i < methods->length(); ++i) {
-    Method* mh = methods->at(i);
-    uintptr_t nv = (uintptr_t)mh->name();
-    assert(nv >= prev, "Incorrect overpass method ordering");
-    prev = nv;
-  }
-#endif
 }
 
 static void merge_in_new_methods(InstanceKlass* klass,
@@ -1098,15 +1089,6 @@ static void merge_in_new_methods(InstanceKlass* klass,
   }
 
   // Verify correct order
-#ifdef ASSERT
-  uintptr_t prev = 0;
-  for (int i = 0; i < merged_methods->length(); ++i) {
-    Method* mo = merged_methods->at(i);
-    uintptr_t nv = (uintptr_t)mo->name();
-    assert(nv >= prev, "Incorrect method ordering");
-    prev = nv;
-  }
-#endif
 
   // Replace klass methods with new merged lists
   klass->set_methods(merged_methods);

@@ -52,16 +52,6 @@
   // Used for debugging, return a unique integer for each thread.
   int thread_identifier() const   { return _thread_id; }
 #endif
-#ifdef ASSERT
-  // On solaris reposition can fail in two ways:
-  // 1: a mismatched pc, because signal is delivered too late, target thread
-  //    is resumed.
-  // 2: on a timeout where signal is lost, target thread is resumed.
-  bool valid_reposition_failure() {
-    // only 1 and 2 can happen and we can handle both of them
-    return true;
-  }
-#endif
   void set_lwp_id(uint id)           { _lwp_id = id; }
   void set_native_priority(int prio) { _native_priority = prio; }
 

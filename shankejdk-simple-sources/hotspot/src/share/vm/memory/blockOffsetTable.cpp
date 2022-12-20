@@ -756,22 +756,6 @@ void BlockOffsetArrayContigSpace::alloc_block_work(HeapWord* blk_start,
   _next_offset_threshold = _array->address_for_index(end_index) + N_words;
   assert(_next_offset_threshold >= blk_end, "Incorrect offset threshold");
 
-#ifdef ASSERT
-  // The offset can be 0 if the block starts on a boundary.  That
-  // is checked by an assertion above.
-  size_t start_index = _array->index_for(blk_start);
-  HeapWord* boundary    = _array->address_for_index(start_index);
-  assert((_array->offset_array(orig_next_offset_index) == 0 &&
-          blk_start == boundary) ||
-          (_array->offset_array(orig_next_offset_index) > 0 &&
-         _array->offset_array(orig_next_offset_index) <= N_words),
-         "offset array should have been set");
-  for (size_t j = orig_next_offset_index + 1; j <= end_index; j++) {
-    assert(_array->offset_array(j) > 0 &&
-           _array->offset_array(j) <= (u_char) (N_words+N_powers-1),
-           "offset array should have been set");
-  }
-#endif
 }
 
 HeapWord* BlockOffsetArrayContigSpace::initialize_threshold() {

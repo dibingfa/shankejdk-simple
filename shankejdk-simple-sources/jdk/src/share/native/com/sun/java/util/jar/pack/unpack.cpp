@@ -4704,11 +4704,6 @@ int raw_address_cmp(const void* p1p, const void* p2p) {
  * writes the InnerClass attributes and returns the updated attribute
  */
 int  unpacker::write_ics(int naOffset, int na) {
-#ifdef ASSERT
-  for (int i = 0; i < ic_count; i++) {
-    assert(!ics[i].requested);
-  }
-#endif
   // First, consult the global table and the local constant pool,
   // and decide on the globally implied inner classes.
   // (Note that we read the cpool's outputIndex fields, but we

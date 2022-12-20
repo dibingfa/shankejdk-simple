@@ -527,16 +527,6 @@ void InlineTree::print_inlining(ciMethod* callee_method, int caller_bci,
 WarmCallInfo* InlineTree::ok_to_inline(ciMethod* callee_method, JVMState* jvms, ciCallProfile& profile, WarmCallInfo* initial_wci, bool& should_delay) {
   assert(callee_method != NULL, "caller checks for optimized virtual!");
   assert(!should_delay, "should be initialized to false");
-#ifdef ASSERT
-  // Make sure the incoming jvms has the same information content as me.
-  // This means that we can eventually make this whole class AllStatic.
-  if (jvms->caller() == NULL) {
-    assert(_caller_jvms == NULL, "redundant instance state");
-  } else {
-    assert(_caller_jvms->same_calls_as(jvms->caller()), "redundant instance state");
-  }
-  assert(_method == jvms->method(), "redundant instance state");
-#endif
   int         caller_bci    = jvms->bci();
   ciMethod*   caller_method = jvms->method();
 

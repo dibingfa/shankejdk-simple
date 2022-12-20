@@ -192,27 +192,6 @@ void Runtime1::generate_blob_for(BufferBlob* buffer_blob, StubID id) {
   assert(oop_maps == NULL || sasm->frame_size() != no_frame_size,
          "if stub has an oop map it must have a valid frame size");
 
-#ifdef ASSERT
-  // Make sure that stubs that need oopmaps have them
-  switch (id) {
-    // These stubs don't need to have an oopmap
-    case dtrace_object_alloc_id:
-    case g1_pre_barrier_slow_id:
-    case g1_post_barrier_slow_id:
-    case slow_subtype_check_id:
-    case fpu2long_stub_id:
-    case unwind_exception_id:
-    case counter_overflow_id:
-#if defined(SPARC) || defined(PPC)
-    case handle_exception_nofpu_id:  // Unused on sparc
-#endif
-      break;
-
-    // All other stubs should have oopmaps
-    default:
-      assert(oop_maps != NULL, "must have an oopmap");
-  }
-#endif
 
   // align so printing shows nop's instead of random code at the end (SimpleStubs are aligned)
   sasm->align(BytesPerWord);
@@ -474,15 +453,6 @@ JRT_ENTRY_NO_ASYNC(static address, exception_handler_for_pc_helper(JavaThread* t
     assert(exception_frame.is_deoptimized_frame(), "must be deopted");
     pc = exception_frame.pc();
   }
-#ifdef ASSERT
-  assert(exception.not_null(), "NULL exceptions should be handled by throw_exception");
-  assert(exception->is_oop(), "just checking");
-  // Check that exception is a subclass of Throwable, otherwise we have a VerifyError
-  if (!(exception->is_a(SystemDictionary::Throwable_klass()))) {
-    if (ExitVMOnVerifyError) vm_exit(-1);
-    ShouldNotReachHere();
-  }
-#endif
 
   // Check the stack guard pages and reenable them if necessary and there is
   // enough space on the stack to do so.  Use fast exceptions only if the guard

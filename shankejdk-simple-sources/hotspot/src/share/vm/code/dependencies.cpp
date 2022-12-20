@@ -37,15 +37,6 @@
 #include "utilities/copy.hpp"
 
 
-#ifdef ASSERT
-static bool must_be_in_vm() {
-  Thread* thread = Thread::current();
-  if (thread->is_Java_thread())
-    return ((JavaThread*)thread)->thread_state() == _thread_in_vm;
-  else
-    return true;  //something like this: thread->is_VM_thread();
-}
-#endif //ASSERT
 
 void Dependencies::initialize(ciEnv* env) {
   Arena* arena = env->arena();
@@ -627,14 +618,6 @@ void Dependencies::DepStream::print_dependency(Klass* witness, bool verbose) {
 
 /// Dependency stream support (decodes dependencies from an nmethod):
 
-#ifdef ASSERT
-void Dependencies::DepStream::initial_asserts(size_t byte_limit) {
-  assert(must_be_in_vm(), "raw oops here");
-  _byte_limit = byte_limit;
-  _type       = (DepType)(end_marker-1);  // defeat "already at end" assert
-  assert((_code!=NULL) + (_deps!=NULL) == 1, "one or t'other");
-}
-#endif //ASSERT
 
 bool Dependencies::DepStream::next() {
   assert(_type != end_marker, "already at end");
@@ -830,52 +813,6 @@ class ClassHierarchyWalker {
     return fm;
   }
 
-#ifdef ASSERT
-  // Assert that m is inherited into ctxk, without intervening overrides.
-  // (May return true even if this is not true, in corner cases where we punt.)
-  bool check_method_context(Klass* ctxk, Method* m) {
-    if (m->method_holder() == ctxk)
-      return true;  // Quick win.
-    if (m->is_private())
-      return false; // Quick lose.  Should not happen.
-    if (!(m->is_public() || m->is_protected()))
-      // The override story is complex when packages get involved.
-      return true;  // Must punt the assertion to true.
-    Klass* k = ctxk;
-    Method* lm = k->lookup_method(m->name(), m->signature());
-    if (lm == NULL && k->oop_is_instance()) {
-      // It might be an interface method
-        lm = ((InstanceKlass*)k)->lookup_method_in_ordered_interfaces(m->name(),
-                                                                m->signature());
-    }
-    if (lm == m)
-      // Method m is inherited into ctxk.
-      return true;
-    if (lm != NULL) {
-      if (!(lm->is_public() || lm->is_protected())) {
-        // Method is [package-]private, so the override story is complex.
-        return true;  // Must punt the assertion to true.
-      }
-      if (lm->is_static()) {
-        // Static methods don't override non-static so punt
-        return true;
-      }
-      if (   !Dependencies::is_concrete_method(lm, k)
-          && !Dependencies::is_concrete_method(m, ctxk)
-          && lm->method_holder()->is_subtype_of(m->method_holder()))
-        // Method m is overridden by lm, but both are non-concrete.
-        return true;
-    }
-    ResourceMark rm;
-    tty->print_cr("Dependency method not found in the associated context:");
-    tty->print_cr("  context = %s", ctxk->external_name());
-    tty->print(   "  method = "); m->print_short_name(tty); tty->cr();
-    if (lm != NULL) {
-      tty->print( "  found = "); lm->print_short_name(tty); tty->cr();
-    }
-    return false;
-  }
-#endif
 
   void add_participant(Klass* participant) {
     assert(_num_participants + _record_witnesses < PARTICIPANT_LIMIT, "oob");

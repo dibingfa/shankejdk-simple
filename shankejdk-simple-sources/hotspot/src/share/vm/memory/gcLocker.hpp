@@ -60,11 +60,6 @@ class GC_locker: public AllStatic {
   static volatile bool _doing_gc;        // unlock_critical() is doing a GC
   static uint _total_collections;        // value for _gc_locker collection
 
-#ifdef ASSERT
-  // This lock count is updated for all operations and is used to
-  // validate the jni_lock_count that is computed during safepoints.
-  static volatile jint _debug_jni_lock_count;
-#endif
 
   // At a safepoint, visit all threads and count the number of active
   // critical sections.  This is used to ensure that all active
@@ -97,16 +92,8 @@ class GC_locker: public AllStatic {
 
   // In debug mode track the locking state at all times
   static void increment_debug_jni_lock_count() {
-#ifdef ASSERT
-    assert(_debug_jni_lock_count >= 0, "bad value");
-    Atomic::inc(&_debug_jni_lock_count);
-#endif
   }
   static void decrement_debug_jni_lock_count() {
-#ifdef ASSERT
-    assert(_debug_jni_lock_count > 0, "bad value");
-    Atomic::dec(&_debug_jni_lock_count);
-#endif
   }
 
   // Set the current lock count
@@ -186,13 +173,8 @@ class No_GC_Verifier: public StackObj {
   unsigned int _old_invocations;
 
  public:
-#ifdef ASSERT
-  No_GC_Verifier(bool verifygc = true);
-  ~No_GC_Verifier();
-#else
   No_GC_Verifier(bool verifygc = true) {}
   ~No_GC_Verifier() {}
-#endif
 };
 
 // A Pause_No_GC_Verifier is used to temporarily pause the behavior
@@ -205,13 +187,8 @@ class Pause_No_GC_Verifier: public StackObj {
   No_GC_Verifier * _ngcv;
 
  public:
-#ifdef ASSERT
-  Pause_No_GC_Verifier(No_GC_Verifier * ngcv);
-  ~Pause_No_GC_Verifier();
-#else
   Pause_No_GC_Verifier(No_GC_Verifier * ngcv) {}
   ~Pause_No_GC_Verifier() {}
-#endif
 };
 
 
@@ -229,27 +206,8 @@ class No_Safepoint_Verifier : public No_GC_Verifier {
   bool _activated;
   Thread *_thread;
  public:
-#ifdef ASSERT
-  No_Safepoint_Verifier(bool activated = true, bool verifygc = true ) :
-    No_GC_Verifier(verifygc),
-    _activated(activated) {
-    _thread = Thread::current();
-    if (_activated) {
-      _thread->_allow_allocation_count++;
-      _thread->_allow_safepoint_count++;
-    }
-  }
-
-  ~No_Safepoint_Verifier() {
-    if (_activated) {
-      _thread->_allow_allocation_count--;
-      _thread->_allow_safepoint_count--;
-    }
-  }
-#else
   No_Safepoint_Verifier(bool activated = true, bool verifygc = true) : No_GC_Verifier(verifygc){}
   ~No_Safepoint_Verifier() {}
-#endif
 };
 
 // A Pause_No_Safepoint_Verifier is used to temporarily pause the
@@ -264,28 +222,9 @@ class Pause_No_Safepoint_Verifier : public Pause_No_GC_Verifier {
   No_Safepoint_Verifier * _nsv;
 
  public:
-#ifdef ASSERT
-  Pause_No_Safepoint_Verifier(No_Safepoint_Verifier * nsv)
-    : Pause_No_GC_Verifier(nsv) {
-
-    _nsv = nsv;
-    if (_nsv->_activated) {
-      _nsv->_thread->_allow_allocation_count--;
-      _nsv->_thread->_allow_safepoint_count--;
-    }
-  }
-
-  ~Pause_No_Safepoint_Verifier() {
-    if (_nsv->_activated) {
-      _nsv->_thread->_allow_allocation_count++;
-      _nsv->_thread->_allow_safepoint_count++;
-    }
-  }
-#else
   Pause_No_Safepoint_Verifier(No_Safepoint_Verifier * nsv)
     : Pause_No_GC_Verifier(nsv) {}
   ~Pause_No_Safepoint_Verifier() {}
-#endif
 };
 
 // A SkipGCALot object is used to elide the usual effect of gc-a-lot
@@ -297,20 +236,8 @@ class SkipGCALot : public StackObj {
    Thread* _t;
 
   public:
-#ifdef ASSERT
-    SkipGCALot(Thread* t) : _t(t) {
-      _saved = _t->skip_gcalot();
-      _t->set_skip_gcalot(true);
-    }
-
-    ~SkipGCALot() {
-      assert(_t->skip_gcalot(), "Save-restore protocol invariant");
-      _t->set_skip_gcalot(_saved);
-    }
-#else
     SkipGCALot(Thread* t) { }
     ~SkipGCALot() { }
-#endif
 };
 
 // JRT_LEAF currently can be called from either _thread_in_Java or
@@ -320,13 +247,8 @@ class SkipGCALot : public StackObj {
 class JRT_Leaf_Verifier : public No_Safepoint_Verifier {
   static bool should_verify_GC();
  public:
-#ifdef ASSERT
-  JRT_Leaf_Verifier();
-  ~JRT_Leaf_Verifier();
-#else
   JRT_Leaf_Verifier() {}
   ~JRT_Leaf_Verifier() {}
-#endif
 };
 
 // A No_Alloc_Verifier object can be placed in methods where one assumes that
@@ -342,19 +264,8 @@ class No_Alloc_Verifier : public StackObj {
   bool  _activated;
 
  public:
-#ifdef ASSERT
-  No_Alloc_Verifier(bool activated = true) {
-    _activated = activated;
-    if (_activated) Thread::current()->_allow_allocation_count++;
-  }
-
-  ~No_Alloc_Verifier() {
-    if (_activated) Thread::current()->_allow_allocation_count--;
-  }
-#else
   No_Alloc_Verifier(bool activated = true) {}
   ~No_Alloc_Verifier() {}
-#endif
 };
 
 #endif // SHARE_VM_MEMORY_GCLOCKER_HPP

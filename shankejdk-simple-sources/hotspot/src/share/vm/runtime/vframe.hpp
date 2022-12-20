@@ -395,18 +395,6 @@ inline void vframeStreamCommon::fill_from_compiled_frame(int decode_offset) {
     // that could lead to crashes in product mode.
     // Therefore, do not use the decode offset if invalid, but fill the frame
     // as it were a native compiled frame (no Java-level assumptions).
-#ifdef ASSERT
-    if (WizardMode) {
-      ttyLocker ttyl;
-      tty->print_cr("Error in fill_from_frame: pc_desc for "
-                    INTPTR_FORMAT " not found or invalid at %d",
-                    p2i(_frame.pc()), decode_offset);
-      nm()->print();
-      nm()->method()->print_codes();
-      nm()->print_code();
-      nm()->print_pcs();
-    }
-#endif
     // Provide a cheap fallback in product mode.  (See comment above.)
     found_bad_method_frame();
     fill_from_compiled_native_frame();

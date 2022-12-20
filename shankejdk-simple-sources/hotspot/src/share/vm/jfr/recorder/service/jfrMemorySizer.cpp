@@ -325,15 +325,6 @@ static void default_size(const JfrMemoryOptions* options) {
   assert(!options->global_buffer_size_configured, "invariant");
 }
 
-#ifdef ASSERT
-static void assert_post_condition(const JfrMemoryOptions* options) {
-  assert(options->memory_size % os::vm_page_size() == 0, "invariant");
-  assert(options->global_buffer_size % os::vm_page_size() == 0, "invariant");
-  assert(options->thread_buffer_size % os::vm_page_size() == 0, "invariant");
-  assert(options->buffer_count >= MIN_BUFFER_COUNT, "invariant");
-  assert(options->global_buffer_size >= options->thread_buffer_size, "invariant");
-}
-#endif
 
 // MEMORY SIZING ALGORITHM
 

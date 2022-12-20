@@ -709,20 +709,6 @@ void VM_Version::get_processor_features() {
       // Vectors (in XMM) are only supported with SSE2+
       FLAG_SET_DEFAULT(MaxVectorSize, 0);
     }
-#ifdef ASSERT
-    if (supports_avx() && PrintMiscellaneous && Verbose && TraceNewVectors) {
-      tty->print_cr("State of YMM registers after signal handle:");
-      int nreg = 2 LP64_ONLY(+2);
-      const char* ymm_name[4] = {"0", "7", "8", "15"};
-      for (int i = 0; i < nreg; i++) {
-        tty->print("YMM%s:", ymm_name[i]);
-        for (int j = 7; j >=0; j--) {
-          tty->print(" %x", _cpuid_info.ymm_save[i*8 + j]);
-        }
-        tty->cr();
-      }
-    }
-#endif
   }
 
 #ifdef _LP64

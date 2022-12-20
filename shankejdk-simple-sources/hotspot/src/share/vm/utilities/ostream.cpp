@@ -872,12 +872,6 @@ void gcLogFileStream::write(const char* s, size_t len) {
 // concurrently with the VMThread are synchronized in write and rotate_log via _file_lock.
 // rotate_log can write log entries, so write supports reentry for it.
 void gcLogFileStream::rotate_log(bool force, outputStream* out) {
- #ifdef ASSERT
-   Thread *thread = Thread::current();
-   assert(thread == NULL ||
-          (thread->is_VM_thread() && SafepointSynchronize::is_at_safepoint()),
-          "Must be VMThread at safepoint");
- #endif
 
   VMThread* vmthread = VMThread::vm_thread();
   {

@@ -453,9 +453,6 @@ void SubTasksDone::clear() {
     _tasks[i] = 0;
   }
   _threads_completed = 0;
-#ifdef ASSERT
-  _claimed = 0;
-#endif
 }
 
 bool SubTasksDone::is_task_claimed(uint t) {
@@ -465,12 +462,6 @@ bool SubTasksDone::is_task_claimed(uint t) {
     old = Atomic::cmpxchg(1, &_tasks[t], 0);
   }
   bool res = old != 0;
-#ifdef ASSERT
-  if (!res) {
-    assert(_claimed < _n_tasks, "Too many tasks claimed; missing clear?");
-    Atomic::inc((volatile jint*) &_claimed);
-  }
-#endif
   return res;
 }
 

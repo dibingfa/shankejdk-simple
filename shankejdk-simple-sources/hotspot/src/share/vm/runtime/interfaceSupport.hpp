@@ -67,34 +67,6 @@ class HandleMarkCleaner: public StackObj {
 
 
 class InterfaceSupport: AllStatic {
-# ifdef ASSERT
- public:
-  static long _scavenge_alot_counter;
-  static long _fullgc_alot_counter;
-  static long _number_of_calls;
-  static long _fullgc_alot_invocation;
-
-  // tracing
-  static void trace(const char* result_type, const char* header);
-
-  // Helper methods used to implement +ScavengeALot and +FullGCALot
-  static void check_gc_alot() { if (ScavengeALot || FullGCALot) gc_alot(); }
-  static void gc_alot();
-
-  static void walk_stack_from(vframe* start_vf);
-  static void walk_stack();
-
-# ifdef ENABLE_ZAP_DEAD_LOCALS
-  static void zap_dead_locals_old();
-# endif
-
-  static void zombieAll();
-  static void unlinkSymbols();
-  static void deoptimizeAll();
-  static void stress_derived_pointers();
-  static void verify_stack();
-  static void verify_last_frame();
-# endif
 
  public:
   // OS dependent stuff
@@ -343,84 +315,12 @@ class ThreadInVMfromJavaNoAsyncException : public ThreadStateTransition {
 // Debug class instantiated in JRT_ENTRY and ITR_ENTRY macro.
 // Can be used to verify properties on enter/exit of the VM.
 
-#ifdef ASSERT
-class VMEntryWrapper {
- public:
-  VMEntryWrapper() {
-    if (VerifyLastFrame) {
-      InterfaceSupport::verify_last_frame();
-    }
-  }
-
-  ~VMEntryWrapper() {
-    InterfaceSupport::check_gc_alot();
-    if (WalkStackALot) {
-      InterfaceSupport::walk_stack();
-    }
-#ifdef ENABLE_ZAP_DEAD_LOCALS
-    if (ZapDeadLocalsOld) {
-      InterfaceSupport::zap_dead_locals_old();
-    }
-#endif
-#ifdef COMPILER2
-    // This option is not used by Compiler 1
-    if (StressDerivedPointers) {
-      InterfaceSupport::stress_derived_pointers();
-    }
-#endif
-    if (DeoptimizeALot || DeoptimizeRandom) {
-      InterfaceSupport::deoptimizeAll();
-    }
-    if (ZombieALot) {
-      InterfaceSupport::zombieAll();
-    }
-    if (UnlinkSymbolsALot) {
-      InterfaceSupport::unlinkSymbols();
-    }
-    // do verification AFTER potential deoptimization
-    if (VerifyStack) {
-      InterfaceSupport::verify_stack();
-    }
-
-  }
-};
-
-
-class VMNativeEntryWrapper {
- public:
-  VMNativeEntryWrapper() {
-    if (GCALotAtAllSafepoints) InterfaceSupport::check_gc_alot();
-  }
-
-  ~VMNativeEntryWrapper() {
-    if (GCALotAtAllSafepoints) InterfaceSupport::check_gc_alot();
-  }
-};
-
-#endif
 
 
 // VM-internal runtime interface support
 
-#ifdef ASSERT
-
-class RuntimeHistogramElement : public HistogramElement {
-  public:
-   RuntimeHistogramElement(const char* name);
-};
-
-#define TRACE_CALL(result_type, header)                            \
-  InterfaceSupport::_number_of_calls++;                            \
-  if (TraceRuntimeCalls)                                           \
-    InterfaceSupport::trace(#result_type, #header);                \
-  if (CountRuntimeCalls) {                                         \
-    static RuntimeHistogramElement* e = new RuntimeHistogramElement(#header); \
-    if (e != NULL) e->increment_count();                           \
-  }
-#else
 #define TRACE_CALL(result_type, header)                            \
   /* do nothing */
-#endif
 
 
 // LEAF routines do not lock, GC or throw exceptions

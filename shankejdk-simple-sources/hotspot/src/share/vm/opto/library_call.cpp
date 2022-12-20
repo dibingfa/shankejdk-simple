@@ -1813,10 +1813,6 @@ Node* LibraryCallKit::finish_pow_exp(Node* result, Node* x, Node* y, const TypeF
                                    no_memory_effects,
                                    x, top(), y, y ? top() : NULL);
       Node* value = _gvn.transform(new (C) ProjNode(rt, TypeFunc::Parms+0));
-#ifdef ASSERT
-      Node* value_top = _gvn.transform(new (C) ProjNode(rt, TypeFunc::Parms+1));
-      assert(value_top == top(), "second value must be top");
-#endif
 
       result_region->init_req(2, control());
       result_val->init_req(2, value);
@@ -2039,10 +2035,6 @@ bool LibraryCallKit::runtime_math(const TypeFunc* call_type, address funcAddr, c
                                  no_memory_effects,
                                  a, top(), b, b ? top() : NULL);
   Node* value = _gvn.transform(new (C) ProjNode(trig, TypeFunc::Parms+0));
-#ifdef ASSERT
-  Node* value_top = _gvn.transform(new (C) ProjNode(trig, TypeFunc::Parms+1));
-  assert(value_top == top(), "second value must be top");
-#endif
 
   set_result(value);
   return true;
@@ -2572,38 +2564,6 @@ bool LibraryCallKit::inline_unsafe_access(bool is_native_ptr, bool is_store, Bas
     ResourceMark rm;
     // Check the signatures.
     ciSignature* sig = callee()->signature();
-#ifdef ASSERT
-    if (!is_store) {
-      // Object getObject(Object base, int/long offset), etc.
-      BasicType rtype = sig->return_type()->basic_type();
-      if (rtype == T_ADDRESS_HOLDER && callee()->name() == ciSymbol::getAddress_name())
-          rtype = T_ADDRESS;  // it is really a C void*
-      assert(rtype == type, "getter must return the expected value");
-      if (!is_native_ptr) {
-        assert(sig->count() == 2, "oop getter has 2 arguments");
-        assert(sig->type_at(0)->basic_type() == T_OBJECT, "getter base is object");
-        assert(sig->type_at(1)->basic_type() == T_LONG, "getter offset is correct");
-      } else {
-        assert(sig->count() == 1, "native getter has 1 argument");
-        assert(sig->type_at(0)->basic_type() == T_LONG, "getter base is long");
-      }
-    } else {
-      // void putObject(Object base, int/long offset, Object x), etc.
-      assert(sig->return_type()->basic_type() == T_VOID, "putter must not return a value");
-      if (!is_native_ptr) {
-        assert(sig->count() == 3, "oop putter has 3 arguments");
-        assert(sig->type_at(0)->basic_type() == T_OBJECT, "putter base is object");
-        assert(sig->type_at(1)->basic_type() == T_LONG, "putter offset is correct");
-      } else {
-        assert(sig->count() == 2, "native putter has 2 arguments");
-        assert(sig->type_at(0)->basic_type() == T_LONG, "putter base is long");
-      }
-      BasicType vtype = sig->type_at(sig->count()-1)->basic_type();
-      if (vtype == T_ADDRESS_HOLDER && callee()->name() == ciSymbol::putAddress_name())
-        vtype = T_ADDRESS;  // it is really a C void*
-      assert(vtype == type, "putter must accept the expected value");
-    }
-#endif // ASSERT
  }
 #endif //PRODUCT
 
@@ -2822,18 +2782,6 @@ bool LibraryCallKit::inline_unsafe_prefetch(bool is_native_ptr, bool is_store, b
     ResourceMark rm;
     // Check the signatures.
     ciSignature* sig = callee()->signature();
-#ifdef ASSERT
-    // Object getObject(Object base, int/long offset), etc.
-    BasicType rtype = sig->return_type()->basic_type();
-    if (!is_native_ptr) {
-      assert(sig->count() == 2, "oop prefetch has 2 arguments");
-      assert(sig->type_at(0)->basic_type() == T_OBJECT, "prefetch base is object");
-      assert(sig->type_at(1)->basic_type() == T_LONG, "prefetcha offset is correct");
-    } else {
-      assert(sig->count() == 1, "native prefetch has 1 argument");
-      assert(sig->type_at(0)->basic_type() == T_LONG, "prefetch base is long");
-    }
-#endif // ASSERT
   }
 #endif // !PRODUCT
 
@@ -2917,21 +2865,8 @@ bool LibraryCallKit::inline_unsafe_load_store(BasicType type, LoadStoreKind kind
     rtype = sig->return_type()->basic_type();
     if (kind == LS_xadd || kind == LS_xchg) {
       // Check the signatures.
-#ifdef ASSERT
-      assert(rtype == type, "get and set must return the expected type");
-      assert(sig->count() == 3, "get and set has 3 arguments");
-      assert(sig->type_at(0)->basic_type() == T_OBJECT, "get and set base is object");
-      assert(sig->type_at(1)->basic_type() == T_LONG, "get and set offset is long");
-      assert(sig->type_at(2)->basic_type() == type, "get and set must take expected type as new value/delta");
-#endif // ASSERT
     } else if (kind == LS_cmpxchg) {
       // Check the signatures.
-#ifdef ASSERT
-      assert(rtype == T_BOOLEAN, "CAS must return boolean");
-      assert(sig->count() == 4, "CAS has 4 arguments");
-      assert(sig->type_at(0)->basic_type() == T_OBJECT, "CAS base is object");
-      assert(sig->type_at(1)->basic_type() == T_LONG, "CAS offset is long");
-#endif // ASSERT
     } else {
       ShouldNotReachHere();
     }
@@ -3148,13 +3083,6 @@ bool LibraryCallKit::inline_unsafe_ordered_store(BasicType type) {
     ResourceMark rm;
     // Check the signatures.
     ciSignature* sig = callee()->signature();
-#ifdef ASSERT
-    BasicType rtype = sig->return_type()->basic_type();
-    assert(rtype == T_VOID, "must return void");
-    assert(sig->count() == 3, "has 3 arguments");
-    assert(sig->type_at(0)->basic_type() == T_OBJECT, "base is object");
-    assert(sig->type_at(1)->basic_type() == T_LONG, "offset is long");
-#endif // ASSERT
   }
 #endif //PRODUCT
 
@@ -3339,10 +3267,6 @@ bool LibraryCallKit::inline_native_time_funcs(address funcAddr, const char* func
   const TypePtr* no_memory_effects = NULL;
   Node* time = make_runtime_call(RC_LEAF, tf, funcAddr, funcName, no_memory_effects);
   Node* value = _gvn.transform(new (C) ProjNode(time, TypeFunc::Parms+0));
-#ifdef ASSERT
-  Node* value_top = _gvn.transform(new (C) ProjNode(time, TypeFunc::Parms+1));
-  assert(value_top == top(), "second value must be top");
-#endif
   set_result(value);
   return true;
 }

@@ -107,15 +107,6 @@ public:
   void set_mask_size( int size ) {
     assert((size == (int)AllStack_size) || (size == (int)_mask.Size()), "");
     _mask_size = size;
-#ifdef ASSERT
-    _msize_valid=1;
-    if (_is_vector) {
-      assert(!_fat_proj, "sanity");
-      _mask.verify_sets(_num_regs);
-    } else if (_num_regs == 2 && !_fat_proj) {
-      _mask.verify_pairs();
-    }
-#endif
   }
   void compute_set_mask_size() { set_mask_size(compute_mask_size()); }
   int mask_size() const { assert( _msize_valid, "mask size not valid" );

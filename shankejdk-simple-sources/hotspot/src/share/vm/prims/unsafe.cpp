@@ -120,18 +120,6 @@ inline jint invocation_key_to_method_slot(jint key) {
 
 inline void* index_oop_from_field_offset_long(oop p, jlong field_offset) {
   jlong byte_offset = field_offset_to_byte_offset(field_offset);
-#ifdef ASSERT
-  if (p != NULL) {
-    assert(byte_offset >= 0 && byte_offset <= (jlong)MAX_OBJECT_SIZE, "sane offset");
-    if (byte_offset == (jint)byte_offset) {
-      void* ptr_plus_disp = (address)p + byte_offset;
-      assert((void*)p->obj_field_addr<oop>((jint)byte_offset) == ptr_plus_disp,
-             "raw [ptr+disp] must be consistent with oop::field_base");
-    }
-    jlong p_size = HeapWordSize * (jlong)(p->size());
-    assert(byte_offset < p_size, err_msg("Unsafe access: offset " INT64_FORMAT " > object's size " INT64_FORMAT, byte_offset, p_size));
-  }
-#endif
   if (sizeof(char*) == sizeof(jint))    // (this constant folds!)
     return (address)p + (jint) byte_offset;
   else

@@ -57,9 +57,6 @@
 
 PRAGMA_FORMAT_MUTE_WARNINGS_FOR_GCC
 
-#ifdef ASSERT
-bool AbstractAssembler::pd_check_instruction_mark() { return true; }
-#endif
 
 static Assembler::Condition reverse[] = {
     Assembler::noOverflow     /* overflow      = 0x0 */ ,
@@ -2514,11 +2511,6 @@ void MacroAssembler::call_VM_base(Register oop_result,
   // debugging support
   assert(number_of_arguments >= 0   , "cannot have negative number of arguments");
   LP64_ONLY(assert(java_thread == r15_thread, "unexpected register"));
-#ifdef ASSERT
-  // TraceBytecodes does not use r12 but saves it over the call, so don't verify
-  // r12 is the heapbase.
-  LP64_ONLY(if ((UseCompressedOops || UseCompressedClassPointers) && !TraceBytecodes) verify_heapbase("call_VM_base: heap base corrupted?");)
-#endif // ASSERT
 
   assert(java_thread != oop_result  , "cannot use the same register for java_thread & oop_result");
   assert(java_thread != last_java_sp, "cannot use the same register for java_thread & last_java_sp");
@@ -2542,18 +2534,6 @@ void MacroAssembler::call_VM_base(Register oop_result,
   // however can use the register value directly if it is callee saved.
   if (LP64_ONLY(true ||) java_thread == rdi || java_thread == rsi) {
     // rdi & rsi (also r15) are callee saved -> nothing to do
-#ifdef ASSERT
-    guarantee(java_thread != rax, "change this code");
-    push(rax);
-    { Label L;
-      get_thread(rax);
-      cmpptr(java_thread, rax);
-      jcc(Assembler::equal, L);
-      STOP("MacroAssembler::call_VM_base: rdi not callee saved?");
-      bind(L);
-    }
-    pop(rax);
-#endif
   } else {
     get_thread(java_thread);
   }
@@ -3259,43 +3239,10 @@ void MacroAssembler::pow_or_exp(bool is_exp, int num_fpu_regs_in_use) {
     // end up in the gp registers. Huge numbers are all even, the
     // integer indefinite number is even so it's fine.
 
-#ifdef ASSERT
-    // Let's check we don't end up with an integer indefinite number
-    // when not expected. First test for huge numbers: check whether
-    // int(Y)+1 == int(Y) which is true for very large numbers and
-    // those are all even. A 64 bit integer is guaranteed to not
-    // overflow for numbers where y+1 != y (when precision is set to
-    // double precision).
-    Label y_not_huge;
-
-    fld1();                     // Stack: 1 int(Y) X Y
-    fadd(1);                    // Stack: 1+int(Y) int(Y) X Y
-
-#ifdef _LP64
-    // trip to memory to force the precision down from double extended
-    // precision
-    fstp_d(Address(rsp, 0));
-    fld_d(Address(rsp, 0));
-#endif
-
-    fcmp(tmp, 1, true, false);  // Stack: int(Y) X Y
-#endif
 
     // move int(Y) as 64 bit integer to thread's stack
     fistp_d(Address(rsp,0));    // Stack: X Y
 
-#ifdef ASSERT
-    jcc(Assembler::notEqual, y_not_huge);
-
-    // Y is huge so we know it's even. It may not fit in a 64 bit
-    // integer and we don't want the debug code below to see the
-    // integer indefinite value so overwrite int(Y) on the thread's
-    // stack with 0.
-    movl(Address(rsp, 0), 0);
-    movl(Address(rsp, 4), 0);
-
-    bind(y_not_huge);
-#endif
 
     fld_s(1);                   // duplicate arguments for runtime call. Stack: Y X Y
     fld_s(1);                   // Stack: X Y X Y
@@ -3308,32 +3255,6 @@ void MacroAssembler::pow_or_exp(bool is_exp, int num_fpu_regs_in_use) {
     NOT_LP64(pop(tmp3));
     jcc(Assembler::parity, slow_case);
 
-#ifdef ASSERT
-    // Check that int(Y) is not integer indefinite value (int
-    // overflow). Shouldn't happen because for values that would
-    // overflow, 1+int(Y)==Y which was tested earlier.
-#ifndef _LP64
-    {
-      Label integer;
-      testl(tmp2, tmp2);
-      jcc(Assembler::notZero, integer);
-      cmpl(tmp3, 0x80000000);
-      jcc(Assembler::notZero, integer);
-      STOP("integer indefinite value shouldn't be seen here");
-      bind(integer);
-    }
-#else
-    {
-      Label integer;
-      mov(tmp3, tmp2); // preserve tmp2 for parity check below
-      shlq(tmp3, 1);
-      jcc(Assembler::carryClear, integer);
-      jcc(Assembler::notZero, integer);
-      STOP("integer indefinite value shouldn't be seen here");
-      bind(integer);
-    }
-#endif
-#endif
 
     // get rid of duplicate arguments. Stack: X^Y
     if (num_fpu_regs_in_use > 0) {
@@ -3448,9 +3369,6 @@ void MacroAssembler::jump_cc(Condition cc, AddressLiteral dst) {
       emit_int32(offs - long_size);
     }
   } else {
-#ifdef ASSERT
-    warning("reversing conditional branch");
-#endif /* ASSERT */
     Label skip;
     jccb(reverse[cc], skip);
     lea(rscratch1, dst);
@@ -4556,23 +4474,6 @@ Register MacroAssembler::tlab_refill(Label& retry,
   eden_allocate(top, t1, 0, t2, slow_case);
 
   // Check that t1 was preserved in eden_allocate.
-#ifdef ASSERT
-  if (UseTLAB) {
-    Label ok;
-    Register tsize = rsi;
-    assert_different_registers(tsize, thread_reg, t1);
-    push(tsize);
-    movptr(tsize, Address(thread_reg, in_bytes(JavaThread::tlab_size_offset())));
-    shlptr(tsize, LogHeapWordSize);
-    cmpptr(t1, tsize);
-    jcc(Assembler::equal, ok);
-    STOP("assert(t1 != tlab size)");
-    should_not_reach_here();
-
-    bind(ok);
-    pop(tsize);
-  }
-#endif
   movptr(Address(thread_reg, in_bytes(JavaThread::tlab_start_offset())), top);
   movptr(Address(thread_reg, in_bytes(JavaThread::tlab_top_offset())), top);
   addptr(top, t1);
@@ -5245,26 +5146,6 @@ RegisterOrConstant MacroAssembler::delayed_value_impl(intptr_t* delayed_value_ad
   // load indirectly to solve generation ordering problem
   movptr(tmp, ExternalAddress((address) delayed_value_addr));
 
-#ifdef ASSERT
-  { Label L;
-    testptr(tmp, tmp);
-    if (WizardMode) {
-      const char* buf = NULL;
-      {
-        ResourceMark rm;
-        stringStream ss;
-        ss.print("DelayedValue=" INTPTR_FORMAT, delayed_value_addr[1]);
-        buf = code_string(ss.as_string());
-      }
-      jcc(Assembler::notZero, L);
-      STOP(buf);
-    } else {
-      jccb(Assembler::notZero, L);
-      hlt();
-    }
-    bind(L);
-  }
-#endif
 
   if (offset != 0)
     addptr(tmp, offset);
@@ -5278,10 +5159,6 @@ Address MacroAssembler::argument_address(RegisterOrConstant arg_slot,
   // cf. TemplateTable::prepare_invoke(), if (load_receiver).
   int stackElementSize = Interpreter::stackElementSize;
   int offset = Interpreter::expr_offset_in_bytes(extra_slot_offset+0);
-#ifdef ASSERT
-  int offset1 = Interpreter::expr_offset_in_bytes(extra_slot_offset+1);
-  assert(offset1 - offset == stackElementSize, "correct arithmetic");
-#endif
   Register             scale_reg    = noreg;
   Address::ScaleFactor scale_factor = Address::no_scale;
   if (arg_slot.is_constant()) {
@@ -5336,34 +5213,6 @@ void MacroAssembler::verify_oop_addr(Address addr, const char* s) {
 }
 
 void MacroAssembler::verify_tlab() {
-#ifdef ASSERT
-  if (UseTLAB && VerifyOops) {
-    Label next, ok;
-    Register t1 = rsi;
-    Register thread_reg = NOT_LP64(rbx) LP64_ONLY(r15_thread);
-
-    push(t1);
-    NOT_LP64(push(thread_reg));
-    NOT_LP64(get_thread(thread_reg));
-
-    movptr(t1, Address(thread_reg, in_bytes(JavaThread::tlab_top_offset())));
-    cmpptr(t1, Address(thread_reg, in_bytes(JavaThread::tlab_start_offset())));
-    jcc(Assembler::aboveEqual, next);
-    STOP("assert(top >= start)");
-    should_not_reach_here();
-
-    bind(next);
-    movptr(t1, Address(thread_reg, in_bytes(JavaThread::tlab_end_offset())));
-    cmpptr(t1, Address(thread_reg, in_bytes(JavaThread::tlab_top_offset())));
-    jcc(Assembler::aboveEqual, ok);
-    STOP("assert(top <= end)");
-    should_not_reach_here();
-
-    bind(ok);
-    NOT_LP64(pop(thread_reg));
-    pop(t1);
-  }
-#endif
 }
 
 class ControlWord {
@@ -5835,27 +5684,9 @@ void MacroAssembler::store_klass_gap(Register dst, Register src) {
   }
 }
 
-#ifdef ASSERT
-void MacroAssembler::verify_heapbase(const char* msg) {
-  assert (UseCompressedOops, "should be compressed");
-  assert (Universe::heap() != NULL, "java heap should be initialized");
-  if (CheckCompressedOops) {
-    Label ok;
-    push(rscratch1); // cmpptr trashes rscratch1
-    cmpptr(r12_heapbase, ExternalAddress((address)Universe::narrow_ptrs_base_addr()));
-    jcc(Assembler::equal, ok);
-    STOP(msg);
-    bind(ok);
-    pop(rscratch1);
-  }
-}
-#endif
 
 // Algorithm must match oop.inline.hpp encode_heap_oop.
 void MacroAssembler::encode_heap_oop(Register r) {
-#ifdef ASSERT
-  verify_heapbase("MacroAssembler::encode_heap_oop: heap base corrupted?");
-#endif
   verify_oop(r, "broken oop in encode_heap_oop");
   if (Universe::narrow_oop_base() == NULL) {
     if (Universe::narrow_oop_shift() != 0) {
@@ -5871,16 +5702,6 @@ void MacroAssembler::encode_heap_oop(Register r) {
 }
 
 void MacroAssembler::encode_heap_oop_not_null(Register r) {
-#ifdef ASSERT
-  verify_heapbase("MacroAssembler::encode_heap_oop_not_null: heap base corrupted?");
-  if (CheckCompressedOops) {
-    Label ok;
-    testq(r, r);
-    jcc(Assembler::notEqual, ok);
-    STOP("null oop passed to encode_heap_oop_not_null");
-    bind(ok);
-  }
-#endif
   verify_oop(r, "broken oop in encode_heap_oop_not_null");
   if (Universe::narrow_oop_base() != NULL) {
     subq(r, r12_heapbase);
@@ -5892,16 +5713,6 @@ void MacroAssembler::encode_heap_oop_not_null(Register r) {
 }
 
 void MacroAssembler::encode_heap_oop_not_null(Register dst, Register src) {
-#ifdef ASSERT
-  verify_heapbase("MacroAssembler::encode_heap_oop_not_null2: heap base corrupted?");
-  if (CheckCompressedOops) {
-    Label ok;
-    testq(src, src);
-    jcc(Assembler::notEqual, ok);
-    STOP("null oop passed to encode_heap_oop_not_null2");
-    bind(ok);
-  }
-#endif
   verify_oop(src, "broken oop in encode_heap_oop_not_null2");
   if (dst != src) {
     movq(dst, src);
@@ -5916,9 +5727,6 @@ void MacroAssembler::encode_heap_oop_not_null(Register dst, Register src) {
 }
 
 void  MacroAssembler::decode_heap_oop(Register r) {
-#ifdef ASSERT
-  verify_heapbase("MacroAssembler::decode_heap_oop: heap base corrupted?");
-#endif
   if (Universe::narrow_oop_base() == NULL) {
     if (Universe::narrow_oop_shift() != 0) {
       assert (LogMinObjAlignmentInBytes == Universe::narrow_oop_shift(), "decode alg wrong");
@@ -6224,19 +6032,6 @@ void MacroAssembler::verified_entry(int framesize, int stack_bang_size, bool fp_
   }
 #endif
 
-#ifdef ASSERT
-  if (VerifyStackAtCalls) {
-    Label L;
-    push(rax);
-    mov(rax, rsp);
-    andptr(rax, StackAlignmentInBytes-1);
-    cmpptr(rax, StackAlignmentInBytes-wordSize);
-    pop(rax);
-    jcc(Assembler::equal, L);
-    STOP("Stack is not properly aligned!");
-    bind(L);
-  }
-#endif
 
 }
 

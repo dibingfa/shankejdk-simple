@@ -1157,11 +1157,6 @@ public:
   // list verification in debug builds.
   void verify_region_sets_optional() { DEBUG_ONLY(verify_region_sets();) }
 
-#ifdef ASSERT
-  bool is_on_master_free_list(HeapRegion* hr) {
-    return _hrm.is_free(hr);
-  }
-#endif // ASSERT
 
   // Wrapper for the region list operations that can be called from
   // methods outside this class.
@@ -1222,11 +1217,6 @@ public:
 
   // Returns "TRUE" iff "p" points into the committed areas of the heap.
   virtual bool is_in(const void* p) const;
-#ifdef ASSERT
-  // Returns whether p is in one of the available areas of the heap. Slow but
-  // extensive version.
-  bool is_in_exact(const void* p) const;
-#endif
 
   // Return "TRUE" iff the given object address is within the collection
   // set. Slow implementation.
@@ -1322,13 +1312,6 @@ public:
   // collection set to the default.
   void reset_cset_heap_region_claim_values();
 
-#ifdef ASSERT
-  bool check_heap_region_claim_values(jint claim_value);
-
-  // Same as the routine above but only checks regions in the
-  // current collection set.
-  bool check_cset_heap_region_claim_values(jint claim_value);
-#endif // ASSERT
 
   // Clear the cached cset start regions and (more importantly)
   // the time stamps. Called when we reset the GC time stamp.
@@ -1418,9 +1401,6 @@ public:
 
   inline bool is_in_young(const oop obj);
 
-#ifdef ASSERT
-  virtual bool is_in_partial_collection(const void* p);
-#endif
 
   virtual bool is_scavengable(const void* addr);
 

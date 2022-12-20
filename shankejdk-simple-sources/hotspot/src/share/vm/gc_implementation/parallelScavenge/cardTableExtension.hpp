@@ -101,13 +101,6 @@ class CardTableExtension : public CardTableModRefBS {
   // previous (i.e., lower index) to the covered region with index "ind".
   HeapWord* lowest_prev_committed_start(int ind) const;
 
-#ifdef ASSERT
-
-  bool is_valid_card_address(jbyte* addr) {
-    return (addr >= _byte_map) && (addr < _byte_map + _byte_map_size);
-  }
-
-#endif // ASSERT
 };
 
 #endif // SHARE_VM_GC_IMPLEMENTATION_PARALLELSCAVENGE_CARDTABLEEXTENSION_HPP

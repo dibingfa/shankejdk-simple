@@ -167,13 +167,6 @@ void LoaderConstraintTable::purge_loader_constraints() {
         FREE_C_HEAP_ARRAY(oop, probe->loaders(), mtClass);
         free_entry(probe);
       } else {
-#ifdef ASSERT
-        if (probe->klass() != NULL) {
-          ClassLoaderData* loader_data =
-            probe->klass()->class_loader_data();
-          assert(!loader_data->is_unloading(), "klass should be live");
-        }
-#endif
         // Go to next entry
         p = probe->next_addr();
       }

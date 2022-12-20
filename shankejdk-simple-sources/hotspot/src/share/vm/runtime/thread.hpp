@@ -285,14 +285,6 @@ class Thread: public ThreadShadow {
   ObjectMonitor* omInUseList;                   // SLL to track monitors in circulation
   int omInUseCount;                             // length of omInUseList
 
-#ifdef ASSERT
- private:
-  bool _visited_for_critical_count;
-
- public:
-  void set_visited_for_critical_count(bool z) { _visited_for_critical_count = z; }
-  bool was_visited_for_critical_count() const   { return _visited_for_critical_count; }
-#endif
 
  public:
   enum {
@@ -573,27 +565,6 @@ protected:
   virtual void print_on_error(outputStream* st, char* buf, int buflen) const;
 
   // Debug-only code
-#ifdef ASSERT
- private:
-  // Deadlock detection support for Mutex locks. List of locks own by thread.
-  Monitor* _owned_locks;
-  // Mutex::set_owner_implementation is the only place where _owned_locks is modified,
-  // thus the friendship
-  friend class Mutex;
-  friend class Monitor;
-
- public:
-  void print_owned_locks_on(outputStream* st) const;
-  void print_owned_locks() const                 { print_owned_locks_on(tty);    }
-  Monitor* owned_locks() const                   { return _owned_locks;          }
-  bool owns_locks() const                        { return owned_locks() != NULL; }
-  bool owns_locks_but_compiled_lock() const;
-
-  // Deadlock detection
-  bool allow_allocation()                        { return _allow_allocation_count == 0; }
-  ResourceMark* current_resource_mark()          { return _current_resource_mark; }
-  void set_current_resource_mark(ResourceMark* rm) { _current_resource_mark = rm; }
-#endif
 
   void check_for_valid_safepoint_state(bool potential_vm_operation) PRODUCT_RETURN;
 
@@ -668,16 +639,6 @@ protected:
 // period.   This is inlined in thread_<os_family>.inline.hpp.
 
 inline Thread* Thread::current() {
-#ifdef ASSERT
-// This function is very high traffic. Define PARANOID to enable expensive
-// asserts.
-#ifdef PARANOID
-  // Signal handler should call ThreadLocalStorage::get_thread_slow()
-  Thread* t = ThreadLocalStorage::get_thread_slow();
-  assert(t != NULL && !t->is_inside_signal_handler(),
-         "Don't use Thread::current() inside signal handler");
-#endif
-#endif
   Thread* thread = ThreadLocalStorage::thread();
   assert(thread != NULL, "just checking");
   return thread;
@@ -775,19 +736,6 @@ class JavaThread: public Thread {
   JavaThread*    _next;                          // The next thread in the Threads list
   oop            _threadObj;                     // The Java level thread object
 
-#ifdef ASSERT
- private:
-  int _java_call_counter;
-
- public:
-  int  java_call_counter()                       { return _java_call_counter; }
-  void inc_java_call_counter()                   { _java_call_counter++; }
-  void dec_java_call_counter() {
-    assert(_java_call_counter > 0, "Invalid nesting of JavaCallWrapper");
-    _java_call_counter--;
-  }
- private:  // restore original namespace restriction
-#endif  // ifdef ASSERT
 
 #ifndef PRODUCT
  public:
@@ -972,10 +920,6 @@ class JavaThread: public Thread {
   JavaThread(ThreadFunction entry_point, size_t stack_size = 0);
   ~JavaThread();
 
-#ifdef ASSERT
-  // verify this JavaThread hasn't be published in the Threads::list yet
-  void verify_not_published();
-#endif
 
   //JNI functiontable getter/setter for JVMTI jni function table interception API.
   void set_jni_functions(struct JNINativeInterface_* functionTable) {
@@ -1796,12 +1740,6 @@ inline bool JavaThread::stack_yellow_zone_disabled() {
 }
 
 inline bool JavaThread::stack_yellow_zone_enabled() {
-#ifdef ASSERT
-  if (os::uses_stack_guard_pages() &&
-      !(DisablePrimordialThreadGuardPages && os::is_primordial_thread())) {
-    assert(_stack_guard_state != stack_guard_unused, "guard pages must be in use");
-  }
-#endif
     return _stack_guard_state == stack_guard_enabled;
 }
 
@@ -1900,9 +1838,6 @@ class Threads: AllStatic {
   static int         _number_of_threads;
   static int         _number_of_non_daemon_threads;
   static int         _return_code;
-#ifdef ASSERT
-  static bool        _vm_complete;
-#endif
 
  public:
   // Thread management
@@ -1955,9 +1890,6 @@ class Threads: AllStatic {
 
   static void gc_epilogue();
   static void gc_prologue();
-#ifdef ASSERT
-  static bool is_vm_complete() { return _vm_complete; }
-#endif
 
   // Verification
   static void verify();

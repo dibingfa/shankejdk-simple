@@ -103,49 +103,6 @@ JVMState* GraphKit::sync_jvms_for_reexecute() {
   return jvms;
 }
 
-#ifdef ASSERT
-bool GraphKit::jvms_in_sync() const {
-  Parse* parse = is_Parse();
-  if (parse == NULL) {
-    if (bci() !=      jvms()->bci())          return false;
-    if (sp()  != (int)jvms()->sp())           return false;
-    return true;
-  }
-  if (jvms()->method() != parse->method())    return false;
-  if (jvms()->bci()    != parse->bci())       return false;
-  int jvms_sp = jvms()->sp();
-  if (jvms_sp          != parse->sp())        return false;
-  int jvms_depth = jvms()->depth();
-  if (jvms_depth       != parse->depth())     return false;
-  return true;
-}
-
-// Local helper checks for special internal merge points
-// used to accumulate and merge exception states.
-// They are marked by the region's in(0) edge being the map itself.
-// Such merge points must never "escape" into the parser at large,
-// until they have been handed to gvn.transform.
-static bool is_hidden_merge(Node* reg) {
-  if (reg == NULL)  return false;
-  if (reg->is_Phi()) {
-    reg = reg->in(0);
-    if (reg == NULL)  return false;
-  }
-  return reg->is_Region() && reg->in(0) != NULL && reg->in(0)->is_Root();
-}
-
-void GraphKit::verify_map() const {
-  if (map() == NULL)  return;  // null map is OK
-  assert(map()->req() <= jvms()->endoff(), "no extra garbage on map");
-  assert(!map()->has_exceptions(),    "call add_exception_states_from 1st");
-  assert(!is_hidden_merge(control()), "call use_exception_state, not set_map");
-}
-
-void GraphKit::verify_exception_state(SafePointNode* ex_map) {
-  assert(ex_map->next_exception() == NULL, "not already part of a chain");
-  assert(has_saved_ex_oop(ex_map), "every exception state has an ex_oop");
-}
-#endif
 
 //---------------------------stop_and_kill_map---------------------------------
 // Set _map to NULL, signalling a stop to further bytecode execution.
@@ -206,13 +163,6 @@ Node* GraphKit::clear_saved_ex_oop(SafePointNode* ex_map) {
   return common_saved_ex_oop(ex_map, true);
 }
 
-#ifdef ASSERT
-//---------------------------has_saved_ex_oop----------------------------------
-// Erase a previously saved exception from its map.
-bool GraphKit::has_saved_ex_oop(SafePointNode* ex_map) {
-  return ex_map->req() == ex_map->jvms()->endoff()+1;
-}
-#endif
 
 //-------------------------make_exception_state--------------------------------
 // Turn the current JVM state into an exception state, appending the ex_oop.
@@ -230,12 +180,6 @@ void GraphKit::add_exception_state(SafePointNode* ex_map) {
   if (ex_map == NULL || ex_map->control() == top()) {
     return;
   }
-#ifdef ASSERT
-  verify_exception_state(ex_map);
-  if (has_exceptions()) {
-    assert(ex_map->jvms()->same_calls_as(_exceptions->jvms()), "all collected exceptions must come from the same place");
-  }
-#endif
 
   // If there is already an exception of exactly this type, merge with it.
   // In particular, null-checks and other low-level exceptions common up here.
@@ -642,21 +586,9 @@ PreserveJVMState::PreserveJVMState(GraphKit* kit, bool clone_map) {
   _map    = kit->map();   // preserve the map
   _sp     = kit->sp();
   kit->set_map(clone_map ? kit->clone_map() : NULL);
-#ifdef ASSERT
-  _bci    = kit->bci();
-  Parse* parser = kit->is_Parse();
-  int block = (parser == NULL || parser->block() == NULL) ? -1 : parser->block()->rpo();
-  _block  = block;
-#endif
 }
 PreserveJVMState::~PreserveJVMState() {
   GraphKit* kit = _kit;
-#ifdef ASSERT
-  assert(kit->bci() == _bci, "bci must not shift");
-  Parse* parser = kit->is_Parse();
-  int block = (parser == NULL || parser->block() == NULL) ? -1 : parser->block()->rpo();
-  assert(block == _block,    "block must not shift");
-#endif
   kit->set_map(_map);
   kit->set_sp(_sp);
 }
@@ -767,46 +699,6 @@ void GraphKit::kill_dead_locals() {
   }
 }
 
-#ifdef ASSERT
-//-------------------------dead_locals_are_killed------------------------------
-// Return true if all dead locals are set to top in the map.
-// Used to assert "clean" debug info at various points.
-bool GraphKit::dead_locals_are_killed() {
-  if (method() == NULL || method()->code_size() == 0) {
-    // No locals need to be dead, so all is as it should be.
-    return true;
-  }
-
-  // Make sure somebody called kill_dead_locals upstream.
-  ResourceMark rm;
-  for (JVMState* jvms = this->jvms(); jvms != NULL; jvms = jvms->caller()) {
-    if (jvms->loc_size() == 0)  continue;  // no locals to consult
-    SafePointNode* map = jvms->map();
-    ciMethod* method = jvms->method();
-    int       bci    = jvms->bci();
-    if (jvms == this->jvms()) {
-      bci = this->bci();  // it might not yet be synched
-    }
-    MethodLivenessResult live_locals = method->liveness_at_bci(bci);
-    int len = (int)live_locals.size();
-    if (!live_locals.is_valid() || len == 0)
-      // This method is trivial, or is poisoned by a breakpoint.
-      return true;
-    assert(len == jvms->loc_size(), "live map consistent with locals map");
-    for (int local = 0; local < len; local++) {
-      if (!live_locals.at(local) && map->local(jvms, local) != top()) {
-        if (PrintMiscellaneous && (Verbose || WizardMode)) {
-          tty->print_cr("Zombie local %d: ", local);
-          jvms->dump();
-        }
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-#endif //ASSERT
 
 // Helper function for enforcing certain bytecodes to reexecute if
 // deoptimization happens
@@ -1091,18 +983,6 @@ bool GraphKit::compute_stack_effects(int& inputs, int& depth) {
     break;
   }
 
-#ifdef ASSERT
-  // spot check
-  int outputs = depth + inputs;
-  assert(outputs >= 0, "sanity");
-  switch (code) {
-  case Bytecodes::_checkcast: assert(inputs == 1 && outputs == 1, ""); break;
-  case Bytecodes::_athrow:    assert(inputs == 1 && outputs == 0, ""); break;
-  case Bytecodes::_aload_0:   assert(inputs == 0 && outputs == 1, ""); break;
-  case Bytecodes::_return:    assert(inputs == 0 && outputs == 0, ""); break;
-  case Bytecodes::_drem:      assert(inputs == 4 && outputs == 2, ""); break;
-  }
-#endif //ASSERT
 
   return true;
 }
@@ -1984,17 +1864,6 @@ void GraphKit::uncommon_trap(int trap_request,
   // Set the stack pointer to the right value for reexecution:
   set_sp(reexecute_sp());
 
-#ifdef ASSERT
-  if (!must_throw) {
-    // Make sure the stack has at least enough depth to execute
-    // the current bytecode.
-    int inputs, ignored_depth;
-    if (compute_stack_effects(inputs, ignored_depth)) {
-      assert(sp() >= inputs, err_msg_res("must have enough JVMS stack to execute %s: sp=%d, inputs=%d",
-             Bytecodes::name(java_bc()), sp(), inputs));
-    }
-  }
-#endif
 
   Deoptimization::DeoptReason reason = Deoptimization::trap_request_reason(trap_request);
   Deoptimization::DeoptAction action = Deoptimization::trap_request_action(trap_request);
@@ -2022,14 +1891,6 @@ void GraphKit::uncommon_trap(int trap_request,
   case Deoptimization::Action_make_not_entrant:
     C->set_trap_can_recompile(true);
     break;
-#ifdef ASSERT
-  case Deoptimization::Action_none:
-  case Deoptimization::Action_make_not_compilable:
-    break;
-  default:
-    fatal(err_msg_res("unknown action %d: %s", action, Deoptimization::trap_action_name(action)));
-    break;
-#endif
   }
 
   if (TraceOptoParse) {
@@ -3241,9 +3102,6 @@ void GraphKit::shared_unlock(Node* box, Node* obj) {
 
   const TypeFunc *tf = OptoRuntime::complete_monitor_exit_Type();
   UnlockNode *unlock = new (C) UnlockNode(C, tf);
-#ifdef ASSERT
-  unlock->set_dbg_jvms(sync_jvms());
-#endif
   uint raw_idx = Compile::AliasIdxRaw;
   unlock->init_req( TypeFunc::Control, control() );
   unlock->init_req( TypeFunc::Memory , memory(raw_idx) );
@@ -3363,22 +3221,6 @@ Node* GraphKit::set_output_for_allocation(AllocateNode* alloc,
   C->set_recent_alloc(control(), javaoop);
   assert(just_allocated_object(control()) == javaoop, "just allocated");
 
-#ifdef ASSERT
-  { // Verify that the AllocateNode::Ideal_allocation recognizers work:
-    assert(AllocateNode::Ideal_allocation(rawoop, &_gvn) == alloc,
-           "Ideal_allocation works");
-    assert(AllocateNode::Ideal_allocation(javaoop, &_gvn) == alloc,
-           "Ideal_allocation works");
-    if (alloc->is_AllocateArray()) {
-      assert(AllocateArrayNode::Ideal_array_allocation(rawoop, &_gvn) == alloc->as_AllocateArray(),
-             "Ideal_allocation works");
-      assert(AllocateArrayNode::Ideal_array_allocation(javaoop, &_gvn) == alloc->as_AllocateArray(),
-             "Ideal_allocation works");
-    } else {
-      assert(alloc->in(AllocateNode::ALength)->is_top(), "no length, please");
-    }
-  }
-#endif //ASSERT
 
   return javaoop;
 }
@@ -3723,15 +3565,6 @@ InitializeNode* AllocateNode::initialization() {
 void GraphKit::add_predicate_impl(Deoptimization::DeoptReason reason, int nargs) {
   // Too many traps seen?
   if (too_many_traps(reason)) {
-#ifdef ASSERT
-    if (TraceLoopPredicate) {
-      int tc = C->trap_count(reason);
-      tty->print("too many traps=%s tcount=%d in ",
-                    Deoptimization::trap_reason_name(reason), tc);
-      method()->print(); // which method has too many predicate traps
-      tty->cr();
-    }
-#endif
     // We cannot afford to take more traps here,
     // do not generate predicate.
     return;

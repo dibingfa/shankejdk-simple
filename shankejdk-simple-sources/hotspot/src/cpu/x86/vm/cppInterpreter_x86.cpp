@@ -696,19 +696,6 @@ void InterpreterGenerator::generate_stack_overflow_check(void) {
   __ lea(rax, Address(noreg, rax, Interpreter::stackElementScale(), one_monitor+Method::extra_stack_words()));
   __ lea(rax, Address(rax, rdx, Interpreter::stackElementScale(), overhead_size));
 
-#ifdef ASSERT
-  Label stack_base_okay, stack_size_okay;
-  // verify that thread stack base is non-zero
-  __ cmpptr(stack_base, (int32_t)0);
-  __ jcc(Assembler::notEqual, stack_base_okay);
-  __ stop("stack base is zero");
-  __ bind(stack_base_okay);
-  // verify that thread stack size is non-zero
-  __ cmpptr(stack_size, (int32_t)0);
-  __ jcc(Assembler::notEqual, stack_size_okay);
-  __ stop("stack size is zero");
-  __ bind(stack_size_okay);
-#endif
 
   // Add stack base to locals and subtract stack size
   __ addptr(rax, stack_base);
@@ -759,15 +746,6 @@ void InterpreterGenerator::lock_method(void) {
   __ movptr(monitor, STATE(_monitor_base));                                   // get monitor bottom limit
   __ subptr(monitor, entry_size);                                             // point to initial monitor
 
-#ifdef ASSERT
-  { Label L;
-    __ movl(rax, access_flags);
-    __ testl(rax, JVM_ACC_SYNCHRONIZED);
-    __ jcc(Assembler::notZero, L);
-    __ stop("method doesn't need synchronization");
-    __ bind(L);
-  }
-#endif // ASSERT
   // get synchronization object
   { Label done;
     const int mirror_offset = in_bytes(Klass::java_mirror_offset());
@@ -782,14 +760,6 @@ void InterpreterGenerator::lock_method(void) {
     __ movptr(rax, Address(rax, mirror_offset));
     __ bind(done);
   }
-#ifdef ASSERT
-  { Label L;
-    __ cmpptr(rax, Address(monitor, BasicObjectLock::obj_offset_in_bytes()));   // correct object?
-    __ jcc(Assembler::equal, L);
-    __ stop("wrong synchronization lobject");
-    __ bind(L);
-  }
-#endif // ASSERT
   // can destroy rax, rdx|c_rarg1, rcx, and (via call_VM) rdi!
   __ lock_object(monitor);
 }
@@ -912,17 +882,6 @@ address InterpreterGenerator::generate_accessor_entry(void) {
     __ jmp(xreturn_path);
 
     __ bind(notChar);
-#ifdef ASSERT
-    Label okay;
-#ifndef _LP64
-    __ cmpl(rdx, atos);
-    __ jcc(Assembler::equal, okay);
-#endif // _LP64
-    __ cmpl(rdx, itos);
-    __ jcc(Assembler::equal, okay);
-    __ stop("what type is this?");
-    __ bind(okay);
-#endif // ASSERT
     // All the rest are a 32 bit wordsize
     __ movl(rax, field_address);
 
@@ -1024,20 +983,6 @@ address InterpreterGenerator::generate_native_entry(bool synchronized) {
   __ movptr(state, (int32_t)NULL_WORD);
   generate_compute_interpreter_state(state, locals, rcx, true);
 
-#ifdef ASSERT
-  { Label L;
-    __ movptr(rax, STATE(_stack_base));
-#ifdef _LP64
-    // duplicate the alignment rsp got after setting stack_base
-    __ subptr(rax, frame::arg_reg_save_area_bytes); // windows
-    __ andptr(rax, -16); // must be 16 byte boundary (see amd64 ABI)
-#endif // _LP64
-    __ cmpptr(rax, rsp);
-    __ jcc(Assembler::equal, L);
-    __ stop("broken stack frame setup in interpreter");
-    __ bind(L);
-  }
-#endif
 
   const Register unlock_thread = LP64_ONLY(r15_thread) NOT_LP64(rax);
   NOT_LP64(__ movptr(unlock_thread, STATE(_thread));) // get thread
@@ -1052,22 +997,6 @@ address InterpreterGenerator::generate_native_entry(bool synchronized) {
   __ movbool(do_not_unlock_if_synchronized, true);
 
   // make sure method is native & not abstract
-#ifdef ASSERT
-  __ movl(rax, access_flags);
-  {
-    Label L;
-    __ testl(rax, JVM_ACC_NATIVE);
-    __ jcc(Assembler::notZero, L);
-    __ stop("tried to execute non-native method as native");
-    __ bind(L);
-  }
-  { Label L;
-    __ testl(rax, JVM_ACC_ABSTRACT);
-    __ jcc(Assembler::zero, L);
-    __ stop("tried to execute abstract method in interpreter");
-    __ bind(L);
-  }
-#endif
 
 
   // increment invocation count & check for overflow
@@ -1096,15 +1025,6 @@ address InterpreterGenerator::generate_native_entry(bool synchronized) {
     lock_method();
   } else {
     // no synchronization necessary
-#ifdef ASSERT
-      { Label L;
-        __ movl(rax, access_flags);
-        __ testl(rax, JVM_ACC_SYNCHRONIZED);
-        __ jcc(Assembler::zero, L);
-        __ stop("method needs synchronization");
-        __ bind(L);
-      }
-#endif
   }
 
   // start execution
@@ -1150,18 +1070,6 @@ address InterpreterGenerator::generate_native_entry(bool synchronized) {
     __ movptr(t, Address(method, Method::signature_handler_offset()));
     __ bind(L);
   }
-#ifdef ASSERT
-  {
-    Label L;
-    __ push(t);
-    __ get_thread(t);                                   // get vm's javathread*
-    __ cmpptr(t, STATE(_thread));
-    __ jcc(Assembler::equal, L);
-    __ int3();
-    __ bind(L);
-    __ pop(t);
-  }
-#endif //
 
   const Register from_ptr = InterpreterRuntime::SignatureHandlerGenerator::from();
   // call signature handler
@@ -1215,18 +1123,6 @@ address InterpreterGenerator::generate_native_entry(bool synchronized) {
 #endif // _LP64
     __ bind(L);
   }
-#ifdef ASSERT
-  {
-    Label L;
-    __ push(t);
-    __ get_thread(t);                                   // get vm's javathread*
-    __ cmpptr(t, STATE(_thread));
-    __ jcc(Assembler::equal, L);
-    __ int3();
-    __ bind(L);
-    __ pop(t);
-  }
-#endif //
 
   // pass JNIEnv
 #ifdef _LP64
@@ -1238,28 +1134,7 @@ address InterpreterGenerator::generate_native_entry(bool synchronized) {
   __ movptr(Address(rsp, 0), t);
 #endif // _LP64
 
-#ifdef ASSERT
-  {
-    Label L;
-    __ push(t);
-    __ get_thread(t);                                   // get vm's javathread*
-    __ cmpptr(t, STATE(_thread));
-    __ jcc(Assembler::equal, L);
-    __ int3();
-    __ bind(L);
-    __ pop(t);
-  }
-#endif //
 
-#ifdef ASSERT
-  { Label L;
-    __ movl(t, Address(thread, JavaThread::thread_state_offset()));
-    __ cmpl(t, _thread_in_Java);
-    __ jcc(Assembler::equal, L);
-    __ stop("Wrong thread state in native stub");
-    __ bind(L);
-  }
-#endif
 
   // Change state to native (we save the return address in the thread, since it might not
   // be pushed on the stack when we do a a stack traversal). It is enough that the pc()
@@ -2420,9 +2295,6 @@ void AbstractInterpreter::layout_activation(Method* method,
   int frame_size = frame_size_helper(method->max_stack(), tempcount, moncount, callee_param_count, callee_locals,
                                      is_top_frame, monitor_size, full_frame_size);
 
-#ifdef ASSERT
-  assert(caller->unextended_sp() == interpreter_frame->interpreter_frame_sender_sp(), "Frame not properly walkable");
-#endif
 
   // MUCHO HACK
 

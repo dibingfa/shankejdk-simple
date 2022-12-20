@@ -142,23 +142,6 @@ class SharkBlock : public SharkTargetInvariants {
   SharkValue* pop_result(BasicType type) {
     SharkValue *result = pop();
 
-#ifdef ASSERT
-    switch (result->basic_type()) {
-    case T_BOOLEAN:
-    case T_BYTE:
-    case T_CHAR:
-    case T_SHORT:
-      assert(type == T_INT, "type mismatch");
-      break;
-
-    case T_ARRAY:
-      assert(type == T_OBJECT, "type mismatch");
-      break;
-
-    default:
-      assert(result->basic_type() == type, "type mismatch");
-    }
-#endif // ASSERT
 
     return result;
   }

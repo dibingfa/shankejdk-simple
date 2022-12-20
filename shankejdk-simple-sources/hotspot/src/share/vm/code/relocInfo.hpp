@@ -279,14 +279,9 @@ class relocInfo VALUE_OBJ_CLASS_SPEC {
  public:
   // constructor
   relocInfo(relocType type, int offset, int format = 0)
-#ifndef ASSERT
   {
     (*this) = relocInfo(type, RAW_BITS, offset, format);
   }
-#else
-  // Put a bunch of assertions out-of-line.
-  ;
-#endif
 
   #define APPLY_TO_RELOCATIONS(visitor) \
     visitor(oop) \

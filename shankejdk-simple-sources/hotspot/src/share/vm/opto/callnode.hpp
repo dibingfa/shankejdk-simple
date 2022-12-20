@@ -499,9 +499,6 @@ class SafePointScalarObjectNode: public TypeNode {
 
 public:
   SafePointScalarObjectNode(const TypeOopPtr* tp,
-#ifdef ASSERT
-                            AllocateNode* alloc,
-#endif
                             uint first_index, uint n_fields);
   virtual int Opcode() const;
   virtual uint           ideal_reg() const;
@@ -515,9 +512,6 @@ public:
   }
   uint n_fields()    const { return _n_fields; }
 
-#ifdef ASSERT
-  AllocateNode* alloc() const { return _alloc; }
-#endif
 
   virtual uint size_of() const { return sizeof(*this); }
 
@@ -1071,16 +1065,10 @@ public:
 // High-level unlock operation
 class UnlockNode : public AbstractLockNode {
 private:
-#ifdef ASSERT
-  JVMState* const _dbg_jvms;      // Pointer to list of JVM State objects
-#endif
 public:
   virtual int Opcode() const;
   virtual uint size_of() const; // Size is bigger
   UnlockNode(Compile* C, const TypeFunc *tf) : AbstractLockNode( tf )
-#ifdef ASSERT
-    , _dbg_jvms(NULL)
-#endif
   {
     init_class_id(Class_Unlock);
     init_flags(Flag_is_macro);
@@ -1089,14 +1077,7 @@ public:
   virtual Node *Ideal(PhaseGVN *phase, bool can_reshape);
   // unlock is never a safepoint
   virtual bool        guaranteed_safepoint()  { return false; }
-#ifdef ASSERT
-  void set_dbg_jvms(JVMState* s) {
-    *(JVMState**)&_dbg_jvms = s;  // override const attribute in the accessor
-  }
-  JVMState* dbg_jvms() const { return _dbg_jvms; }
-#else
   JVMState* dbg_jvms() const { return NULL; }
-#endif
 };
 
 #endif // SHARE_VM_OPTO_CALLNODE_HPP

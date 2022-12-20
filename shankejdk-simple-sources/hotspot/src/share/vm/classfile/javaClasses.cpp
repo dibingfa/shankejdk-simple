@@ -516,10 +516,6 @@ static void initialize_static_field(fieldDescriptor* fd, Handle mirror, TRAPS) {
         break;
       case T_OBJECT:
         {
-          #ifdef ASSERT
-          TempNewSymbol sym = SymbolTable::new_symbol("Ljava/lang/String;", CHECK);
-          assert(fd->signature() == sym, "just checking");
-          #endif
           oop string = fd->string_initial_value(CHECK);
           mirror()->obj_field_put(fd->offset(), string);
         }
@@ -711,10 +707,6 @@ oop java_lang_Class::create_basic_type_mirror(const char* basic_type_name, Basic
     assert(aklass != NULL, "correct bootstrap");
     set_array_klass(java_class, aklass);
   }
-#ifdef ASSERT
-  InstanceMirrorKlass* mk = InstanceMirrorKlass::cast(SystemDictionary::Class_klass());
-  assert(java_lang_Class::static_oop_field_count(java_class) == 0, "should have been zeroed by allocation");
-#endif
   return java_class;
 }
 
@@ -817,13 +809,6 @@ bool java_lang_Class::is_primitive(oop java_class) {
   //assert(java_lang_Class::is_instance(java_class), "must be a Class object");
   bool is_primitive = (java_class->metadata_field(_klass_offset) == NULL);
 
-#ifdef ASSERT
-  if (is_primitive) {
-    Klass* k = ((Klass*)java_class->metadata_field(_array_klass_offset));
-    assert(k == NULL || is_java_primitive(ArrayKlass::cast(k)->element_type()),
-        "Should be either the T_VOID primitive or a java primitive");
-  }
-#endif
 
   return is_primitive;
 }
@@ -1630,10 +1615,6 @@ void java_lang_Throwable::fill_in_stack_trace(Handle throwable, methodHandle met
   // See bug 6333838 for  more details.
   // The "ASSERT" here is to verify this method generates the exactly same stack
   // trace as utilizing vframe.
-#ifdef ASSERT
-  vframeStream st(thread);
-  methodHandle st_method(THREAD, st.method());
-#endif
   int total_count = 0;
   RegisterMap map(thread, false);
   int decode_offset = 0;
@@ -1681,16 +1662,6 @@ void java_lang_Throwable::fill_in_stack_trace(Handle throwable, methodHandle met
         }
       }
     }
-#ifdef ASSERT
-    assert(st_method() == method && st.bci() == bci,
-           "Wrong stack trace");
-    st.next();
-    // vframeStream::method isn't GC-safe so store off a copy
-    // of the Method* in case we GC.
-    if (!st.at_end()) {
-      st_method = st.method();
-    }
-#endif
 
     // the format of the stacktrace will be:
     // - 1 or more fillInStackTrace frames for the exception class (skipped)

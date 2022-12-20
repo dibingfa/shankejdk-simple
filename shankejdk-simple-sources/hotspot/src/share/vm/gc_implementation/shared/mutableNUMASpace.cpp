@@ -91,12 +91,10 @@ void MutableNUMASpace::ensure_parsability() {
           CollectedHeap::fill_with_object((HeapWord*)cur_top, words_to_fill);
           if (!os::numa_has_static_binding()) {
             size_t touched_words = words_to_fill;
-#ifndef ASSERT
             if (!ZapUnusedHeapArea) {
               touched_words = MIN2((size_t)align_object_size(typeArrayOopDesc::header_size(T_INT)),
                 touched_words);
             }
-#endif
             MemRegion invalid;
             HeapWord *crossing_start = (HeapWord*)round_to(cur_top, os::vm_page_size());
             HeapWord *crossing_end = (HeapWord*)round_to(cur_top + touched_words, os::vm_page_size());
@@ -116,17 +114,12 @@ void MutableNUMASpace::ensure_parsability() {
       }
     } else {
       if (!os::numa_has_static_binding()) {
-#ifdef ASSERT
-        MemRegion invalid(s->top(), s->end());
-        ls->add_invalid_region(invalid);
-#else
         if (ZapUnusedHeapArea) {
           MemRegion invalid(s->top(), s->end());
           ls->add_invalid_region(invalid);
         } else {
           return;
         }
-#endif
       } else {
           return;
       }

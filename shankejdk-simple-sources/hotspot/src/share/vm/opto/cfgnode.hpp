@@ -214,12 +214,7 @@ public:
 #ifndef PRODUCT
   virtual void dump_spec(outputStream *st) const;
 #endif
-#ifdef ASSERT
-  void verify_adr_type(VectorSet& visited, const TypePtr* at) const;
-  void verify_adr_type(bool recursive = false) const;
-#else //ASSERT
   void verify_adr_type(bool recursive = false) const {}
-#endif //ASSERT
 };
 
 //------------------------------GotoNode---------------------------------------

@@ -82,13 +82,6 @@ JVMState* ParseGenerator::generate(JVMState* jvms) {
 
   Parse parser(jvms, method(), _expected_uses);
   // Grab signature for matching/allocation
-#ifdef ASSERT
-  if (parser.tf() != (parser.depth() == 1 ? C->tf() : tf())) {
-    MutexLockerEx ml(Compile_lock, Mutex::_no_safepoint_check_flag);
-    assert(C->env()->system_dictionary_modification_counter_changed(),
-           "Must invalidate if TypeFuncs differ");
-  }
-#endif
 
   GraphKit& exits = parser.exits();
 
@@ -956,22 +949,7 @@ JVMState* PredicatedIntrinsicGenerator::generate(JVMState* jvms) {
 
   int results = 0;
   for (int predicate = 0; (predicate < n_predicates) && !kit.stopped(); predicate++) {
-#ifdef ASSERT
-    JVMState* old_jvms = kit.jvms();
-    SafePointNode* old_map = kit.map();
-    Node* old_io  = old_map->i_o();
-    Node* old_mem = old_map->memory();
-    Node* old_exc = old_map->next_exception();
-#endif
     Node* else_ctrl = _intrinsic->generate_predicate(kit.sync_jvms(), predicate);
-#ifdef ASSERT
-    // Assert(no_new_memory && no_new_io && no_new_exceptions) after generate_predicate.
-    assert(old_jvms == kit.jvms(), "generate_predicate should not change jvm state");
-    SafePointNode* new_map = kit.map();
-    assert(old_io  == new_map->i_o(), "generate_predicate should not change i_o");
-    assert(old_mem == new_map->memory(), "generate_predicate should not change memory");
-    assert(old_exc == new_map->next_exception(), "generate_predicate should not add exceptions");
-#endif
     if (!kit.stopped()) {
       PreserveJVMState pjvms(&kit);
       // Generate intrinsic code:

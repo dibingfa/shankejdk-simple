@@ -141,14 +141,6 @@ void ObjPtrQueue::filter() {
     }
   }
 
-#ifdef ASSERT
-  size_t entries_calc = (sz - _index) / oopSize;
-  assert(entries == entries_calc, "the number of entries we counted "
-         "should match the number of entries we calculated");
-  size_t retained_calc = (sz - new_index) / oopSize;
-  assert(retained == retained_calc, "the number of retained entries we counted "
-         "should match the number of retained entries we calculated");
-#endif // ASSERT
 
   _index = new_index;
 }
@@ -224,48 +216,9 @@ void SATBMarkQueueSet::handle_zero_index_for_thread(JavaThread* t) {
   t->satb_mark_queue().handle_zero_index();
 }
 
-#ifdef ASSERT
-void SATBMarkQueueSet::dump_active_states(bool expected_active) {
-  gclog_or_tty->print_cr("Expected SATB active state: %s",
-                         expected_active ? "ACTIVE" : "INACTIVE");
-  gclog_or_tty->print_cr("Actual SATB active states:");
-  gclog_or_tty->print_cr("  Queue set: %s", is_active() ? "ACTIVE" : "INACTIVE");
-  for (JavaThread* t = Threads::first(); t; t = t->next()) {
-    gclog_or_tty->print_cr("  Thread \"%s\" queue: %s", t->name(),
-                           t->satb_mark_queue().is_active() ? "ACTIVE" : "INACTIVE");
-  }
-  gclog_or_tty->print_cr("  Shared queue: %s",
-                         shared_satb_queue()->is_active() ? "ACTIVE" : "INACTIVE");
-}
-
-void SATBMarkQueueSet::verify_active_states(bool expected_active) {
-  // Verify queue set state
-  if (is_active() != expected_active) {
-    dump_active_states(expected_active);
-    guarantee(false, "SATB queue set has an unexpected active state");
-  }
-
-  // Verify thread queue states
-  for (JavaThread* t = Threads::first(); t; t = t->next()) {
-    if (t->satb_mark_queue().is_active() != expected_active) {
-      dump_active_states(expected_active);
-      guarantee(false, "Thread SATB queue has an unexpected active state");
-    }
-  }
-
-  // Verify shared queue state
-  if (shared_satb_queue()->is_active() != expected_active) {
-    dump_active_states(expected_active);
-    guarantee(false, "Shared SATB queue has an unexpected active state");
-  }
-}
-#endif // ASSERT
 
 void SATBMarkQueueSet::set_active_all_threads(bool active, bool expected_active) {
   assert(SafepointSynchronize::is_at_safepoint(), "Must be at safepoint.");
-#ifdef ASSERT
-  verify_active_states(expected_active);
-#endif // ASSERT
   _all_active = active;
   for (JavaThread* t = Threads::first(); t; t = t->next()) {
     t->satb_mark_queue().set_active(active);

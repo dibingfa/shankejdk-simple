@@ -53,18 +53,11 @@ is running. Raw monitor transition will not work");
 //
 
 JvmtiRawMonitor::JvmtiRawMonitor(const char *name) {
-#ifdef ASSERT
-  _name = strcpy(NEW_C_HEAP_ARRAY(char, strlen(name) + 1, mtInternal), name);
-#else
   _name = NULL;
-#endif
   _magic = JVMTI_RM_MAGIC;
 }
 
 JvmtiRawMonitor::~JvmtiRawMonitor() {
-#ifdef ASSERT
-  FreeHeap(_name);
-#endif
   _magic = 0;
 }
 

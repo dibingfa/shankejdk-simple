@@ -246,10 +246,6 @@ class CodeStrings VALUE_OBJ_CLASS_SPEC {
 private:
 #ifndef PRODUCT
   CodeString* _strings;
-#ifdef ASSERT
-  // Becomes true after copy-out, forbids further use.
-  bool _defunct; // Zero bit pattern is "valid", see memset call in decode_env::decode_env
-#endif
 #endif
 
   CodeString* find(intptr_t offset) const;
@@ -258,9 +254,6 @@ private:
   void set_null_and_invalidate() {
 #ifndef PRODUCT
     _strings = NULL;
-#ifdef ASSERT
-    _defunct = true;
-#endif
 #endif
   }
 
@@ -268,18 +261,11 @@ public:
   CodeStrings() {
 #ifndef PRODUCT
     _strings = NULL;
-#ifdef ASSERT
-    _defunct = false;
-#endif
 #endif
   }
 
   bool is_null() {
-#ifdef ASSERT
-    return _strings == NULL;
-#else
     return true;
-#endif
   }
 
   const char* add_string(const char * string) PRODUCT_RETURN_(return NULL;);
@@ -293,9 +279,6 @@ public:
   void free() PRODUCT_RETURN;
   // Guarantee that _strings are used at most once; assign invalidates a buffer.
   inline void check_valid() const {
-#ifdef ASSERT
-    assert(!_defunct, "Use of invalid CodeStrings");
-#endif
   }
 };
 

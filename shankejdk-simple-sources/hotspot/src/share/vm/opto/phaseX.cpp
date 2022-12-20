@@ -231,12 +231,6 @@ bool NodeHash::hash_delete( const Node *n ) {
     k = _table[key];            // Get hashed value
     if( !k ) {                  // Miss?
       debug_only( _delete_misses++ );
-#ifdef ASSERT
-      if( VerifyOpto ) {
-        for( uint i=0; i < _max; i++ )
-          assert( _table[i] != n, "changed edges with rehashing" );
-      }
-#endif
       return false;             // Miss! Not in chain
     }
     else if( n == k ) {
@@ -293,14 +287,6 @@ void  NodeHash::grow() {
 //------------------------------clear------------------------------------------
 // Clear all entries in _table to NULL but keep storage
 void  NodeHash::clear() {
-#ifdef ASSERT
-  // Unlock all nodes upon removal from table.
-  for (uint i = 0; i < _max; i++) {
-    Node* n = _table[i];
-    if (!n || n == _sentinel)  continue;
-    n->exit_hash_lock();
-  }
-#endif
 
   memset( _table, 0, _max * sizeof(Node*) );
 }
@@ -325,19 +311,6 @@ void NodeHash::remove_useless_nodes(VectorSet &useful) {
 
 
 void NodeHash::check_no_speculative_types() {
-#ifdef ASSERT
-  uint max = size();
-  Node *sentinel_node = sentinel();
-  for (uint i = 0; i < max; ++i) {
-    Node *n = at(i);
-    if(n != NULL && n != sentinel_node && n->is_Type()) {
-      TypeNode* tn = n->as_Type();
-      const Type* t = tn->type();
-      const Type* t_no_spec = t->remove_speculative();
-      assert(t == t_no_spec, "dead node in hash table or missed node during speculative cleanup");
-    }
-  }
-#endif
 }
 
 #ifndef PRODUCT
@@ -375,24 +348,6 @@ Node *NodeHash::find_index(uint idx) { // For debugging
 }
 #endif
 
-#ifdef ASSERT
-NodeHash::~NodeHash() {
-  // Unlock all nodes upon destruction of table.
-  if (_table != (Node**)badAddress)  clear();
-}
-
-void NodeHash::operator=(const NodeHash& nh) {
-  // Unlock all nodes upon replacement of table.
-  if (&nh == this)  return;
-  if (_table != (Node**)badAddress)  clear();
-  memcpy(this, &nh, sizeof(*this));
-  // Do not increment hash_lock counts again.
-  // Instead, be sure we never again use the source table.
-  ((NodeHash*)&nh)->_table = (Node**)badAddress;
-}
-
-
-#endif
 
 
 //=============================================================================
@@ -815,33 +770,6 @@ Node *PhaseGVN::transform_no_reclaim( Node *n ) {
   return k;
 }
 
-#ifdef ASSERT
-//------------------------------dead_loop_check--------------------------------
-// Check for a simple dead loop when a data node references itself directly
-// or through an other data node excluding cons and phis.
-void PhaseGVN::dead_loop_check( Node *n ) {
-  // Phi may reference itself in a loop
-  if (n != NULL && !n->is_dead_loop_safe() && !n->is_CFG()) {
-    // Do 2 levels check and only data inputs.
-    bool no_dead_loop = true;
-    uint cnt = n->req();
-    for (uint i = 1; i < cnt && no_dead_loop; i++) {
-      Node *in = n->in(i);
-      if (in == n) {
-        no_dead_loop = false;
-      } else if (in != NULL && !in->is_dead_loop_safe()) {
-        uint icnt = in->req();
-        for (uint j = 1; j < icnt && no_dead_loop; j++) {
-          if (in->in(j) == n || in->in(j) == in)
-            no_dead_loop = false;
-        }
-      }
-    }
-    if (!no_dead_loop) n->dump(3);
-    assert(no_dead_loop, "dead loop detected");
-  }
-}
-#endif
 
 //=============================================================================
 //------------------------------PhaseIterGVN-----------------------------------
@@ -953,10 +881,6 @@ void PhaseIterGVN::optimize() {
   }
 #endif
 
-#ifdef ASSERT
-  Node* prev = NULL;
-  uint rep_cnt = 0;
-#endif
   uint loop_count = 0;
 
   // Pull from worklist; transform node;
@@ -973,17 +897,6 @@ void PhaseIterGVN::optimize() {
       C->record_method_not_compilable("infinite loop in PhaseIterGVN::optimize");
       return;
     }
-#ifdef ASSERT
-    if (n == prev) {
-      if (++rep_cnt > 3) {
-        n->dump(4);
-        assert(false, "loop in Ideal transformation");
-      }
-    } else {
-      rep_cnt = 0;
-    }
-    prev = n;
-#endif
     if (TraceIterativeGVN && Verbose) {
       tty->print("  Pop ");
       NOT_PRODUCT( n->dump(); )
@@ -1587,20 +1500,6 @@ PhaseCCP::~PhaseCCP() {
 #endif
 
 
-#ifdef ASSERT
-static bool ccp_type_widens(const Type* t, const Type* t0) {
-  assert(t->meet(t0) == t, "Not monotonic");
-  switch (t->base() == t0->base() ? t->base() : Type::Top) {
-  case Type::Int:
-    assert(t0->isa_int()->_widen <= t->isa_int()->_widen, "widen increases");
-    break;
-  case Type::Long:
-    assert(t0->isa_long()->_widen <= t->isa_long()->_widen, "widen increases");
-    break;
-  }
-  return true;
-}
-#endif //ASSERT
 
 //------------------------------analyze----------------------------------------
 void PhaseCCP::analyze() {

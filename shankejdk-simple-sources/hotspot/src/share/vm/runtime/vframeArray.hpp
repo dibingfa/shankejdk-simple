@@ -58,9 +58,6 @@ class vframeArrayElement : public _ValueObj {
     MonitorChunk* _monitors;                                     // active monitors for this vframe
     StackValueCollection* _locals;
     StackValueCollection* _expressions;
-#ifdef ASSERT
-    bool _removed_monitors;
-#endif
 
   public:
 
@@ -102,11 +99,6 @@ class vframeArrayElement : public _ValueObj {
                        bool is_bottom_frame,
                        int exec_mode);
 
-#ifdef ASSERT
-  void set_removed_monitors() {
-    _removed_monitors = true;
-  }
-#endif
 
 #ifndef PRODUCT
   void print(outputStream* st);

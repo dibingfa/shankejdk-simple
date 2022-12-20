@@ -148,34 +148,6 @@ void PhaseCFG::schedule_pinned_nodes(VectorSet &visited) {
   }
 }
 
-#ifdef ASSERT
-// Assert that new input b2 is dominated by all previous inputs.
-// Check this by by seeing that it is dominated by b1, the deepest
-// input observed until b2.
-static void assert_dom(Block* b1, Block* b2, Node* n, const PhaseCFG* cfg) {
-  if (b1 == NULL)  return;
-  assert(b1->_dom_depth < b2->_dom_depth, "sanity");
-  Block* tmp = b2;
-  while (tmp != b1 && tmp != NULL) {
-    tmp = tmp->_idom;
-  }
-  if (tmp != b1) {
-    // Detected an unschedulable graph.  Print some nice stuff and die.
-    tty->print_cr("!!! Unschedulable graph !!!");
-    for (uint j=0; j<n->len(); j++) { // For all inputs
-      Node* inn = n->in(j); // Get input
-      if (inn == NULL)  continue;  // Ignore NULL, missing inputs
-      Block* inb = cfg->get_block_for_node(inn);
-      tty->print("B%d idom=B%d depth=%2d ",inb->_pre_order,
-                 inb->_idom ? inb->_idom->_pre_order : 0, inb->_dom_depth);
-      inn->dump();
-    }
-    tty->print("Failing node: ");
-    n->dump();
-    assert(false, "unscheduable graph");
-  }
-}
-#endif
 
 static Block* find_deepest_input(Node* n, const PhaseCFG* cfg) {
   // Find the last input dominated by all other inputs.
@@ -462,19 +434,6 @@ Block* PhaseCFG::insert_anti_dependences(Block* LCA, Node* load, bool verify) {
   // Compute the alias index.  Loads and stores with different alias indices
   // do not need anti-dependence edges.
   uint load_alias_idx = C->get_alias_index(load->adr_type());
-#ifdef ASSERT
-  if (load_alias_idx == Compile::AliasIdxBot && C->AliasLevel() > 0 &&
-      (PrintOpto || VerifyAliases ||
-       PrintMiscellaneous && (WizardMode || Verbose))) {
-    // Load nodes should not consume all of memory.
-    // Reporting a bottom type indicates a bug in adlc.
-    // If some particular type of node validly consumes all of memory,
-    // sharpen the preceding "if" to exclude it, so we can catch bugs here.
-    tty->print_cr("*** Possible Anti-Dependence Bug:  Load consumes all of memory.");
-    load->dump(2);
-    if (VerifyAliases)  assert(load_alias_idx != Compile::AliasIdxBot, "");
-  }
-#endif
   assert(load_alias_idx || (load->is_Mach() && load->as_Mach()->ideal_Opcode() == Op_StrComp),
          "String compare is only known 'load' that does not conflict with any stores");
   assert(load_alias_idx || (load->is_Mach() && load->as_Mach()->ideal_Opcode() == Op_StrEquals),
@@ -664,17 +623,6 @@ Block* PhaseCFG::insert_anti_dependences(Block* LCA, Node* load, bool verify) {
       }
       assert(found_match, "no worklist bug");
 #ifdef TRACK_PHI_INPUTS
-#ifdef ASSERT
-      // This assert asks about correct handling of PhiNodes, which may not
-      // have all input edges directly from 'mem'. See BugId 4621264
-      int num_mem_inputs = phi_inputs.at_grow(store->_idx,0) + 1;
-      // Increment by exactly one even if there are multiple copies of 'mem'
-      // coming into the phi, because we will run this block several times
-      // if there are several copies of 'mem'.  (That's how DU iterators work.)
-      phi_inputs.at_put(store->_idx, num_mem_inputs);
-      assert(PhiNode::Input + num_mem_inputs < store->req(),
-             "Expect at least one phi input will not be from original memory state");
-#endif //ASSERT
 #endif //TRACK_PHI_INPUTS
     } else if (store_block != early) {
       // 'store' is between the current LCA and earliest possible block.
@@ -1175,9 +1123,6 @@ void PhaseCFG::schedule_late(VectorSet &visited, Node_List &stack) {
         Node *def = self->in(1);
         if (def != NULL && def->bottom_type()->base() == Type::RawPtr) {
           early->add_inst(self);
-#ifdef ASSERT
-          _raw_oops.push(def);
-#endif
           continue;
         }
         break;
@@ -1252,14 +1197,6 @@ void PhaseCFG::schedule_late(VectorSet &visited, Node_List &stack) {
     // Put the node into target block
     schedule_node_into_block(self, late);
 
-#ifdef ASSERT
-    if (self->needs_anti_dependence_check()) {
-      // since precedence edges are only inserted when we're sure they
-      // are needed make sure that after placement in a block we don't
-      // need any new precedence edges.
-      verify_anti_dependences(late, self);
-    }
-#endif
   } // Loop until all nodes have been visited
 
 } // end ScheduleLate
@@ -1470,12 +1407,6 @@ void PhaseCFG::estimate_block_frequency() {
     }
   }
 
-#ifdef ASSERT
-  for (uint i = 0; i < number_of_blocks(); i++) {
-    Block* b = get_block(i);
-    assert(b->_freq >= MIN_BLOCK_FREQUENCY, "Register Allocator requires meaningful block frequency");
-  }
-#endif
 
 #ifndef PRODUCT
   if (PrintCFGBlockFreq) {
@@ -1495,19 +1426,6 @@ void PhaseCFG::estimate_block_frequency() {
 // Create a loop tree from the CFG
 CFGLoop* PhaseCFG::create_loop_tree() {
 
-#ifdef ASSERT
-  assert(get_block(0) == get_root_block(), "first block should be root block");
-  for (uint i = 0; i < number_of_blocks(); i++) {
-    Block* block = get_block(i);
-    // Check that _loop field are clear...we could clear them if not.
-    assert(block->_loop == NULL, "clear _loop expected");
-    // Sanity check that the RPO numbering is reflected in the _blocks array.
-    // It doesn't have to be for the loop tree to be built, but if it is not,
-    // then the blocks have been reordered since dom graph building...which
-    // may question the RPO numbering
-    assert(block->_rpo == i, "unexpected reverse post order number");
-  }
-#endif
 
   int idct = 0;
   CFGLoop* root_loop = new CFGLoop(idct++);

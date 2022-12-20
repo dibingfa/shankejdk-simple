@@ -302,10 +302,6 @@ public:
   }
 
   uint64_t set_fingerprint(uint64_t new_fingerprint) {
-#ifdef ASSERT
-    // Assert only valid if complete/valid 64 bit _fingerprint value is read.
-    uint64_t oldfp = fingerprint();
-#endif // ASSERT
     _fingerprint = new_fingerprint;
     assert(oldfp == 0L || new_fingerprint == oldfp,
            "fingerprint cannot change");

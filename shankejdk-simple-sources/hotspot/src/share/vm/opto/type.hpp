@@ -159,10 +159,6 @@ private:
   // Table for efficient dualing of base types
   static const TYPES dual_type[lastype];
 
-#ifdef ASSERT
-  // One type is interface, the other is oop
-  virtual bool interface_vs_oop_helper(const Type *t) const;
-#endif
 
   const Type *meet_helper(const Type *t, bool include_speculative) const;
   void check_symmetrical(const Type *t, const Type *mt) const;
@@ -263,10 +259,6 @@ public:
     return filter_helper(kills, true);
   }
 
-#ifdef ASSERT
-  // One type is interface, the other is oop
-  virtual bool interface_vs_oop(const Type *t) const;
-#endif
 
   // Returns true if this pointer points at memory which contains a
   // compressed oop references.
@@ -686,10 +678,6 @@ public:
   virtual const Type *xdual() const;    // Compute dual right now.
   bool ary_must_be_exact() const;  // true if arrays of such are never generic
   virtual const Type* remove_speculative() const;
-#ifdef ASSERT
-  // One type is interface, the other is oop
-  virtual bool interface_vs_oop(const Type *t) const;
-#endif
 #ifndef PRODUCT
   virtual void dump2( Dict &d, uint, outputStream *st  ) const; // Specialized per-Type dumping
 #endif
@@ -1093,22 +1081,6 @@ class TypeAryPtr : public TypeOopPtr {
     _ary(ary),
     _is_autobox_cache(is_autobox_cache)
  {
-#ifdef ASSERT
-    if (k != NULL) {
-      // Verify that specified klass and TypeAryPtr::klass() follow the same rules.
-      ciKlass* ck = compute_klass(true);
-      if (k != ck) {
-        this->dump(); tty->cr();
-        tty->print(" k: ");
-        k->print(); tty->cr();
-        tty->print("ck: ");
-        if (ck != NULL) ck->print();
-        else tty->print("<NULL>");
-        tty->cr();
-        assert(false, "unexpected TypeAryPtr::_klass");
-      }
-    }
-#endif
   }
   virtual bool eq( const Type *t ) const;
   virtual int hash() const;     // Type specific hashing
@@ -1174,10 +1146,6 @@ public:
   }
   static const TypeAryPtr *_array_body_type[T_CONFLICT+1];
   // sharpen the type of an int which is used as an array size
-#ifdef ASSERT
-  // One type is interface, the other is oop
-  virtual bool interface_vs_oop(const Type *t) const;
-#endif
 #ifndef PRODUCT
   virtual void dump2( Dict &d, uint depth, outputStream *st ) const; // Specialized per-Type dumping
 #endif

@@ -65,12 +65,6 @@ inline void MemoryWriterHost<Adapter, AP, AccessAssert>::release() {
   debug_only(_access.release();)
 }
 
-#ifdef ASSERT
-template <typename Adapter, typename AP, typename AccessAssert>
-inline bool MemoryWriterHost<Adapter, AP, AccessAssert>::is_acquired() const {
-  return _access.is_acquired();
-}
-#endif
 
 template <typename Adapter, typename AP>
 inline AcquireReleaseMemoryWriterHost<Adapter, AP>::AcquireReleaseMemoryWriterHost(typename Adapter::StorageType* storage, Thread* thread) :

@@ -785,10 +785,6 @@ class Compile : public Phase {
     assert (val >= 0, err_msg_res("number of tracked dead nodes %d more than created nodes %d", _unique, _dead_node_count));
             return (uint) val;
                                            }
-#ifdef ASSERT
-  uint         count_live_nodes_by_graph_walk();
-  void         print_missing_nodes();
-#endif
 
   // Constant table
   ConstantTable&   constant_table() { return _constant_table; }
@@ -1224,9 +1220,6 @@ class Compile : public Phase {
 
   // Auxiliary method for randomized fuzzing/stressing
   static bool randomized_select(int count);
-#ifdef ASSERT
-  bool _type_verify_symmetry;
-#endif
 };
 
 #endif // SHARE_VM_OPTO_COMPILE_HPP

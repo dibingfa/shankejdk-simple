@@ -56,17 +56,9 @@ class CompiledICHolder : public CHeapObj<mtCompiler> {
   // Constructor
   CompiledICHolder(Metadata* metadata, Klass* klass, bool is_method = true)
       : _holder_metadata(metadata), _holder_klass(klass), _is_metadata_method(is_method) {
-#ifdef ASSERT
-    Atomic::inc(&_live_count);
-    Atomic::inc(&_live_not_claimed_count);
-#endif
   }
 
   ~CompiledICHolder() {
-#ifdef ASSERT
-    assert(_live_count > 0, "underflow");
-    Atomic::dec(&_live_count);
-#endif
   }
 
   static int live_count() { return _live_count; }
@@ -106,9 +98,6 @@ class CompiledICHolder : public CHeapObj<mtCompiler> {
   const char* internal_name() const { return "{compiledICHolder}"; }
 
   void claim() {
-#ifdef ASSERT
-    Atomic::dec(&_live_not_claimed_count);
-#endif
   }
 };
 

@@ -746,11 +746,7 @@ enum ArrayElementSize {
 };
 
 extern int _type2aelembytes[T_CONFLICT+1]; // maps a BasicType to nof bytes used by its array element
-#ifdef ASSERT
-extern int type2aelembytes(BasicType t, bool allow_address = false); // asserts
-#else
 inline int type2aelembytes(BasicType t, bool allow_address = false) { return _type2aelembytes[t]; }
-#endif
 
 
 // JavaValue serves as a container for arbitrary Java values.
@@ -1215,35 +1211,23 @@ inline int log2_jlong(jlong x) {
 
 //* the argument must be exactly a power of 2
 inline int exact_log2(intptr_t x) {
-  #ifdef ASSERT
-    if (!is_power_of_2(x)) basic_fatal("x must be a power of 2");
-  #endif
   return log2_intptr(x);
 }
 
 //* the argument must be exactly a power of 2
 inline int exact_log2_long(jlong x) {
-  #ifdef ASSERT
-    if (!is_power_of_2_long(x)) basic_fatal("x must be a power of 2");
-  #endif
   return log2_long(x);
 }
 
 
 // returns integer round-up to the nearest multiple of s (s must be a power of two)
 inline intptr_t round_to(intptr_t x, uintx s) {
-  #ifdef ASSERT
-    if (!is_power_of_2(s)) basic_fatal("s must be a power of 2");
-  #endif
   const uintx m = s - 1;
   return mask_bits(x + m, ~m);
 }
 
 // returns integer round-down to the nearest multiple of s (s must be a power of two)
 inline intptr_t round_down(intptr_t x, uintx s) {
-  #ifdef ASSERT
-    if (!is_power_of_2(s)) basic_fatal("s must be a power of 2");
-  #endif
   const uintx m = s - 1;
   return mask_bits(x, ~m);
 }
@@ -1469,11 +1453,6 @@ inline intptr_t p2i(const void * p) {
 
 // Enable zap-a-lot if in debug version.
 
-# ifdef ASSERT
-# ifdef COMPILER2
-#   define ENABLE_ZAP_DEAD_LOCALS
-#endif /* COMPILER2 */
-# endif /* ASSERT */
 
 #define ARRAY_SIZE(array) (sizeof(array)/sizeof((array)[0]))
 

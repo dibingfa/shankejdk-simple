@@ -745,14 +745,6 @@ bool InstanceKlass::link_class_impl(
         this_oop->vtable()->initialize_vtable(true, CHECK_false);
         this_oop->itable()->initialize_itable(true, CHECK_false);
       }
-#ifdef ASSERT
-      else {
-        ResourceMark rm(THREAD);
-        this_oop->vtable()->verify(tty, true);
-        // In case itable verification is ever added.
-        // this_oop->itable()->verify(tty, true);
-      }
-#endif
       this_oop->set_init_state(linked);
       if (JvmtiExport::should_post_class_prepare()) {
         Thread *thread = THREAD;
@@ -791,21 +783,6 @@ void InstanceKlass::link_methods(TRAPS) {
     m->link_method(m, CHECK);
 
     // This is for JVMTI and unrelated to relocator but the last thing we do
-#ifdef ASSERT
-    if (StressMethodComparator) {
-      ResourceMark rm(THREAD);
-      static int nmc = 0;
-      for (int j = i; j >= 0 && j >= i-4; j--) {
-        if ((++nmc % 1000) == 0)  tty->print_cr("Have run MethodComparator %d times...", nmc);
-        bool z = MethodComparator::methods_EMCP(m(),
-                   methods()->at(j));
-        if (j == i && !z) {
-          tty->print("MethodComparator FAIL: "); m->print(); m->print_codes();
-          assert(z, "method must compare equal to itself");
-        }
-      }
-    }
-#endif //ASSERT
   }
 }
 
@@ -1445,19 +1422,6 @@ void InstanceKlass::array_klasses_do(void f(Klass* k)) {
     ArrayKlass::cast(array_klasses())->array_klasses_do(f);
 }
 
-#ifdef ASSERT
-static int linear_search(Array<Method*>* methods, Symbol* name, Symbol* signature) {
-  int len = methods->length();
-  for (int index = 0; index < len; index++) {
-    Method* m = methods->at(index);
-    assert(m->is_method(), "must be method");
-    if (m->signature() == signature && m->name() == name) {
-       return index;
-    }
-  }
-  return -1;
-}
-#endif
 
 static int binary_search(Array<Method*>* methods, Symbol* name) {
   int len = methods->length();
@@ -1602,10 +1566,6 @@ int InstanceKlass::find_method_index(
         if (method_matches(m, signature, skipping_overpass, skipping_static, skipping_private)) return i;
     }
     // not found
-#ifdef ASSERT
-    int index = (skipping_overpass || skipping_static || skipping_private) ? -1 : linear_search(methods, name, signature);
-    assert(index == -1, err_msg("binary search should have found entry %d", index));
-#endif
   }
   return -1;
 }
@@ -1643,20 +1603,6 @@ Method* InstanceKlass::uncached_lookup_method(Symbol* name, Symbol* signature, O
   return NULL;
 }
 
-#ifdef ASSERT
-// search through class hierarchy and return true if this class or
-// one of the superclasses was redefined
-bool InstanceKlass::has_redefined_this_or_super() const {
-  const InstanceKlass* klass = this;
-  while (klass != NULL) {
-    if (klass->has_been_redefined()) {
-      return true;
-    }
-    klass = InstanceKlass::cast(klass->super());
-  }
-  return false;
-}
-#endif
 
 // lookup a method in the default methods list then in all transitive interfaces
 // Do NOT return private or static methods
@@ -2002,15 +1948,6 @@ void InstanceKlass::clean_dependent_nmethods() {
     }
     set_has_unloaded_dependent(false);
   }
-#ifdef ASSERT
-  else {
-    // Verification
-    for (nmethodBucket* b = _dependencies; b != NULL; b = b->next()) {
-      assert(b->count() >= 0, err_msg("bucket count: %d", b->count()));
-      assert(b->count() != 0, "empty buckets need to be cleaned");
-    }
-  }
-#endif
 }
 
 //
@@ -2066,10 +2003,6 @@ void InstanceKlass::remove_dependent_nmethod(nmethod* nm, bool delete_immediatel
     last = b;
     b = b->next();
   }
-#ifdef ASSERT
-  tty->print_cr("### %s can't find dependent nmethod:", this->external_name());
-  nm->print();
-#endif // ASSERT
   ShouldNotReachHere();
 }
 
@@ -2098,10 +2031,6 @@ bool InstanceKlass::is_dependent_nmethod(nmethod* nm) {
   nmethodBucket* b = _dependencies;
   while (b != NULL) {
     if (nm == b->get_nmethod()) {
-#ifdef ASSERT
-      int count = b->count();
-      assert(count >= 0, err_msg("count shouldn't be negative: %d", count));
-#endif
       return true;
     }
     b = b->next();
@@ -2113,37 +2042,10 @@ bool InstanceKlass::is_dependent_nmethod(nmethod* nm) {
 
 // Garbage collection
 
-#ifdef ASSERT
-template <class T> void assert_is_in(T *p) {
-  T heap_oop = oopDesc::load_heap_oop(p);
-  if (!oopDesc::is_null(heap_oop)) {
-    oop o = oopDesc::decode_heap_oop_not_null(heap_oop);
-    assert(Universe::heap()->is_in(o), "should be in heap");
-  }
-}
-template <class T> void assert_is_in_closed_subset(T *p) {
-  T heap_oop = oopDesc::load_heap_oop(p);
-  if (!oopDesc::is_null(heap_oop)) {
-    oop o = oopDesc::decode_heap_oop_not_null(heap_oop);
-    assert(Universe::heap()->is_in_closed_subset(o),
-           err_msg("should be in closed *p " INTPTR_FORMAT " " INTPTR_FORMAT, (address)p, (address)o));
-  }
-}
-template <class T> void assert_is_in_reserved(T *p) {
-  T heap_oop = oopDesc::load_heap_oop(p);
-  if (!oopDesc::is_null(heap_oop)) {
-    oop o = oopDesc::decode_heap_oop_not_null(heap_oop);
-    assert(Universe::heap()->is_in_reserved(o), "should be in reserved");
-  }
-}
-template <class T> void assert_nothing(T *p) {}
-
-#else
 template <class T> void assert_is_in(T *p) {}
 template <class T> void assert_is_in_closed_subset(T *p) {}
 template <class T> void assert_is_in_reserved(T *p) {}
 template <class T> void assert_nothing(T *p) {}
-#endif // ASSERT
 
 //
 // Macros that iterate over areas of oops which are specialized on type of
@@ -3605,26 +3507,11 @@ void JNIid::verify(Klass* holder) {
   JNIid* current = this;
   while (current != NULL) {
     guarantee(current->holder() == holder, "Invalid klass in JNIid");
-#ifdef ASSERT
-    int o = current->offset();
-    if (current->is_static_field_id()) {
-      guarantee(o >= first_field_offset  && o < end_field_offset,  "Invalid static field offset in JNIid");
-    }
-#endif
     current = current->next();
   }
 }
 
 
-#ifdef ASSERT
-void InstanceKlass::set_init_state(ClassState state) {
-  bool good_state = is_shared() ? (_init_state <= state)
-                                               : (_init_state < state);
-  assert(good_state || state == allocated, "illegal state transition");
-  assert(_init_thread == NULL, "should be cleared before state change");
-  _init_state = (u1)state;
-}
-#endif
 
 
 // RedefineClasses() support for previous versions:

@@ -199,9 +199,6 @@ class nmethod : public CodeBlob {
 
   volatile unsigned char _unloading_clock;   // Incremented after GC unloaded/cleaned the nmethod
 
-#ifdef ASSERT
-  bool _oops_are_stale;  // indicates that it's no longer safe to access oops section
-#endif
 
   enum { in_use       = 0,   // executable nmethod
          not_entrant  = 1,   // marked for deoptimization but activations may still exist,

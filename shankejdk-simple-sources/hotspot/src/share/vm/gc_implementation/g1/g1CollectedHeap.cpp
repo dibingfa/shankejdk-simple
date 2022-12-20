@@ -430,24 +430,6 @@ HeapRegion* G1CollectedHeap::pop_dirty_cards_region()
   return hr;
 }
 
-#ifdef ASSERT
-// A region is added to the collection set as it is retired
-// so an address p can point to a region which will be in the
-// collection set but has not yet been retired.  This method
-// therefore is only accurate during a GC pause after all
-// regions have been retired.  It is used for debugging
-// to check if an nmethod has references to objects that can
-// be move during a partial collection.  Though it can be
-// inaccurate, it is sufficient for G1 because the conservative
-// implementation of is_scavengable() for G1 will indicate that
-// all nmethods must be scanned during a partial collection.
-bool G1CollectedHeap::is_in_partial_collection(const void* p) {
-  if (p == NULL) {
-    return false;
-  }
-  return heap_region_containing(p)->in_collection_set();
-}
-#endif
 
 // Returns true if the reference points to an object that
 // can move in an incremental collection.
@@ -788,14 +770,6 @@ HeapWord* G1CollectedHeap::humongous_obj_allocate(size_t word_size, AllocationCo
       _hrm.expand_at(first, obj_regions);
       g1_policy()->record_new_heap_size(num_regions());
 
-#ifdef ASSERT
-      for (uint i = first; i < first + obj_regions; ++i) {
-        HeapRegion* hr = region_at(i);
-        assert(hr->is_free(), "sanity");
-        assert(hr->is_empty(), "sanity");
-        assert(is_on_master_free_list(hr), "sanity");
-      }
-#endif
       _hrm.allocate_free_regions_starting_at(first, obj_regions);
     } else {
       // Policy: Potentially trigger a defragmentation GC.
@@ -2552,17 +2526,6 @@ bool G1CollectedHeap::is_in(const void* p) const {
   }
 }
 
-#ifdef ASSERT
-bool G1CollectedHeap::is_in_exact(const void* p) const {
-  bool contains = reserved_region().contains(p);
-  bool available = _hrm.is_available(addr_to_region((HeapWord*)p));
-  if (contains && available) {
-    return true;
-  } else {
-    return false;
-  }
-}
-#endif
 
 // Iteration functions.
 
@@ -2651,85 +2614,6 @@ void G1CollectedHeap::reset_cset_heap_region_claim_values() {
   collection_set_iterate(&blk);
 }
 
-#ifdef ASSERT
-// This checks whether all regions in the heap have the correct claim
-// value. I also piggy-backed on this a check to ensure that the
-// humongous_start_region() information on "continues humongous"
-// regions is correct.
-
-class CheckClaimValuesClosure : public HeapRegionClosure {
-private:
-  jint _claim_value;
-  uint _failures;
-  HeapRegion* _sh_region;
-
-public:
-  CheckClaimValuesClosure(jint claim_value) :
-    _claim_value(claim_value), _failures(0), _sh_region(NULL) { }
-  bool doHeapRegion(HeapRegion* r) {
-    if (r->claim_value() != _claim_value) {
-      gclog_or_tty->print_cr("Region " HR_FORMAT ", "
-                             "claim value = %d, should be %d",
-                             HR_FORMAT_PARAMS(r),
-                             r->claim_value(), _claim_value);
-      ++_failures;
-    }
-    if (!r->isHumongous()) {
-      _sh_region = NULL;
-    } else if (r->startsHumongous()) {
-      _sh_region = r;
-    } else if (r->continuesHumongous()) {
-      if (r->humongous_start_region() != _sh_region) {
-        gclog_or_tty->print_cr("Region " HR_FORMAT ", "
-                               "HS = " PTR_FORMAT ", should be " PTR_FORMAT,
-                               HR_FORMAT_PARAMS(r),
-                               p2i(r->humongous_start_region()),
-                               p2i(_sh_region));
-        ++_failures;
-      }
-    }
-    return false;
-  }
-  uint failures() { return _failures; }
-};
-
-bool G1CollectedHeap::check_heap_region_claim_values(jint claim_value) {
-  CheckClaimValuesClosure cl(claim_value);
-  heap_region_iterate(&cl);
-  return cl.failures() == 0;
-}
-
-class CheckClaimValuesInCSetHRClosure: public HeapRegionClosure {
-private:
-  jint _claim_value;
-  uint _failures;
-
-public:
-  CheckClaimValuesInCSetHRClosure(jint claim_value) :
-    _claim_value(claim_value), _failures(0) { }
-
-  uint failures() { return _failures; }
-
-  bool doHeapRegion(HeapRegion* hr) {
-    assert(hr->in_collection_set(), "how?");
-    assert(!hr->isHumongous(), "H-region in CSet");
-    if (hr->claim_value() != _claim_value) {
-      gclog_or_tty->print_cr("CSet Region " HR_FORMAT ", "
-                             "claim value = %d, should be %d",
-                             HR_FORMAT_PARAMS(hr),
-                             hr->claim_value(), _claim_value);
-      _failures += 1;
-    }
-    return false;
-  }
-};
-
-bool G1CollectedHeap::check_cset_heap_region_claim_values(jint claim_value) {
-  CheckClaimValuesInCSetHRClosure cl(claim_value);
-  collection_set_iterate(&cl);
-  return cl.failures() == 0;
-}
-#endif // ASSERT
 
 // Clear the cached CSet starting regions and (more importantly)
 // the time stamps. Called when we reset the GC time stamp.
@@ -3841,11 +3725,6 @@ G1CollectedHeap::setup_surviving_young_words() {
                           "Not enough space for young surv words summary.");
   }
   memset(_surviving_young_words, 0, (size_t) array_length * sizeof(size_t));
-#ifdef ASSERT
-  for (uint i = 0;  i < array_length; ++i) {
-    assert( _surviving_young_words[i] == 0, "memset above" );
-  }
-#endif // !ASSERT
 }
 
 void
@@ -3874,27 +3753,6 @@ class VerifyRegionRemSetClosure : public HeapRegionClosure {
     }
 };
 
-#ifdef ASSERT
-class VerifyCSetClosure: public HeapRegionClosure {
-public:
-  bool doHeapRegion(HeapRegion* hr) {
-    // Here we check that the CSet region's RSet is ready for parallel
-    // iteration. The fields that we'll verify are only manipulated
-    // when the region is part of a CSet and is collected. Afterwards,
-    // we reset these fields when we clear the region's RSet (when the
-    // region is freed) so they are ready when the region is
-    // re-allocated. The only exception to this is if there's an
-    // evacuation failure and instead of freeing the region we leave
-    // it in the heap. In that case, we reset these fields during
-    // evacuation failure handling.
-    guarantee(hr->rem_set()->verify_ready_for_par_iteration(), "verification");
-
-    // Here's a good place to add any other checks we'd like to
-    // perform on CSet regions.
-    return false;
-  }
-};
-#endif // ASSERT
 
 #if TASKQUEUE_STATS
 void G1CollectedHeap::print_taskqueue_stats_hdr(outputStream* const st) {
@@ -4167,10 +4025,6 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
           }
         }
 
-#ifdef ASSERT
-        VerifyCSetClosure cl;
-        collection_set_iterate(&cl);
-#endif // ASSERT
 
         setup_surviving_young_words();
 

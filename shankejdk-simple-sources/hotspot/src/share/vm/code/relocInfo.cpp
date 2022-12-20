@@ -38,16 +38,6 @@ const RelocationHolder RelocationHolder::none; // its type is relocInfo::none
 
 // Implementation of relocInfo
 
-#ifdef ASSERT
-relocInfo::relocInfo(relocType t, int off, int f) {
-  assert(t != data_prefix_tag, "cannot build a prefix this way");
-  assert((t & type_mask) == t, "wrong type");
-  assert((f & format_mask) == f, "wrong format");
-  assert(off >= 0 && off < offset_limit(), "offset out off bounds");
-  assert((off & (offset_unit-1)) == 0, "misaligned offset");
-  (*this) = relocInfo(t, RAW_BITS, off, f);
-}
-#endif
 
 void relocInfo::initialize(CodeSection* dest, Relocation* reloc) {
   relocInfo* data = this+1;  // here's where the data might go
@@ -279,12 +269,6 @@ void RelocIterator::set_limits(address begin, address limit) {
 
   // the limit affects this next stuff:
   if (begin != NULL) {
-#ifdef ASSERT
-    // In ASSERT mode we do not actually use the index, but simply
-    // check that its contents would have led us to the right answer.
-    address addrCheck = _addr;
-    relocInfo* infoCheck = _current;
-#endif // ASSERT
     if (index_size > 0) {
       // skip ahead
       RelocIndexEntry* index       = (RelocIndexEntry*)_end;
@@ -294,16 +278,11 @@ void RelocIterator::set_limits(address begin, address limit) {
       if (card > 0) {
         if (index+card-1 < index_limit)  index += card-1;
         else                             index = index_limit - 1;
-#ifdef ASSERT
-        addrCheck = _addr    + index->addr_offset;
-        infoCheck = _current + index->reloc_offset;
-#else
         // Advance the iterator immediately to the last valid state
         // for the previous card.  Calling "next" will then advance
         // it to the first item on the required card.
         _addr    += index->addr_offset;
         _current += index->reloc_offset;
-#endif // ASSERT
       }
     }
 
@@ -312,13 +291,6 @@ void RelocIterator::set_limits(address begin, address limit) {
     while (true) {
       backup      = _current;
       backup_addr = _addr;
-#ifdef ASSERT
-      if (backup == infoCheck) {
-        assert(backup_addr == addrCheck, "must match"); addrCheck = NULL; infoCheck = NULL;
-      } else {
-        assert(addrCheck == NULL || backup_addr <= addrCheck, "must not pass addrCheck");
-      }
-#endif // ASSERT
       if (!next() || addr() >= begin) break;
     }
     assert(addrCheck == NULL || addrCheck == backup_addr, "must have matched addrCheck");

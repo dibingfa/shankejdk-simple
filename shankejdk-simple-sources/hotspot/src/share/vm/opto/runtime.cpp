@@ -141,15 +141,6 @@ ExceptionBlob* OptoRuntime::_exception_blob;
 
 // This should be called in an assertion at the start of OptoRuntime routines
 // which are entered from compiled code (all of them)
-#ifdef ASSERT
-static bool check_compiled_frame(JavaThread* thread) {
-  assert(thread->last_frame().is_runtime_frame(), "cannot call runtime directly from compiled code");
-  RegisterMap map(thread, false);
-  frame caller = thread->last_frame().sender(&map);
-  assert(caller.is_compiled_frame(), "not being called from compiled like code");
-  return true;
-}
-#endif // ASSERT
 
 
 #define gen(env, var, type_func_gen, c_func, fancy_jump, pass_tls, save_arg_regs, return_pc) \
@@ -1224,12 +1215,6 @@ JRT_ENTRY_NO_ASYNC(address, OptoRuntime::handle_exception_C_helper(JavaThread* t
   // for AbortVMOnException flag
   NOT_PRODUCT(Exceptions::debug_check_abort(exception));
 
-#ifdef ASSERT
-  if (!(exception->is_a(SystemDictionary::Throwable_klass()))) {
-    // should throw an exception here
-    ShouldNotReachHere();
-  }
-#endif
 
   // new exception handling: this method is entered only from adapters
   // exceptions from compiled java methods are handled in compiled code
@@ -1288,12 +1273,6 @@ JRT_ENTRY_NO_ASYNC(address, OptoRuntime::handle_exception_C_helper(JavaThread* t
           nm->add_handler_for_exception_and_pc(exception,pc,handler_address);
         }
       } else {
-#ifdef ASSERT
-        bool recursive_exception = false;
-        address computed_address = SharedRuntime::compute_compiled_exc_handler(nm, pc, exception, force_unwind, true, recursive_exception);
-        assert(recursive_exception || (handler_address == computed_address), err_msg("Handler address inconsistency: " PTR_FORMAT " != " PTR_FORMAT,
-                 p2i(handler_address), p2i(computed_address)));
-#endif
       }
     }
 
@@ -1342,9 +1321,6 @@ address OptoRuntime::handle_exception_C(JavaThread* thread) {
   if (nm != NULL) {
     RegisterMap map(thread, false);
     frame caller = thread->last_frame().sender(&map);
-#ifdef ASSERT
-    assert(caller.is_compiled_frame(), "must be");
-#endif // ASSERT
     if (caller.is_deoptimized_frame()) {
       handler_address = SharedRuntime::deopt_blob()->unpack_with_exception();
     }
@@ -1379,12 +1355,6 @@ address OptoRuntime::rethrow_C(oopDesc* exception, JavaThread* thread, address r
   SharedRuntime::_rethrow_ctr++;               // count rethrows
 #endif
   assert (exception != NULL, "should have thrown a NULLPointerException");
-#ifdef ASSERT
-  if (!(exception->is_a(SystemDictionary::Throwable_klass()))) {
-    // should throw an exception here
-    ShouldNotReachHere();
-  }
-#endif
 
   thread->set_vm_result(exception);
   // Frame not compiled (handles deoptimization blob)

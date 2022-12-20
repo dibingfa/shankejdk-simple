@@ -79,11 +79,6 @@ struct InCSetState {
   bool is_young() const                { return _value == Young; }
   bool is_old() const                  { return _value == Old; }
 
-#ifdef ASSERT
-  bool is_default() const              { return !is_in_cset_or_humongous(); }
-  bool is_valid() const                { return (_value >= Humongous) && (_value < Num); }
-  bool is_valid_gen() const            { return (_value >= Young && _value <= Old); }
-#endif
 };
 
 // Instances of this class are used for quick tests on whether a reference points

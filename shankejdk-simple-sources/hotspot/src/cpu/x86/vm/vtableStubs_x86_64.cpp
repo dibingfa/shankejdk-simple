@@ -197,17 +197,6 @@ VtableStub* VtableStubs::create_itable_stub(int itable_index) {
   // method (rbx): Method*
   // j_rarg0: receiver
 
-#ifdef ASSERT
-  if (DebugVtables) {
-    Label L2;
-    __ cmpptr(method, (int32_t)NULL_WORD);
-    __ jcc(Assembler::equal, L2);
-    __ cmpptr(Address(method, Method::from_compiled_offset()), (int32_t)NULL_WORD);
-    __ jcc(Assembler::notZero, L2);
-    __ stop("compiler entrypoint is null");
-    __ bind(L2);
-  }
-#endif // ASSERT
 
   // rbx: Method*
   // j_rarg0: receiver

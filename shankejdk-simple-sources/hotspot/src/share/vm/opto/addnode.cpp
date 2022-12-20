@@ -132,14 +132,6 @@ Node *AddNode::Ideal(PhaseGVN *phase, bool can_reshape) {
     if( t12->singleton() && t12 != Type::TOP ) { // Left input is an add of a constant?
       // Check for rare case of closed data cycle which can happen inside
       // unreachable loops. In these cases the computation is undefined.
-#ifdef ASSERT
-      Node *add11    = add1->in(1);
-      int   add11_op = add11->Opcode();
-      if( (add1 == add1->in(1))
-         || (add11_op == this_op && add11->in(1) == add1) ) {
-        assert(false, "dead loop in AddNode::Ideal");
-      }
-#endif
       // The Add of the flattened expression
       Node *x1 = add1->in(1);
       Node *x2 = phase->makecon( add1->as_Add()->add_ring( t2, t12 ));

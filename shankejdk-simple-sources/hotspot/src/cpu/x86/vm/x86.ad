@@ -737,10 +737,6 @@ static int vec_mov_helper(CodeBuffer *cbuf, bool do_size, int src_lo, int dst_lo
       ShouldNotReachHere();
     }
     int size = __ offset() - offset;
-#ifdef ASSERT
-    // VEX_2bytes prefix is used if UseAVX > 0, so it takes the same 2 bytes as SIMD prefix.
-    assert(!do_size || size == 4, "incorrect size calculattion");
-#endif
     return size;
 #ifndef PRODUCT
   } else if (!do_size) {
@@ -806,11 +802,6 @@ static int vec_spill_helper(CodeBuffer *cbuf, bool do_size, bool is_load,
       }
     }
     int size = __ offset() - offset;
-#ifdef ASSERT
-    int offset_size = (stack_offset == 0) ? 0 : ((stack_offset < 0x80) ? 1 : 4);
-    // VEX_2bytes prefix is used if UseAVX > 0, so it takes the same 2 bytes as SIMD prefix.
-    assert(!do_size || size == (5+offset_size), "incorrect size calculattion");
-#endif
     return size;
 #ifndef PRODUCT
   } else if (!do_size) {

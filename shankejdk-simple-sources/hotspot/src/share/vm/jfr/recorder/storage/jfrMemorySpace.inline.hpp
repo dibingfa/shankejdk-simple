@@ -362,16 +362,6 @@ inline bool ReleaseOp<Mspace>::process(typename Mspace::Type* t) {
   return true;
 }
 
-#ifdef ASSERT
-template <typename T>
-inline void assert_migration_state(const T* old, const T* new_buffer, size_t used, size_t requested) {
-  assert(old != NULL, "invariant");
-  assert(new_buffer != NULL, "invariant");
-  assert(old->pos() >= old->start(), "invariant");
-  assert(old->pos() + used <= old->end(), "invariant");
-  assert(new_buffer->free_size() >= (used + requested), "invariant");
-}
-#endif // ASSERT
 
 template <typename T>
 inline void migrate_outstanding_writes(const T* old, T* new_buffer, size_t used, size_t requested) {

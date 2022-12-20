@@ -307,9 +307,6 @@ HeapRegion::HeapRegion(uint hrm_index,
     _prev_marked_bytes(0), _next_marked_bytes(0), _gc_efficiency(0.0),
     _next_young_region(NULL),
     _next_dirty_cards_region(NULL), _next(NULL), _prev(NULL),
-#ifdef ASSERT
-    _containing_set(NULL),
-#endif // ASSERT
      _young_index_in_cset(-1), _surv_rate_group(NULL), _age_index(-1),
     _rem_set(NULL), _recorded_rs_length(0), _predicted_elapsed_time_ms(0),
     _predicted_bytes_to_copy(0)
@@ -504,15 +501,6 @@ bool HeapRegion::oops_on_card_seq_iterate_careful(MemRegion mr,
   // object containing the start of the region.
   HeapWord* cur = block_start(start);
 
-#ifdef ASSERT
-  {
-    assert(cur <= start,
-           err_msg("cur: " PTR_FORMAT ", start: " PTR_FORMAT, p2i(cur), p2i(start)));
-    HeapWord* next = cur + block_size(cur);
-    assert(start < next,
-           err_msg("start: " PTR_FORMAT ", next: " PTR_FORMAT, p2i(start), p2i(next)));
-  }
-#endif
 
   do {
     oop obj = oop(cur);

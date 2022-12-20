@@ -351,19 +351,6 @@ void TypeOrigin::details(outputStream* ss) const {
   }
 }
 
-#ifdef ASSERT
-void TypeOrigin::print_on(outputStream* str) const {
-  str->print("{%d,%d,%p:", _origin, _index, _frame);
-  if (_frame != NULL) {
-    _frame->print_on(str);
-  } else {
-    str->print("null");
-  }
-  str->print(",");
-  _type.print_on(str);
-  str->print("}");
-}
-#endif
 
 void ErrorContext::details(outputStream* ss, const Method* method) const {
   if (is_valid()) {
@@ -1927,11 +1914,6 @@ void ClassVerifier::verify_error(ErrorContext ctx, const char* msg, ...) {
   ss.vprint(msg, va);
   va_end(va);
   _message = ss.as_string();
-#ifdef ASSERT
-  ResourceMark rm;
-  const char* exception_name = _exception_type->as_C_string();
-  Exceptions::debug_check_abort(exception_name, NULL);
-#endif // ndef ASSERT
 }
 
 void ClassVerifier::class_format_error(const char* msg, ...) {
@@ -2691,13 +2673,6 @@ void ClassVerifier::verify_invoke_instructions(
   }
   int nargs = sig_i;
 
-#ifdef ASSERT
-  {
-    ArgumentSizeComputer size_it(method_sig);
-    assert(nargs == size_it.size(), "Argument sizes do not match");
-    assert(nargs <= (method_sig->utf8_length() - 3) * 2, "estimate of max size isn't conservative enough");
-  }
-#endif
 
   // Check instruction operands
   u2 bci = bcs->bci();

@@ -112,9 +112,6 @@ class   ProfileInvoke;
 class   RuntimeCall;
 class   MemBar;
 class   RangeCheckPredicate;
-#ifdef ASSERT
-class   Assert;
-#endif
 
 // A Value is a reference to the instruction creating the value
 typedef Instruction* Value;
@@ -217,9 +214,6 @@ class InstructionVisitor: public StackObj {
   virtual void do_RuntimeCall    (RuntimeCall*     x) = 0;
   virtual void do_MemBar         (MemBar*          x) = 0;
   virtual void do_RangeCheckPredicate(RangeCheckPredicate* x) = 0;
-#ifdef ASSERT
-  virtual void do_Assert         (Assert*          x) = 0;
-#endif
 };
 
 
@@ -586,9 +580,6 @@ class Instruction: public CompilationResourceObj {
   virtual ProfileInvoke*    as_ProfileInvoke()   { return NULL; }
   virtual RangeCheckPredicate* as_RangeCheckPredicate() { return NULL; }
 
-#ifdef ASSERT
-  virtual Assert*           as_Assert()          { return NULL; }
-#endif
 
   virtual void visit(InstructionVisitor* v)      = 0;
 
@@ -634,14 +625,7 @@ class Instruction: public CompilationResourceObj {
 // Debugging support
 
 
-#ifdef ASSERT
-class AssertValues: public ValueVisitor {
-  void visit(Value* x)             { assert((*x) != NULL, "value must exist"); }
-};
-  #define ASSERT_VALUES                          { AssertValues assert_value; values_do(&assert_value); }
-#else
   #define ASSERT_VALUES
-#endif // ASSERT
 
 
 // A Phi is a phi function in the sense of SSA form. It stands for
@@ -1826,10 +1810,6 @@ BASE(BlockEnd, StateSplit)
   BlockList* sux() const                         { return _sux; }
 
   void set_sux(BlockList* sux) {
-#ifdef ASSERT
-    assert(sux != NULL, "sux must exist");
-    for (int i = sux->length() - 1; i >= 0; i--) assert(sux->at(i) != NULL, "sux must exist");
-#endif
     _sux = sux;
   }
 
@@ -1902,30 +1882,6 @@ LEAF(Goto, BlockEnd)
   void set_direction(Direction d)                { _direction = d; }
 };
 
-#ifdef ASSERT
-LEAF(Assert, Instruction)
-  private:
-  Value       _x;
-  Condition   _cond;
-  Value       _y;
-  char        *_message;
-
- public:
-  // creation
-  // unordered_is_true is valid for float/double compares only
-   Assert(Value x, Condition cond, bool unordered_is_true, Value y);
-
-  // accessors
-  Value x() const                                { return _x; }
-  Condition cond() const                         { return _cond; }
-  bool unordered_is_true() const                 { return check_flag(UnorderedIsTrueFlag); }
-  Value y() const                                { return _y; }
-  const char *message() const                    { return _message; }
-
-  // generic
-  virtual void input_values_do(ValueVisitor* f)  { f->visit(&_x); f->visit(&_y); }
-};
-#endif
 
 LEAF(RangeCheckPredicate, StateSplit)
  private:

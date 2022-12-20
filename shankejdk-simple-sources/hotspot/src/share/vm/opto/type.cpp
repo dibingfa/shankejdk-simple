@@ -591,11 +591,6 @@ const Type *Type::hashcons(void) {
   // New Type, insert into Type table
   tdic->Insert((void*)_dual,(void*)_dual);
   ((Type*)_dual)->_dual = this; // Finish up being symmetric
-#ifdef ASSERT
-  Type *dual_dual = (Type*)_dual->xdual();
-  assert( eq(dual_dual), "xdual(xdual()) should be identity" );
-  delete dual_dual;
-#endif
   return this;                  // Return new Type
 }
 
@@ -624,77 +619,8 @@ bool Type::is_nan()    const {
 }
 
 //----------------------interface_vs_oop---------------------------------------
-#ifdef ASSERT
-bool Type::interface_vs_oop_helper(const Type *t) const {
-  bool result = false;
-
-  const TypePtr* this_ptr = this->make_ptr(); // In case it is narrow_oop
-  const TypePtr*    t_ptr =    t->make_ptr();
-  if( this_ptr == NULL || t_ptr == NULL )
-    return result;
-
-  const TypeInstPtr* this_inst = this_ptr->isa_instptr();
-  const TypeInstPtr*    t_inst =    t_ptr->isa_instptr();
-  if( this_inst && this_inst->is_loaded() && t_inst && t_inst->is_loaded() ) {
-    bool this_interface = this_inst->klass()->is_interface();
-    bool    t_interface =    t_inst->klass()->is_interface();
-    result = this_interface ^ t_interface;
-  }
-
-  return result;
-}
-
-bool Type::interface_vs_oop(const Type *t) const {
-  if (interface_vs_oop_helper(t)) {
-    return true;
-  }
-  // Now check the speculative parts as well
-  const TypeOopPtr* this_spec = isa_oopptr() != NULL ? isa_oopptr()->speculative() : NULL;
-  const TypeOopPtr* t_spec = t->isa_oopptr() != NULL ? t->isa_oopptr()->speculative() : NULL;
-  if (this_spec != NULL && t_spec != NULL) {
-    if (this_spec->interface_vs_oop_helper(t_spec)) {
-      return true;
-    }
-    return false;
-  }
-  if (this_spec != NULL && this_spec->interface_vs_oop_helper(t)) {
-    return true;
-  }
-  if (t_spec != NULL && interface_vs_oop_helper(t_spec)) {
-    return true;
-  }
-  return false;
-}
-
-#endif
 
 void Type::check_symmetrical(const Type *t, const Type *mt) const {
-#ifdef ASSERT
-  assert(mt == t->xmeet(this), "meet not commutative");
-  const Type* dual_join = mt->_dual;
-  const Type *t2t    = dual_join->xmeet(t->_dual);
-  const Type *t2this = dual_join->xmeet(this->_dual);
-
-  // Interface meet Oop is Not Symmetric:
-  // Interface:AnyNull meet Oop:AnyNull == Interface:AnyNull
-  // Interface:NotNull meet Oop:NotNull == java/lang/Object:NotNull
-
-  if( !interface_vs_oop(t) && (t2t != t->_dual || t2this != this->_dual) ) {
-    tty->print_cr("=== Meet Not Symmetric ===");
-    tty->print("t   =                   ");              t->dump(); tty->cr();
-    tty->print("this=                   ");                 dump(); tty->cr();
-    tty->print("mt=(t meet this)=       ");             mt->dump(); tty->cr();
-
-    tty->print("t_dual=                 ");       t->_dual->dump(); tty->cr();
-    tty->print("this_dual=              ");          _dual->dump(); tty->cr();
-    tty->print("mt_dual=                ");      mt->_dual->dump(); tty->cr();
-
-    tty->print("mt_dual meet t_dual=    "); t2t           ->dump(); tty->cr();
-    tty->print("mt_dual meet this_dual= "); t2this        ->dump(); tty->cr();
-
-    fatal("meet not symmetric" );
-  }
-#endif
 }
 
 //------------------------------meet-------------------------------------------
@@ -714,29 +640,6 @@ const Type *Type::meet_helper(const Type *t, bool include_speculative) const {
   t = t->maybe_remove_speculative(include_speculative);
 
   const Type *mt = this_t->xmeet(t);
-#ifdef ASSERT
-  if (isa_narrowoop() || t->isa_narrowoop()) return mt;
-  if (isa_narrowklass() || t->isa_narrowklass()) return mt;
-  Compile* C = Compile::current();
-  if (!C->_type_verify_symmetry) {
-    return mt;
-  }
-  this_t->check_symmetrical(t, mt);
-  // In the case of an array, computing the meet above, caused the
-  // computation of the meet of the elements which at verification
-  // time caused the computation of the meet of the dual of the
-  // elements. Computing the meet of the dual of the arrays here
-  // causes the meet of the dual of the elements to be computed which
-  // would cause the meet of the dual of the dual of the elements,
-  // that is the meet of the elements already computed above to be
-  // computed. Avoid redundant computations by requesting no
-  // verification.
-  C->_type_verify_symmetry = false;
-  const Type *mt_dual = this_t->_dual->xmeet(t->_dual);
-  this_t->_dual->check_symmetrical(t->_dual, mt_dual);
-  assert(!C->_type_verify_symmetry, "shouldn't have changed");
-  C->_type_verify_symmetry = true;
-#endif
   return mt;
 }
 
@@ -2016,19 +1919,6 @@ const Type* TypeAry::remove_speculative() const {
 }
 
 //----------------------interface_vs_oop---------------------------------------
-#ifdef ASSERT
-bool TypeAry::interface_vs_oop(const Type *t) const {
-  const TypeAry* t_ary = t->is_ary();
-  if (t_ary) {
-    const TypePtr* this_ptr = _elem->make_ptr(); // In case we have narrow_oops
-    const TypePtr*    t_ptr = t_ary->_elem->make_ptr();
-    if(this_ptr != NULL && t_ptr != NULL) {
-      return this_ptr->interface_vs_oop(t_ptr);
-    }
-  }
-  return false;
-}
-#endif
 
 //------------------------------dump2------------------------------------------
 #ifndef PRODUCT
@@ -4097,15 +3987,6 @@ const Type *TypeAryPtr::xdual() const {
 }
 
 //----------------------interface_vs_oop---------------------------------------
-#ifdef ASSERT
-bool TypeAryPtr::interface_vs_oop(const Type *t) const {
-  const TypeAryPtr* t_aryptr = t->isa_aryptr();
-  if (t_aryptr) {
-    return _ary->interface_vs_oop(t_aryptr->_ary);
-  }
-  return false;
-}
-#endif
 
 //------------------------------dump2------------------------------------------
 #ifndef PRODUCT
@@ -4612,24 +4493,6 @@ ciKlass* TypeAryPtr::compute_klass(DEBUG_ONLY(bool verify)) const {
   } else {
     // Cannot compute array klass directly from basic type,
     // since subtypes of TypeInt all have basic type T_INT.
-#ifdef ASSERT
-    if (verify && el->isa_int()) {
-      // Check simple cases when verifying klass.
-      BasicType bt = T_ILLEGAL;
-      if (el == TypeInt::BYTE) {
-        bt = T_BYTE;
-      } else if (el == TypeInt::SHORT) {
-        bt = T_SHORT;
-      } else if (el == TypeInt::CHAR) {
-        bt = T_CHAR;
-      } else if (el == TypeInt::INT) {
-        bt = T_INT;
-      } else {
-        return _klass; // just return specified klass
-      }
-      return ciTypeArrayKlass::make(bt);
-    }
-#endif
     assert(!el->isa_int(),
            "integral arrays must be pre-equipped with a class");
     // Compute array klass directly from basic type

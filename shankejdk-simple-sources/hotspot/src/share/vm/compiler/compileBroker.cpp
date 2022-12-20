@@ -258,9 +258,6 @@ CompileTaskWrapper::~CompileTaskWrapper() {
 
 
 CompileTask*  CompileTask::_task_free_list = NULL;
-#ifdef ASSERT
-int CompileTask::_num_allocated_tasks = 0;
-#endif
 /**
  * Allocate a CompileTask, from the free list if possible.
  */
@@ -1528,34 +1525,9 @@ bool CompileBroker::compilation_is_prohibited(methodHandle method, int osr_bci, 
  * The function also allows to generate separate compilation IDs for OSR compilations.
  */
 int CompileBroker::assign_compile_id(methodHandle method, int osr_bci) {
-#ifdef ASSERT
-  bool is_osr = (osr_bci != standard_entry_bci);
-  int id;
-  if (method->is_native()) {
-    assert(!is_osr, "can't be osr");
-    // Adapters, native wrappers and method handle intrinsics
-    // should be generated always.
-    return Atomic::add(1, &_compilation_id);
-  } else if (CICountOSR && is_osr) {
-    id = Atomic::add(1, &_osr_compilation_id);
-    if (CIStartOSR <= id && id < CIStopOSR) {
-      return id;
-    }
-  } else {
-    id = Atomic::add(1, &_compilation_id);
-    if (CIStart <= id && id < CIStop) {
-      return id;
-    }
-  }
-
-  // Method was not in the appropriate compilation range.
-  method->set_not_compilable_quietly();
-  return 0;
-#else
   // CICountOSR is a develop flag and set to 'false' by default. In a product built,
   // only _compilation_id is incremented.
   return Atomic::add(1, &_compilation_id);
-#endif
 }
 
 /**
@@ -2113,14 +2085,6 @@ void CompileBroker::invoke_compiler_on_method(CompileTask* task) {
   // only after the setting of the bits. See also 14012000 above.
   method->clear_queued_for_compilation();
 
-#ifdef ASSERT
-  if (CollectedHeap::fired_fake_oom()) {
-    // The current compile received a fake OOM during compilation so
-    // go ahead and exit the VM since the test apparently succeeded
-    tty->print_cr("*** Shutting down VM after successful fake OOM");
-    vm_exit(0);
-  }
-#endif
 }
 
 /**

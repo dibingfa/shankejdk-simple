@@ -33,29 +33,7 @@
 #include "runtime/thread.hpp"
 #include "utilities/exceptions.hpp"
 #include "utilities/ticks.hpp"
-#ifdef ASSERT
-#include "utilities/bitMap.hpp"
-#endif
 
-#ifdef ASSERT
-class JfrEventVerifier {
-  template <typename>
-  friend class JfrEvent;
- private:
-  // verification of event fields
-  BitMap::bm_word_t _verification_storage[1];
-  BitMap _verification_bit_map;
-  bool _committed;
-
-  JfrEventVerifier();
-  void check(BitMap::idx_t field_idx) const;
-  void set_field_bit(size_t field_idx);
-  bool verify_field_bit(size_t field_idx) const;
-  void set_committed();
-  void clear_committed();
-  bool committed() const;
-};
-#endif // ASSERT
 
 template <typename T>
 class JfrEvent {
@@ -66,9 +44,6 @@ class JfrEvent {
 
  protected:
   JfrEvent(EventStartTime timing=TIMED) : _start_time(0), _end_time(0), _started(false)
-#ifdef ASSERT
-  , _verifier()
-#endif
   {
     if (T::is_enabled()) {
       _started = true;
@@ -186,29 +161,6 @@ class JfrEvent {
     static_cast<T*>(this)->writeData(writer);
   }
 
-#ifdef ASSERT
- private:
-  // verification of event fields
-  JfrEventVerifier _verifier;
-
-  void assert_precondition() {
-    assert(T::eventId >= (JfrEventId)NUM_RESERVED_EVENTS, "event id underflow invariant");
-    assert(T::eventId < MaxJfrEventId, "event id overflow invariant");
-    DEBUG_ONLY(static_cast<T*>(this)->verify());
-  }
-
- protected:
-  void set_field_bit(size_t field_idx) {
-    _verifier.set_field_bit(field_idx);
-    // it is ok to reuse an already committed event
-    // granted you provide new informational content
-    _verifier.clear_committed();
-  }
-
-  bool verify_field_bit(size_t field_idx) const {
-    return _verifier.verify_field_bit(field_idx);
-  }
-#endif // ASSERT
 };
 
 #endif // SHARE_VM_JFR_RECORDER_SERVICE_JFREVENT_HPP

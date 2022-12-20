@@ -484,28 +484,6 @@ size_t VirtualSpace::actual_committed_size() const {
   size_t committed_middle = pointer_delta(_middle_high, _lower_high_boundary,  sizeof(char));
   size_t committed_high   = pointer_delta(_upper_high,  _middle_high_boundary, sizeof(char));
 
-#ifdef ASSERT
-  size_t lower  = pointer_delta(_lower_high_boundary,  _low_boundary,         sizeof(char));
-  size_t middle = pointer_delta(_middle_high_boundary, _lower_high_boundary,  sizeof(char));
-  size_t upper  = pointer_delta(_upper_high_boundary,  _middle_high_boundary, sizeof(char));
-
-  if (committed_high > 0) {
-    assert(committed_low == lower, "Must be");
-    assert(committed_middle == middle, "Must be");
-  }
-
-  if (committed_middle > 0) {
-    assert(committed_low == lower, "Must be");
-  }
-  if (committed_middle < middle) {
-    assert(committed_high == 0, "Must be");
-  }
-
-  if (committed_low < lower) {
-    assert(committed_high == 0, "Must be");
-    assert(committed_middle == 0, "Must be");
-  }
-#endif
 
   return committed_low + committed_middle + committed_high;
 }

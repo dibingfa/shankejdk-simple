@@ -61,17 +61,6 @@ extern void resource_free_bytes( char *old, size_t size ) {
   Thread::current()->resource_area()->Afree(old, size);
 }
 
-#ifdef ASSERT
-ResourceMark::ResourceMark(Thread *thread) {
-  assert(thread == Thread::current(), "not the current thread");
-  initialize(thread);
-}
-
-DeoptResourceMark::DeoptResourceMark(Thread *thread) {
-  assert(thread == Thread::current(), "not the current thread");
-  initialize(thread);
-}
-#endif
 
 
 //-------------------------------------------------------------------------------

@@ -85,9 +85,6 @@ template <class T> class ValueRecorder : public StackObj {
   void copy_values_to(nmethod* nm);
 
   bool is_unused() { return _handles == NULL && !_complete; }
-#ifdef ASSERT
-  bool is_complete() { return _complete; }
-#endif
 
  private:
   // variant of find_index which does not allocate if not found (yields -1)
@@ -141,9 +138,6 @@ template <class T> class ValueRecorder : public StackObj {
   Arena*                    _arena;
   bool                      _complete;
 
-#ifdef ASSERT
-  static int _find_index_calls, _hit_indexes, _missed_indexes;
-#endif
 };
 
 class OopRecorder : public ResourceObj {
@@ -209,12 +203,6 @@ class OopRecorder : public ResourceObj {
     }
   }
 
-#ifdef ASSERT
-  bool is_complete() {
-    assert(_oops.is_complete() == _metadata.is_complete(), "must agree");
-    return _oops.is_complete();
-  }
-#endif
 };
 
 

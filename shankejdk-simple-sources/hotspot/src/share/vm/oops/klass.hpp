@@ -546,16 +546,7 @@ protected:
   virtual bool oop_is_instanceRef()         const { return false; }
 
   // Fast non-virtual versions
-  #ifndef ASSERT
   #define assert_same_query(xval, xcheck) xval
-  #else
- private:
-  static bool assert_same_query(bool xval, bool xslow) {
-    assert(xval == xslow, "slow and fast queries agree");
-    return xval;
-  }
- public:
-  #endif
   inline  bool oop_is_instance()            const { return assert_same_query(
                                                     layout_helper_is_instance(layout_helper()),
                                                     oop_is_instance_slow()); }

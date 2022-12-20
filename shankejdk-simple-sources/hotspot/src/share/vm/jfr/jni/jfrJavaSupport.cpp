@@ -44,19 +44,6 @@
 #include "runtime/thread.inline.hpp"
 //#include "runtime/threadSMR.hpp"
 
-#ifdef ASSERT
-void JfrJavaSupport::check_java_thread_in_vm(Thread* t) {
-  assert(t != NULL, "invariant");
-  assert(t->is_Java_thread(), "invariant");
-  assert(((JavaThread*)t)->thread_state() == _thread_in_vm, "invariant");
-}
-
-void JfrJavaSupport::check_java_thread_in_native(Thread* t) {
-  assert(t != NULL, "invariant");
-  assert(t->is_Java_thread(), "invariant");
-  assert(((JavaThread*)t)->thread_state() == _thread_in_native, "invariant");
-}
-#endif
 
 /*
  *  Handles and references

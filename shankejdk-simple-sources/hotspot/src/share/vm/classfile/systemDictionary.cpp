@@ -129,20 +129,6 @@ ClassLoaderData* SystemDictionary::register_loader(Handle class_loader, TRAPS) {
 // ----------------------------------------------------------------------------
 // debugging
 
-#ifdef ASSERT
-
-// return true if class_name contains no '.' (internal format is '/')
-bool SystemDictionary::is_internal_format(Symbol* class_name) {
-  if (class_name != NULL) {
-    ResourceMark rm;
-    char* name = class_name->as_C_string();
-    return strchr(name, '.') == NULL;
-  } else {
-    return true;
-  }
-}
-
-#endif
 #if INCLUDE_JFR
 #include "jfr/jfr.hpp"
 #endif
@@ -882,14 +868,6 @@ Klass* SystemDictionary::resolve_instance_class_or_null(Symbol* name,
 
   post_class_load_event(class_load_start_event, k, class_loader);
 
-#ifdef ASSERT
-  {
-    ClassLoaderData* loader_data = k->class_loader_data();
-    MutexLocker mu(SystemDictionary_lock, THREAD);
-    Klass* kk = find_class(name, loader_data);
-    assert(kk == k(), "should be present in dictionary");
-  }
-#endif
 
   // return if the protection domain in NULL
   if (protection_domain() == NULL) return k();
@@ -1604,10 +1582,6 @@ instanceKlassHandle SystemDictionary::find_or_define_instance_class(Symbol* clas
     if ((UnsyncloadClass || is_parallelDefine(class_loader)) && (probe->instance_klass() != NULL)) {
         placeholders()->find_and_remove(p_index, p_hash, name_h, loader_data, PlaceholderTable::DEFINE_CLASS, THREAD);
         SystemDictionary_lock->notify_all();
-#ifdef ASSERT
-        Klass* check = find_class(d_index, d_hash, name_h, loader_data);
-        assert(check != NULL, "definer missed recording success");
-#endif
         return(instanceKlassHandle(THREAD, probe->instance_klass()));
     } else {
       // This thread will define the class (even if earlier thread tried and had an error)
@@ -1703,13 +1677,11 @@ Symbol* SystemDictionary::find_placeholder(Symbol* class_name,
 
 // Used for assertions and verification only
 Klass* SystemDictionary::find_class(Symbol* class_name, ClassLoaderData* loader_data) {
-  #ifndef ASSERT
   guarantee(VerifyBeforeGC      ||
             VerifyDuringGC      ||
             VerifyBeforeExit    ||
             VerifyDuringStartup ||
             VerifyAfterGC, "too expensive");
-  #endif
   assert_locked_or_safepoint(SystemDictionary_lock);
 
   // First look in the loaded class array
@@ -1784,23 +1756,6 @@ int SystemDictionary::calculate_systemdictionary_size(int classcount) {
   return newsize;
 }
 
-#ifdef ASSERT
-class VerifySDReachableAndLiveClosure : public OopClosure {
-private:
-  BoolObjectClosure* _is_alive;
-
-  template <class T> void do_oop_work(T* p) {
-    oop obj = oopDesc::load_decode_heap_oop(p);
-    guarantee(_is_alive->do_object_b(obj), "Oop in system dictionary must be live");
-  }
-
-public:
-  VerifySDReachableAndLiveClosure(BoolObjectClosure* is_alive) : OopClosure(), _is_alive(is_alive) { }
-
-  virtual void do_oop(oop* p)       { do_oop_work(p); }
-  virtual void do_oop(narrowOop* p) { do_oop_work(p); }
-};
-#endif
 
 // Assumes classes in the SystemDictionary are only unloaded at a safepoint
 // Note: anonymous classes are not in the SD.
@@ -1817,10 +1772,6 @@ bool SystemDictionary::do_unloading(BoolObjectClosure* is_alive, bool clean_aliv
   // of the class loader (eg. cached protection domain oops). So we need to
   // explicitly unlink them here instead of in Dictionary::do_unloading.
   dictionary()->unlink(is_alive);
-#ifdef ASSERT
-  VerifySDReachableAndLiveClosure cl(is_alive);
-  dictionary()->oops_do(&cl);
-#endif
   return unloading_occurred;
 }
 
@@ -2115,10 +2066,6 @@ void SystemDictionary::check_constraints(int d_index, unsigned int d_hash,
       }
     }
 
-#ifdef ASSERT
-    Symbol* ph_check = find_placeholder(name, loader_data);
-    assert(ph_check == NULL || ph_check == name, "invalid symbol");
-#endif
 
     if (linkage_error == NULL) {
       if (constraints()->check_or_update(k, class_loader, name) == false) {
@@ -2185,12 +2132,6 @@ void SystemDictionary::update_dictionary(int d_index, unsigned int d_hash,
     dictionary()->add_klass(name, loader_data, k);
     notice_modification();
   }
-#ifdef ASSERT
-  sd_check = find_class(d_index, d_hash, name, loader_data);
-  assert (sd_check != NULL, "should have entry in system dictionary");
-  // Note: there may be a placeholder entry: for circularity testing
-  // or for parallel defines
-#endif
     SystemDictionary_lock->notify_all();
   }
 }

@@ -577,11 +577,6 @@ static void gen_c2i_adapter(MacroAssembler *masm,
           // ld_off == LSW, ld_off+wordSize == MSW
           // st_off == MSW, next_off == LSW
           __ movq(Address(rsp, next_off), rax);
-#ifdef ASSERT
-          // Overwrite the unused slot with known junk
-          __ mov64(rax, CONST64(0xdeadffffdeadaaaa));
-          __ movptr(Address(rsp, st_off), rax);
-#endif /* ASSERT */
         } else {
           __ movq(Address(rsp, st_off), rax);
         }
@@ -597,11 +592,6 @@ static void gen_c2i_adapter(MacroAssembler *masm,
         // T_DOUBLE and T_LONG use two slots in the interpreter
         if ( sig_bt[i] == T_LONG || sig_bt[i] == T_DOUBLE) {
           // long/double in gpr
-#ifdef ASSERT
-          // Overwrite the unused slot with known junk
-          __ mov64(rax, CONST64(0xdeadffffdeadaaab));
-          __ movptr(Address(rsp, st_off), rax);
-#endif /* ASSERT */
           __ movq(Address(rsp, next_off), r);
         } else {
           __ movptr(Address(rsp, st_off), r);
@@ -613,11 +603,6 @@ static void gen_c2i_adapter(MacroAssembler *masm,
         // only a float use just part of the slot
         __ movflt(Address(rsp, st_off), r_1->as_XMMRegister());
       } else {
-#ifdef ASSERT
-        // Overwrite the unused slot with known junk
-        __ mov64(rax, CONST64(0xdeadffffdeadaaac));
-        __ movptr(Address(rsp, st_off), rax);
-#endif /* ASSERT */
         __ movdbl(Address(rsp, next_off), r_1->as_XMMRegister());
       }
     }
@@ -1394,35 +1379,6 @@ static void check_needs_gc_for_critical_native(MacroAssembler* masm,
                             arg_save_area, NULL, in_regs, in_sig_bt);
 
   __ bind(cont);
-#ifdef ASSERT
-  if (StressCriticalJNINatives) {
-    // Stress register saving
-    OopMap* map = new OopMap(stack_slots * 2, 0 /* arg_slots*/);
-    save_or_restore_arguments(masm, stack_slots, total_in_args,
-                              arg_save_area, map, in_regs, in_sig_bt);
-    // Destroy argument registers
-    for (int i = 0; i < total_in_args - 1; i++) {
-      if (in_regs[i].first()->is_Register()) {
-        const Register reg = in_regs[i].first()->as_Register();
-        __ xorptr(reg, reg);
-      } else if (in_regs[i].first()->is_XMMRegister()) {
-        __ xorpd(in_regs[i].first()->as_XMMRegister(), in_regs[i].first()->as_XMMRegister());
-      } else if (in_regs[i].first()->is_FloatRegister()) {
-        ShouldNotReachHere();
-      } else if (in_regs[i].first()->is_stack()) {
-        // Nothing to do
-      } else {
-        ShouldNotReachHere();
-      }
-      if (in_sig_bt[i] == T_LONG || in_sig_bt[i] == T_DOUBLE) {
-        i++;
-      }
-    }
-
-    save_or_restore_arguments(masm, stack_slots, total_in_args,
-                              arg_save_area, NULL, in_regs, in_sig_bt);
-  }
-#endif
 }
 
 // Unpack an array argument into a pointer to the body and the length
@@ -2022,17 +1978,6 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
       __ xabort(0);
     }
 
-#ifdef ASSERT
-    {
-      Label L;
-      __ mov(rax, rsp);
-      __ andptr(rax, -16); // must be 16 byte boundary (see amd64 ABI)
-      __ cmpptr(rax, rsp);
-      __ jcc(Assembler::equal, L);
-      __ stop("improperly aligned stack");
-      __ bind(L);
-    }
-#endif /* ASSERT */
 
 
   // We use r14 as the oop handle for the receiver/klass
@@ -2080,17 +2025,6 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   // All inbound args are referenced based on rbp and all outbound args via rsp.
 
 
-#ifdef ASSERT
-  bool reg_destroyed[RegisterImpl::number_of_registers];
-  bool freg_destroyed[XMMRegisterImpl::number_of_registers];
-  for ( int r = 0 ; r < RegisterImpl::number_of_registers ; r++ ) {
-    reg_destroyed[r] = false;
-  }
-  for ( int f = 0 ; f < XMMRegisterImpl::number_of_registers ; f++ ) {
-    freg_destroyed[f] = false;
-  }
-
-#endif /* ASSERT */
 
   // This may iterate in two different directions depending on the
   // kind of native it is.  The reason is that for regular JNI natives
@@ -2129,30 +2063,11 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
       i = temploc;
       temploc = -1;
     }
-#ifdef ASSERT
-    if (in_regs[i].first()->is_Register()) {
-      assert(!reg_destroyed[in_regs[i].first()->as_Register()->encoding()], "destroyed reg!");
-    } else if (in_regs[i].first()->is_XMMRegister()) {
-      assert(!freg_destroyed[in_regs[i].first()->as_XMMRegister()->encoding()], "destroyed reg!");
-    }
-    if (out_regs[c_arg].first()->is_Register()) {
-      reg_destroyed[out_regs[c_arg].first()->as_Register()->encoding()] = true;
-    } else if (out_regs[c_arg].first()->is_XMMRegister()) {
-      freg_destroyed[out_regs[c_arg].first()->as_XMMRegister()->encoding()] = true;
-    }
-#endif /* ASSERT */
     switch (in_sig_bt[i]) {
       case T_ARRAY:
         if (is_critical_native) {
           unpack_array_argument(masm, in_regs[i], in_elem_bt[i], out_regs[c_arg + 1], out_regs[c_arg]);
           c_arg++;
-#ifdef ASSERT
-          if (out_regs[c_arg].first()->is_Register()) {
-            reg_destroyed[out_regs[c_arg].first()->as_Register()->encoding()] = true;
-          } else if (out_regs[c_arg].first()->is_XMMRegister()) {
-            freg_destroyed[out_regs[c_arg].first()->as_XMMRegister()->encoding()] = true;
-          }
-#endif
           break;
         }
       case T_OBJECT:
@@ -2556,14 +2471,6 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
     __ call_VM_leaf(CAST_FROM_FN_PTR(address, SharedRuntime::complete_monitor_locking_C), 3);
     restore_args(masm, total_c_args, c_arg, out_regs);
 
-#ifdef ASSERT
-    { Label L;
-    __ cmpptr(Address(r15_thread, in_bytes(Thread::pending_exception_offset())), (int32_t)NULL_WORD);
-    __ jcc(Assembler::equal, L);
-    __ stop("no pending exception allowed on exit from monitorenter");
-    __ bind(L);
-    }
-#endif
     __ jmp(lock_done);
 
     // END Slow path lock
@@ -2593,15 +2500,6 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
     __ call(RuntimeAddress(CAST_FROM_FN_PTR(address, SharedRuntime::complete_monitor_unlocking_C)));
     __ mov(rsp, r12); // restore sp
     __ reinit_heapbase();
-#ifdef ASSERT
-    {
-      Label L;
-      __ cmpptr(Address(r15_thread, in_bytes(Thread::pending_exception_offset())), (int)NULL_WORD);
-      __ jcc(Assembler::equal, L);
-      __ stop("no pending exception allowed on exit complete_monitor_unlocking_C");
-      __ bind(L);
-    }
-#endif /* ASSERT */
 
     __ movptr(Address(r15_thread, in_bytes(Thread::pending_exception_offset())), rbx);
 
@@ -3391,19 +3289,6 @@ void SharedRuntime::generate_deopt_blob() {
   __ movptr(Address(rbp, wordSize), rdx);
   __ movptr(Address(r15_thread, JavaThread::exception_pc_offset()), (int32_t)NULL_WORD);
 
-#ifdef ASSERT
-  // verify that there is really an exception oop in JavaThread
-  __ movptr(rax, Address(r15_thread, JavaThread::exception_oop_offset()));
-  __ verify_oop(rax);
-
-  // verify that there is no pending exception
-  Label no_pending_exception;
-  __ movptr(rax, Address(r15_thread, Thread::pending_exception_offset()));
-  __ testptr(rax, rax);
-  __ jcc(Assembler::zero, no_pending_exception);
-  __ stop("must not have pending exception here");
-  __ bind(no_pending_exception);
-#endif
 
   __ bind(cont);
 
@@ -3415,16 +3300,6 @@ void SharedRuntime::generate_deopt_blob() {
   // fetch_unroll_info needs to call last_java_frame().
 
   __ set_last_Java_frame(noreg, noreg, NULL);
-#ifdef ASSERT
-  { Label L;
-    __ cmpptr(Address(r15_thread,
-                    JavaThread::last_Java_fp_offset()),
-            (int32_t)0);
-    __ jcc(Assembler::equal, L);
-    __ stop("SharedRuntime::generate_deopt_blob: last_Java_fp not cleared");
-    __ bind(L);
-  }
-#endif // ASSERT
   __ mov(c_rarg0, r15_thread);
   __ call(RuntimeAddress(CAST_FROM_FN_PTR(address, Deoptimization::fetch_unroll_info)));
 
@@ -3484,15 +3359,6 @@ void SharedRuntime::generate_deopt_blob() {
   // restore rbp before stack bang because if stack overflow is thrown it needs to be pushed (and preserved)
   __ movptr(rbp, Address(rdi, Deoptimization::UnrollBlock::initial_info_offset_in_bytes()));
 
-#ifdef ASSERT
-  // Compilers generate code that bang the stack by as much as the
-  // interpreter would need. So this stack banging should never
-  // trigger a fault. Verify that it does not on non product builds.
-  if (UseStackBanging) {
-    __ movl(rbx, Address(rdi, Deoptimization::UnrollBlock::total_frame_sizes_offset_in_bytes()));
-    __ bang_stack_size(rbx, rcx);
-  }
-#endif
 
   // Load address of array of frame pcs into rcx
   __ movptr(rcx, Address(rdi, Deoptimization::UnrollBlock::frame_pcs_offset_in_bytes()));
@@ -3525,12 +3391,7 @@ void SharedRuntime::generate_deopt_blob() {
   __ movptr(rbx, Address(rsi, 0));      // Load frame size
 #ifdef CC_INTERP
   __ subptr(rbx, 4*wordSize);           // we'll push pc and ebp by hand and
-#ifdef ASSERT
-  __ push(0xDEADDEAD);                  // Make a recognizable pattern
-  __ push(0xDEADDEAD);
-#else /* ASSERT */
   __ subptr(rsp, 2*wordSize);           // skip the "static long no_param"
-#endif /* ASSERT */
 #else
   __ subptr(rbx, 2*wordSize);           // We'll push pc and ebp by hand
 #endif // CC_INTERP
@@ -3686,15 +3547,6 @@ void SharedRuntime::generate_uncommon_trap_blob() {
   // restore rbp before stack bang because if stack overflow is thrown it needs to be pushed (and preserved)
   __ movptr(rbp, Address(rdi, Deoptimization::UnrollBlock::initial_info_offset_in_bytes()));
 
-#ifdef ASSERT
-  // Compilers generate code that bang the stack by as much as the
-  // interpreter would need. So this stack banging should never
-  // trigger a fault. Verify that it does not on non product builds.
-  if (UseStackBanging) {
-    __ movl(rbx, Address(rdi ,Deoptimization::UnrollBlock::total_frame_sizes_offset_in_bytes()));
-    __ bang_stack_size(rbx, rcx);
-  }
-#endif
 
   // Load address of array of frame pcs into rcx (address*)
   __ movptr(rcx, Address(rdi, Deoptimization::UnrollBlock::frame_pcs_offset_in_bytes()));
@@ -4328,10 +4180,6 @@ void OptoRuntime::generate_exception_blob() {
   __ movptr(rax, Address(r15_thread, JavaThread::exception_oop_offset()));
   // Get the exception pc in case we are deoptimized
   __ movptr(rdx, Address(r15_thread, JavaThread::exception_pc_offset()));
-#ifdef ASSERT
-  __ movptr(Address(r15_thread, JavaThread::exception_handler_pc_offset()), (int)NULL_WORD);
-  __ movptr(Address(r15_thread, JavaThread::exception_pc_offset()), (int)NULL_WORD);
-#endif
   // Clear the exception oop so GC no longer processes it as a root.
   __ movptr(Address(r15_thread, JavaThread::exception_oop_offset()), (int)NULL_WORD);
 

@@ -632,22 +632,12 @@ class AdapterHandlerEntry : public BasicHashtableEntry<mtCode> {
   address _c2i_entry;
   address _c2i_unverified_entry;
 
-#ifdef ASSERT
-  // Captures code and signature used to generate this adapter when
-  // verifing adapter equivalence.
-  unsigned char* _saved_code;
-  int            _saved_code_length;
-#endif
 
   void init(AdapterFingerPrint* fingerprint, address i2c_entry, address c2i_entry, address c2i_unverified_entry) {
     _fingerprint = fingerprint;
     _i2c_entry = i2c_entry;
     _c2i_entry = c2i_entry;
     _c2i_unverified_entry = c2i_unverified_entry;
-#ifdef ASSERT
-    _saved_code = NULL;
-    _saved_code_length = 0;
-#endif
   }
 
   void deallocate();
@@ -668,11 +658,6 @@ class AdapterHandlerEntry : public BasicHashtableEntry<mtCode> {
     return (AdapterHandlerEntry*)BasicHashtableEntry<mtCode>::next();
   }
 
-#ifdef ASSERT
-  // Used to verify that code generated for shared adapters is equivalent
-  void save_code   (unsigned char* code, int length);
-  bool compare_code(unsigned char* code, int length);
-#endif
 
   //virtual void print_on(outputStream* st) const;  DO NOT USE
   void print_adapter_on(outputStream* st) const;

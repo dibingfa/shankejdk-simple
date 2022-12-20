@@ -765,10 +765,6 @@ void CompilerOracle::parse_from_line(char* line) {
 static const char* default_cc_file = ".hotspot_compiler";
 
 static const char* cc_file() {
-#ifdef ASSERT
-  if (CompileCommandFile == NULL)
-    return default_cc_file;
-#endif
   return CompileCommandFile;
 }
 

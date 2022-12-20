@@ -603,42 +603,6 @@ void SymbolTable::print() {
 
 // --------------------------------------------------------------------------
 
-#ifdef ASSERT
-class StableMemoryChecker : public StackObj {
-  enum { _bufsize = wordSize*4 };
-
-  address _region;
-  jint    _size;
-  u1      _save_buf[_bufsize];
-
-  int sample(u1* save_buf) {
-    if (_size <= _bufsize) {
-      memcpy(save_buf, _region, _size);
-      return _size;
-    } else {
-      // copy head and tail
-      memcpy(&save_buf[0],          _region,                      _bufsize/2);
-      memcpy(&save_buf[_bufsize/2], _region + _size - _bufsize/2, _bufsize/2);
-      return (_bufsize/2)*2;
-    }
-  }
-
- public:
-  StableMemoryChecker(const void* region, jint size) {
-    _region = (address) region;
-    _size   = size;
-    sample(_save_buf);
-  }
-
-  bool verify() {
-    u1 check_buf[sizeof(_save_buf)];
-    int check_size = sample(check_buf);
-    return (0 == memcmp(_save_buf, check_buf, check_size));
-  }
-
-  void set_region(const void* region) { _region = (address) region; }
-};
-#endif
 
 
 // --------------------------------------------------------------------------

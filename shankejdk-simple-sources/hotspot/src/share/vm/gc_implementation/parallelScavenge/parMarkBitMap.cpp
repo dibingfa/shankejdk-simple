@@ -90,10 +90,6 @@ ParMarkBitMap::initialize(MemRegion covered_region)
   return false;
 }
 
-#ifdef ASSERT
-extern size_t mark_bitmap_count;
-extern size_t mark_bitmap_size;
-#endif  // #ifdef ASSERT
 
 bool
 ParMarkBitMap::mark_obj(HeapWord* addr, size_t size)
@@ -221,13 +217,3 @@ ParMarkBitMap::iterate(ParMarkBitMapClosure* live_closure,
   return complete;
 }
 
-#ifdef ASSERT
-void ParMarkBitMap::verify_clear() const
-{
-  const idx_t* const beg = (const idx_t*)_virtual_space->committed_low_addr();
-  const idx_t* const end = (const idx_t*)_virtual_space->committed_high_addr();
-  for (const idx_t* p = beg; p < end; ++p) {
-    assert(*p == 0, "bitmap not clear");
-  }
-}
-#endif  // #ifdef ASSERT

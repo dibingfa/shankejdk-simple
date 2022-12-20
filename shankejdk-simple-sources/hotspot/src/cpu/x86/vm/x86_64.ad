@@ -649,13 +649,6 @@ void emit_d32_reloc(CodeBuffer& cbuf,
 
 // emit 32 bit value and construct relocation entry from RelocationHolder
 void emit_d32_reloc(CodeBuffer& cbuf, int d32, RelocationHolder const& rspec, int format) {
-#ifdef ASSERT
-  if (rspec.reloc()->type() == relocInfo::oop_type &&
-      d32 != 0 && d32 != (intptr_t) Universe::non_oop_word()) {
-    assert(Universe::heap()->is_in_reserved((address)(intptr_t)d32), "should be real oop");
-    assert(cast_to_oop((intptr_t)d32)->is_oop() && (ScavengeRootsInCode || !cast_to_oop((intptr_t)d32)->is_scavengable()), "cannot embed scavengable oops in code");
-  }
-#endif
   cbuf.relocate(cbuf.insts_mark(), rspec, format);
   cbuf.insts()->emit_int32(d32);
 }
@@ -676,14 +669,6 @@ void emit_d64_reloc(CodeBuffer& cbuf, int64_t d64, relocInfo::relocType reloc, i
 
 // emit 64 bit value and construct relocation entry from RelocationHolder
 void emit_d64_reloc(CodeBuffer& cbuf, int64_t d64, RelocationHolder const& rspec, int format) {
-#ifdef ASSERT
-  if (rspec.reloc()->type() == relocInfo::oop_type &&
-      d64 != 0 && d64 != (int64_t) Universe::non_oop_word()) {
-    assert(Universe::heap()->is_in_reserved((address)d64), "should be real oop");
-    assert(cast_to_oop(d64)->is_oop() && (ScavengeRootsInCode || !cast_to_oop(d64)->is_scavengable()),
-           "cannot embed scavengable oops in code");
-  }
-#endif
   cbuf.relocate(cbuf.insts_mark(), rspec, format);
   cbuf.insts()->emit_int64(d64);
 }
@@ -875,10 +860,6 @@ void MachPrologNode::format(PhaseRegAlloc* ra_, outputStream* st) const {
     st->print("\n\t");
     framesize -= wordSize;
     st->print("movq    [rsp + #%d], 0xbadb100d\t# Majik cookie for stack depth check",framesize);
-#ifdef ASSERT
-    st->print("\n\t");
-    st->print("# stack alignment check");
-#endif
   }
   st->cr();
 }

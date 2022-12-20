@@ -198,9 +198,6 @@ class IndexSet : public ResourceObj {
   uint       _max_blocks;
 
   // Our assertions need to know the maximum number allowed in the set
-#ifdef ASSERT
-  uint       _max_elements;
-#endif
 
   // The next IndexSet on the free list (not used at same time as count)
   IndexSet *_next;
@@ -210,20 +207,10 @@ class IndexSet : public ResourceObj {
   // Individual IndexSets can be placed on a free list.  This is done in PhaseLive.
 
   IndexSet *next() {
-#ifdef ASSERT
-    if( VerifyOpto ) {
-      check_watch("removed from free list?", ((_next == NULL) ? 0 : _next->_serial_number));
-    }
-#endif
     return _next;
   }
 
   void set_next(IndexSet *next) {
-#ifdef ASSERT
-    if( VerifyOpto ) {
-      check_watch("put on free list?", ((next == NULL) ? 0 : next->_serial_number));
-    }
-#endif
     _next = next;
   }
 
@@ -238,10 +225,6 @@ class IndexSet : public ResourceObj {
 
   // Set a block in the top level array
   void set_block(uint index, BitBlock *block) {
-#ifdef ASSERT
-    if( VerifyOpto )
-      check_watch("set block", index);
-#endif
     _blocks[index] = block;
   }
 
@@ -258,10 +241,6 @@ class IndexSet : public ResourceObj {
   //-------------------------- Primitive set operations --------------------------
 
   void clear() {
-#ifdef ASSERT
-    if( VerifyOpto )
-      check_watch("clear");
-#endif
     _count = 0;
     for (uint i = 0; i < _max_blocks; i++) {
       BitBlock *block = _blocks[i];
@@ -280,10 +259,6 @@ class IndexSet : public ResourceObj {
   }
 
   bool insert(uint element) {
-#ifdef ASSERT
-    if( VerifyOpto )
-      check_watch("insert", element);
-#endif
     if (element == 0) {
       return 0;
     }
@@ -299,10 +274,6 @@ class IndexSet : public ResourceObj {
   }
 
   bool remove(uint element) {
-#ifdef ASSERT
-    if( VerifyOpto )
-      check_watch("remove", element);
-#endif
 
     BitBlock *block = get_block_containing(element);
     bool present = block->remove(element);
@@ -348,45 +319,6 @@ class IndexSet : public ResourceObj {
   void dump() const;
 #endif
 
-#ifdef ASSERT
-  void tally_iteration_statistics() const;
-
-  // BitBlock allocation statistics
-  static julong _alloc_new;
-  static julong _alloc_total;
-
-  // Block density statistics
-  static julong _total_bits;
-  static julong _total_used_blocks;
-  static julong _total_unused_blocks;
-
-  // Sanity tests
-  void verify() const;
-
-  static int _serial_count;
-  int        _serial_number;
-
-  // Check to see if the serial number of the current set is the one we're tracing.
-  // If it is, print a message.
-  void check_watch(const char *operation, uint operand) const {
-    if (IndexSetWatch != 0) {
-      if (IndexSetWatch == -1 || _serial_number == IndexSetWatch) {
-        tty->print_cr("IndexSet %d : %s ( %d )", _serial_number, operation, operand);
-      }
-    }
-  }
-  void check_watch(const char *operation) const {
-    if (IndexSetWatch != 0) {
-      if (IndexSetWatch == -1 || _serial_number == IndexSetWatch) {
-        tty->print_cr("IndexSet %d : %s", _serial_number, operation);
-      }
-    }
-  }
-
- public:
-  static void print_statistics();
-
-#endif
 };
 
 

@@ -2805,22 +2805,6 @@ inline bool VM_HeapWalkOperation::iterate_over_type_array(oop o) {
   return true;
 }
 
-#ifdef ASSERT
-// verify that a static oop field is in range
-static inline bool verify_static_oop(InstanceKlass* ik,
-                                     oop mirror, int offset) {
-  address obj_p = (address)mirror + offset;
-  address start = (address)InstanceMirrorKlass::start_of_static_fields(mirror);
-  address end = start + (java_lang_Class::static_oop_field_count(mirror) * heapOopSize);
-  assert(end >= start, "sanity check");
-
-  if (obj_p >= start && obj_p < end) {
-    return true;
-  } else {
-    return false;
-  }
-}
-#endif // #ifdef ASSERT
 
 // a class references its super class, interfaces, class loader, ...
 // and finally its static fields

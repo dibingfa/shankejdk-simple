@@ -126,10 +126,6 @@ void compiledVFrame::set_locals(StackValueCollection* values) const {
 
 void compiledVFrame::update_local(BasicType type, int index, jvalue value) {
 
-#ifdef ASSERT
-
-  assert(fr().is_deoptimized_frame(), "frame must be scheduled for deoptimization");
-#endif /* ASSERT */
   GrowableArray<jvmtiDeferredLocalVariableSet*>* deferred = thread()->deferred_locals();
   if (deferred != NULL ) {
     // See if this vframe has already had locals with deferred writes

@@ -1293,10 +1293,6 @@ public:
                     vmSymbols::SID sig,
                     jshort flags) {
     ID id = find_id_impl(holder, name, sig, flags);
-#ifdef ASSERT
-    // ID _none does not hold the following asserts.
-    if (id == _none)  return id;
-#endif
     assert(    class_for(id) == holder, "correct id");
     assert(     name_for(id) == name,   "correct id");
     assert(signature_for(id) == sig,    "correct id");

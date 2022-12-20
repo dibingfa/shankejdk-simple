@@ -1004,18 +1004,11 @@ MethodLivenessResult MethodLiveness::BasicBlock::get_liveness_at(ciMethod* metho
                 _analyzer->bit_map_size_bits());
   answer.set_is_valid();
 
-#ifndef ASSERT
   if (bci == start_bci()) {
     answer.set_from(_entry);
     return answer;
   }
-#endif
 
-#ifdef ASSERT
-  ResourceMark rm;
-  BitMap g(_gen.size()); g.set_from(_gen);
-  BitMap k(_kill.size()); k.set_from(_kill);
-#endif
   if (_last_bci != bci || trueInDebug) {
     ciBytecodeStream bytes(method);
     bytes.reset_to_bci(bci);
@@ -1032,11 +1025,6 @@ MethodLivenessResult MethodLiveness::BasicBlock::get_liveness_at(ciMethod* metho
   answer.set_union(_gen);
   answer.set_union(_exception_exit);
 
-#ifdef ASSERT
-  if (bci == start_bci()) {
-    assert(answer.is_same(_entry), "optimized answer must be accurate");
-  }
-#endif
 
   return answer;
 }

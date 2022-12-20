@@ -605,16 +605,6 @@ void GenCollectedHeap::set_n_termination(uint t) {
   _process_strong_tasks->set_n_threads(t);
 }
 
-#ifdef ASSERT
-class AssertNonScavengableClosure: public OopClosure {
-public:
-  virtual void do_oop(oop* p) {
-    assert(!Universe::heap()->is_in_partial_collection(*p),
-      "Referent should not be scavengable.");  }
-  virtual void do_oop(narrowOop* p) { ShouldNotReachHere(); }
-};
-static AssertNonScavengableClosure assert_is_non_scavengable_closure;
-#endif
 
 void GenCollectedHeap::process_roots(bool activate_scope,
                                      ScanningOption so,
@@ -807,18 +797,8 @@ void GenCollectedHeap::collect(GCCause::Cause cause) {
     // are handled above and never discarded.
     collect(cause, 0);
   } else {
-#ifdef ASSERT
-  if (cause == GCCause::_scavenge_alot) {
-    // minor collection only
-    collect(cause, 0);
-  } else {
     // Stop-the-world full collection
     collect(cause, n_gens() - 1);
-  }
-#else
-    // Stop-the-world full collection
-    collect(cause, n_gens() - 1);
-#endif
   }
 }
 
@@ -931,7 +911,6 @@ bool GenCollectedHeap::is_in_young(oop p) {
 
 // Returns "TRUE" iff "p" points into the committed areas of the heap.
 bool GenCollectedHeap::is_in(const void* p) const {
-  #ifndef ASSERT
   guarantee(VerifyBeforeGC      ||
             VerifyDuringGC      ||
             VerifyBeforeExit    ||
@@ -941,7 +920,6 @@ bool GenCollectedHeap::is_in(const void* p) const {
             VerifyAfterGC       ||
     VMError::fatal_error_in_progress(), "too expensive");
 
-  #endif
   // This might be sped up with a cache of the last generation that
   // answered yes.
   for (int i = 0; i < _n_gens; i++) {
@@ -951,15 +929,6 @@ bool GenCollectedHeap::is_in(const void* p) const {
   return false;
 }
 
-#ifdef ASSERT
-// Don't implement this by using is_in_young().  This method is used
-// in some cases to check that is_in_young() is correct.
-bool GenCollectedHeap::is_in_partial_collection(const void* p) {
-  assert(is_in_reserved(p) || p == NULL,
-    "Does not work if address is non-null and outside of the heap");
-  return p < _gens[_n_gens - 2]->reserved().end() && p != NULL;
-}
-#endif
 
 void GenCollectedHeap::oop_iterate(ExtendedOopClosure* cl) {
   for (int i = 0; i < _n_gens; i++) {

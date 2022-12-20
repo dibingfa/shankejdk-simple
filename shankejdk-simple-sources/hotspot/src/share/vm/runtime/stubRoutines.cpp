@@ -182,42 +182,6 @@ void StubRoutines::initialize1() {
 }
 
 
-#ifdef ASSERT
-typedef void (*arraycopy_fn)(address src, address dst, int count);
-
-// simple tests of generated arraycopy functions
-static void test_arraycopy_func(address func, int alignment) {
-  int v = 0xcc;
-  int v2 = 0x11;
-  jlong lbuffer[8];
-  jlong lbuffer2[8];
-  address fbuffer  = (address) lbuffer;
-  address fbuffer2 = (address) lbuffer2;
-  unsigned int i;
-  for (i = 0; i < sizeof(lbuffer); i++) {
-    fbuffer[i] = v; fbuffer2[i] = v2;
-  }
-  // C++ does not guarantee jlong[] array alignment to 8 bytes.
-  // Use middle of array to check that memory before it is not modified.
-  address buffer  = (address) round_to((intptr_t)&lbuffer[4], BytesPerLong);
-  address buffer2 = (address) round_to((intptr_t)&lbuffer2[4], BytesPerLong);
-  // do an aligned copy
-  ((arraycopy_fn)func)(buffer, buffer2, 0);
-  for (i = 0; i < sizeof(lbuffer); i++) {
-    assert(fbuffer[i] == v && fbuffer2[i] == v2, "shouldn't have copied anything");
-  }
-  // adjust destination alignment
-  ((arraycopy_fn)func)(buffer, buffer2 + alignment, 0);
-  for (i = 0; i < sizeof(lbuffer); i++) {
-    assert(fbuffer[i] == v && fbuffer2[i] == v2, "shouldn't have copied anything");
-  }
-  // adjust source alignment
-  ((arraycopy_fn)func)(buffer + alignment, buffer2, 0);
-  for (i = 0; i < sizeof(lbuffer); i++) {
-    assert(fbuffer[i] == v && fbuffer2[i] == v2, "shouldn't have copied anything");
-  }
-}
-#endif
 
 
 void StubRoutines::initialize2() {
@@ -235,82 +199,6 @@ void StubRoutines::initialize2() {
     assert(code_size2 == 0 || buffer.insts_remaining() > 200, "increase code_size2");
   }
 
-#ifdef ASSERT
-
-#define TEST_ARRAYCOPY(type)                                                    \
-  test_arraycopy_func(          type##_arraycopy(),          sizeof(type));     \
-  test_arraycopy_func(          type##_disjoint_arraycopy(), sizeof(type));     \
-  test_arraycopy_func(arrayof_##type##_arraycopy(),          sizeof(HeapWord)); \
-  test_arraycopy_func(arrayof_##type##_disjoint_arraycopy(), sizeof(HeapWord))
-
-  // Make sure all the arraycopy stubs properly handle zero count
-  TEST_ARRAYCOPY(jbyte);
-  TEST_ARRAYCOPY(jshort);
-  TEST_ARRAYCOPY(jint);
-  TEST_ARRAYCOPY(jlong);
-
-#undef TEST_ARRAYCOPY
-
-#define TEST_FILL(type)                                                                      \
-  if (_##type##_fill != NULL) {                                                              \
-    union {                                                                                  \
-      double d;                                                                              \
-      type body[96];                                                                         \
-    } s;                                                                                     \
-                                                                                             \
-    int v = 32;                                                                              \
-    for (int offset = -2; offset <= 2; offset++) {                                           \
-      for (int i = 0; i < 96; i++) {                                                         \
-        s.body[i] = 1;                                                                       \
-      }                                                                                      \
-      type* start = s.body + 8 + offset;                                                     \
-      for (int aligned = 0; aligned < 2; aligned++) {                                        \
-        if (aligned) {                                                                       \
-          if (((intptr_t)start) % HeapWordSize == 0) {                                       \
-            ((void (*)(type*, int, int))StubRoutines::_arrayof_##type##_fill)(start, v, 80); \
-          } else {                                                                           \
-            continue;                                                                        \
-          }                                                                                  \
-        } else {                                                                             \
-          ((void (*)(type*, int, int))StubRoutines::_##type##_fill)(start, v, 80);           \
-        }                                                                                    \
-        for (int i = 0; i < 96; i++) {                                                       \
-          if (i < (8 + offset) || i >= (88 + offset)) {                                      \
-            assert(s.body[i] == 1, "what?");                                                 \
-          } else {                                                                           \
-            assert(s.body[i] == 32, "what?");                                                \
-          }                                                                                  \
-        }                                                                                    \
-      }                                                                                      \
-    }                                                                                        \
-  }                                                                                          \
-
-  TEST_FILL(jbyte);
-  TEST_FILL(jshort);
-  TEST_FILL(jint);
-
-#undef TEST_FILL
-
-#define TEST_COPYRTN(type) \
-  test_arraycopy_func(CAST_FROM_FN_PTR(address, Copy::conjoint_##type##s_atomic),  sizeof(type)); \
-  test_arraycopy_func(CAST_FROM_FN_PTR(address, Copy::arrayof_conjoint_##type##s), (int)MAX2(sizeof(HeapWord), sizeof(type)))
-
-  // Make sure all the copy runtime routines properly handle zero count
-  TEST_COPYRTN(jbyte);
-  TEST_COPYRTN(jshort);
-  TEST_COPYRTN(jint);
-  TEST_COPYRTN(jlong);
-
-#undef TEST_COPYRTN
-
-  test_arraycopy_func(CAST_FROM_FN_PTR(address, Copy::conjoint_words), sizeof(HeapWord));
-  test_arraycopy_func(CAST_FROM_FN_PTR(address, Copy::disjoint_words), sizeof(HeapWord));
-  test_arraycopy_func(CAST_FROM_FN_PTR(address, Copy::disjoint_words_atomic), sizeof(HeapWord));
-  // Aligned to BytesPerLong
-  test_arraycopy_func(CAST_FROM_FN_PTR(address, Copy::aligned_conjoint_words), sizeof(jlong));
-  test_arraycopy_func(CAST_FROM_FN_PTR(address, Copy::aligned_disjoint_words), sizeof(jlong));
-
-#endif
 }
 
 

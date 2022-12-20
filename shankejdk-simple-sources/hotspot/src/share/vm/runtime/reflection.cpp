@@ -391,21 +391,6 @@ oop Reflection::array_component_type(oop mirror, TRAPS) {
   }
 
   oop result = ArrayKlass::cast(klass)->component_mirror();
-#ifdef ASSERT
-  oop result2 = NULL;
-  if (ArrayKlass::cast(klass)->dimension() == 1) {
-    if (klass->oop_is_typeArray()) {
-      result2 = basic_type_arrayklass_to_mirror(klass, CHECK_NULL);
-    } else {
-      result2 = ObjArrayKlass::cast(klass)->element_klass()->java_mirror();
-    }
-  } else {
-    Klass* lower_dim = ArrayKlass::cast(klass)->lower_dimension();
-    assert(lower_dim->oop_is_array(), "just checking");
-    result2 = lower_dim->java_mirror();
-  }
-  assert(result == result2, "results must be consistent");
-#endif //ASSERT
   return result;
 }
 

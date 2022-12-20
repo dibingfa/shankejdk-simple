@@ -57,9 +57,6 @@ class AdaptiveFreeList : public FreeList<Chunk> {
   AdaptiveFreeList();
 
   using FreeList<Chunk>::assert_proper_lock_protection;
-#ifdef ASSERT
-  using FreeList<Chunk>::protecting_lock;
-#endif
   using FreeList<Chunk>::count;
   using FreeList<Chunk>::size;
   using FreeList<Chunk>::verify_chunk_in_free_list;

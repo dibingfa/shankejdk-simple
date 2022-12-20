@@ -281,33 +281,6 @@ void CardTableRS::write_ref_field_gc_par(void* field, oop new_val) {
 void CardTableRS::younger_refs_in_space_iterate(Space* sp,
                                                 OopsInGenClosure* cl) {
   const MemRegion urasm = sp->used_region_at_save_marks();
-#ifdef ASSERT
-  // Convert the assertion check to a warning if we are running
-  // CMS+ParNew until related bug is fixed.
-  MemRegion ur    = sp->used_region();
-  assert(ur.contains(urasm) || (UseConcMarkSweepGC && UseParNewGC),
-         err_msg("Did you forget to call save_marks()? "
-                 "[" PTR_FORMAT ", " PTR_FORMAT ") is not contained in "
-                 "[" PTR_FORMAT ", " PTR_FORMAT ")",
-                 p2i(urasm.start()), p2i(urasm.end()), p2i(ur.start()), p2i(ur.end())));
-  // In the case of CMS+ParNew, issue a warning
-  if (!ur.contains(urasm)) {
-    assert(UseConcMarkSweepGC && UseParNewGC, "Tautology: see assert above");
-    warning("CMS+ParNew: Did you forget to call save_marks()? "
-            "[" PTR_FORMAT ", " PTR_FORMAT ") is not contained in "
-            "[" PTR_FORMAT ", " PTR_FORMAT ")",
-             p2i(urasm.start()), p2i(urasm.end()), p2i(ur.start()), p2i(ur.end()));
-    MemRegion ur2 = sp->used_region();
-    MemRegion urasm2 = sp->used_region_at_save_marks();
-    if (!ur.equals(ur2)) {
-      warning("CMS+ParNew: Flickering used_region()!!");
-    }
-    if (!urasm.equals(urasm2)) {
-      warning("CMS+ParNew: Flickering used_region_at_save_marks()!!");
-    }
-    ShouldNotReachHere();
-  }
-#endif
   _ct_bs->non_clean_card_iterate_possibly_parallel(sp, urasm, cl, this);
 }
 

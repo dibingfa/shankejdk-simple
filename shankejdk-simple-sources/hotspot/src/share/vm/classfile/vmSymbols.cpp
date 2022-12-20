@@ -49,22 +49,6 @@ extern "C" {
   }
 }
 
-#ifdef ASSERT
-#define VM_SYMBOL_ENUM_NAME_BODY(name, string) #name "\0"
-static const char* vm_symbol_enum_names =
-  VM_SYMBOLS_DO(VM_SYMBOL_ENUM_NAME_BODY, VM_ALIAS_IGNORE)
-  "\0";
-static const char* vm_symbol_enum_name(vmSymbols::SID sid) {
-  const char* string = &vm_symbol_enum_names[0];
-  int skip = (int)sid - (int)vmSymbols::FIRST_SID;
-  for (; skip != 0; skip--) {
-    size_t skiplen = strlen(string);
-    if (skiplen == 0)  return "<unknown>";  // overflow
-    string += skiplen+1;
-  }
-  return string;
-}
-#endif //ASSERT
 
 // Put all the VM symbol strings in one place.
 // Makes for a more compact libjvm.
@@ -97,21 +81,6 @@ void vmSymbols::initialize(TRAPS) {
     // no single signatures for T_OBJECT or T_ARRAY
   }
 
-#ifdef ASSERT
-  // Check for duplicates:
-  for (int i1 = (int)FIRST_SID; i1 < (int)SID_LIMIT; i1++) {
-    Symbol* sym = symbol_at((SID)i1);
-    for (int i2 = (int)FIRST_SID; i2 < i1; i2++) {
-      if (symbol_at((SID)i2) == sym) {
-        tty->print("*** Duplicate VM symbol SIDs %s(%d) and %s(%d): \"",
-                   vm_symbol_enum_name((SID)i2), i2,
-                   vm_symbol_enum_name((SID)i1), i1);
-        sym->print_symbol_on(tty);
-        tty->print_cr("\"");
-      }
-    }
-  }
-#endif //ASSERT
 
   // Create an index for find_id:
   {
@@ -123,35 +92,6 @@ void vmSymbols::initialize(TRAPS) {
           compare_vmsymbol_sid);
   }
 
-#ifdef ASSERT
-  {
-    // Spot-check correspondence between strings, symbols, and enums:
-    assert(_symbols[NO_SID] == NULL, "must be");
-    const char* str = "java/lang/Object";
-    TempNewSymbol jlo = SymbolTable::new_permanent_symbol(str, CHECK);
-    assert(strncmp(str, (char*)jlo->base(), jlo->utf8_length()) == 0, "");
-    assert(jlo == java_lang_Object(), "");
-    SID sid = VM_SYMBOL_ENUM_NAME(java_lang_Object);
-    assert(find_sid(jlo) == sid, "");
-    assert(symbol_at(sid) == jlo, "");
-
-    // Make sure find_sid produces the right answer in each case.
-    for (int index = (int)FIRST_SID; index < (int)SID_LIMIT; index++) {
-      Symbol* sym = symbol_at((SID)index);
-      sid = find_sid(sym);
-      assert(sid == (SID)index, "symbol index works");
-      // Note:  If there are duplicates, this assert will fail.
-      // A "Duplicate VM symbol" message will have already been printed.
-    }
-
-    // The string "format" happens (at the moment) not to be a vmSymbol,
-    // though it is a method name in java.lang.String.
-    str = "format";
-    TempNewSymbol fmt = SymbolTable::new_permanent_symbol(str, CHECK);
-    sid = find_sid(fmt);
-    assert(sid == NO_SID, "symbol index works (negative test)");
-  }
-#endif
 }
 
 
@@ -250,29 +190,6 @@ vmSymbols::SID vmSymbols::find_sid(Symbol* symbol) {
     }
   }
 
-#ifdef ASSERT
-  // Perform the exhaustive self-check the first 1000 calls,
-  // and every 100 calls thereafter.
-  static int find_sid_check_count = -2000;
-  if ((uint)++find_sid_check_count > (uint)100) {
-    if (find_sid_check_count > 0)  find_sid_check_count = 0;
-
-    // Make sure this is the right answer, using linear search.
-    // (We have already proven that there are no duplicates in the list.)
-    SID sid2 = NO_SID;
-    for (int index = (int)FIRST_SID; index < (int)SID_LIMIT; index++) {
-      Symbol* sym2 = symbol_at((SID)index);
-      if (sym2 == symbol) {
-        sid2 = (SID)index;
-        break;
-      }
-    }
-    // Unless it's a duplicate, assert that the sids are the same.
-    if (_symbols[sid] != _symbols[sid2]) {
-      assert(sid == sid2, "binary same as linear search");
-    }
-  }
-#endif //ASSERT
 
   return sid;
 }

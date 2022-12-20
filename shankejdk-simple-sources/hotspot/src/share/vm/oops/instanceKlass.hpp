@@ -850,10 +850,6 @@ class InstanceKlass: public Klass {
   bool implements_interface(Klass* k) const;
   bool is_same_or_direct_interface(Klass* k) const;
 
-#ifdef ASSERT
-  // check whether this class or one of its superclasses was redefined
-  bool has_redefined_this_or_super() const;
-#endif
 
   // Access to the implementor of an interface.
   Klass* implementor() const
@@ -1082,11 +1078,7 @@ public:
 
 private:
   // initialization state
-#ifdef ASSERT
-  void set_init_state(ClassState state);
-#else
   void set_init_state(ClassState state) { _init_state = (u1)state; }
-#endif
   void set_rewritten()                  { _misc_flags |= _misc_rewritten; }
   void set_init_thread(Thread *thread)  { _init_thread = thread; }
 
@@ -1217,9 +1209,6 @@ class JNIid: public CHeapObj<mtClass> {
   Klass*             _holder;
   JNIid*             _next;
   int                _offset;
-#ifdef ASSERT
-  bool               _is_static_field_id;
-#endif
 
  public:
   // Accessors
@@ -1237,10 +1226,6 @@ class JNIid: public CHeapObj<mtClass> {
 
   static void deallocate(JNIid* id);
   // Debugging
-#ifdef ASSERT
-  bool is_static_field_id() const { return _is_static_field_id; }
-  void set_is_static_field_id()   { _is_static_field_id = true; }
-#endif
   void verify(Klass* holder);
 };
 

@@ -153,36 +153,6 @@ T* JfrDoublyLinkedList<T>::clear(bool return_tail /* false */) {
   return node;
 }
 
-#ifdef ASSERT
-template <typename T>
-bool JfrDoublyLinkedList<T>::locate(const T* node, const T* const target) const {
-  assert(target != NULL, "invariant");
-  while (node != NULL) {
-    if (node == target) {
-      return true;
-    }
-    node = (T*)node->next();
-  }
-  return false;
-}
-
-template <typename T>
-bool JfrDoublyLinkedList<T>::in_list(const T* const target) const {
-  assert(target != NULL, "invariant");
-  return locate(head(), target);
-}
-
-template <typename T>
-inline void validate_count_param(T* node, size_t count_param) {
-  assert(node != NULL, "invariant");
-  size_t count = 0;
-  while (node) {
-    ++count;
-    node = (T*)node->next();
-  }
-  assert(count_param == count, "invariant");
-}
-#endif // ASSERT
 
 template <typename T>
 void JfrDoublyLinkedList<T>::append_list(T* const head_node, T* const tail_node, size_t count) {

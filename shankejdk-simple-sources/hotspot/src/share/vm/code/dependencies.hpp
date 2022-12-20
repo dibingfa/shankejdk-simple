@@ -460,9 +460,6 @@ class Dependencies: public ResourceObj {
     nmethod*              _code;   // null if in a compiler thread
     Dependencies*         _deps;   // null if not in a compiler thread
     CompressedReadStream  _bytes;
-#ifdef ASSERT
-    size_t                _byte_limit;
-#endif
 
     // iteration variables:
     DepType               _type;

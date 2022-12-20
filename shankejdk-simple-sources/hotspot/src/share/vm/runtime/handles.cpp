@@ -43,24 +43,6 @@
 
 PRAGMA_FORMAT_MUTE_WARNINGS_FOR_GCC
 
-#ifdef ASSERT
-oop* HandleArea::allocate_handle(oop obj) {
-  assert(_handle_mark_nesting > 1, "memory leak: allocating handle outside HandleMark");
-  assert(_no_handle_mark_nesting == 0, "allocating handle inside NoHandleMark");
-  assert(obj->is_oop(), err_msg("not an oop: " INTPTR_FORMAT, (intptr_t*) obj));
-  return real_allocate_handle(obj);
-}
-
-Handle::Handle(Thread* thread, oop obj) {
-  assert(thread == Thread::current(), "sanity check");
-  if (obj == NULL) {
-    _handle = NULL;
-  } else {
-    _handle = thread->handle_area()->allocate_handle(obj);
-  }
-}
-
-#endif
 
 static uintx chunk_oops_do(OopClosure* f, Chunk* chunk, char* chunk_top) {
   oop* bottom = (oop*) chunk->bottom();
@@ -96,12 +78,7 @@ void HandleArea::oops_do(OopClosure* f) {
 
   // The thread local handle areas should not get very large
   if (TraceHandleAllocation && handles_visited > TotalHandleAllocationLimit) {
-#ifdef ASSERT
-    warning("%d: Visited in HandleMark : %d",
-      _nof_handlemarks, handles_visited);
-#else
     warning("Visited in HandleMark : %d", handles_visited);
-#endif
   }
   if (_prev != NULL) _prev->oops_do(f);
 }
@@ -132,29 +109,6 @@ HandleMark::~HandleMark() {
   debug_only(area->_handle_mark_nesting--);
 
   // Debug code to trace the number of handles allocated per mark/
-#ifdef ASSERT
-  if (TraceHandleAllocation) {
-    size_t handles = 0;
-    Chunk *c = _chunk->next();
-    if (c == NULL) {
-      handles = area->_hwm - _hwm; // no new chunk allocated
-    } else {
-      handles = _max - _hwm;      // add rest in first chunk
-      while(c != NULL) {
-        handles += c->length();
-        c = c->next();
-      }
-      handles -= area->_max - area->_hwm; // adjust for last trunk not full
-    }
-    handles /= sizeof(void *); // Adjust for size of a handle
-    if (handles > HandleAllocationLimit) {
-      // Note: _nof_handlemarks is only set in debug mode
-      warning("%d: Allocated in HandleMark : %d", _nof_handlemarks, handles);
-    }
-
-    tty->print_cr("Handles %d", handles);
-  }
-#endif
 
   // Delete later chunks
   if( _chunk->next() ) {
@@ -170,13 +124,6 @@ HandleMark::~HandleMark() {
   area->_chunk = _chunk;
   area->_hwm = _hwm;
   area->_max = _max;
-#ifdef ASSERT
-  // clear out first chunk (to detect allocation bugs)
-  if (ZapVMHandleArea) {
-    memset(_hwm, badHandleValue, _max - _hwm);
-  }
-  Atomic::dec(&_nof_handlemarks);
-#endif
 
   // Unlink this from the thread
   _thread->set_last_handle_mark(previous_handle_mark());
@@ -198,32 +145,3 @@ void HandleMark::operator delete[](void* p) {
   FreeHeap(p, mtThread);
 }
 
-#ifdef ASSERT
-
-NoHandleMark::NoHandleMark() {
-  HandleArea* area = Thread::current()->handle_area();
-  area->_no_handle_mark_nesting++;
-  assert(area->_no_handle_mark_nesting > 0, "must stack allocate NoHandleMark" );
-}
-
-
-NoHandleMark::~NoHandleMark() {
-  HandleArea* area = Thread::current()->handle_area();
-  assert(area->_no_handle_mark_nesting > 0, "must stack allocate NoHandleMark" );
-  area->_no_handle_mark_nesting--;
-}
-
-
-ResetNoHandleMark::ResetNoHandleMark() {
-  HandleArea* area = Thread::current()->handle_area();
-  _no_handle_mark_nesting = area->_no_handle_mark_nesting;
-  area->_no_handle_mark_nesting = 0;
-}
-
-
-ResetNoHandleMark::~ResetNoHandleMark() {
-  HandleArea* area = Thread::current()->handle_area();
-  area->_no_handle_mark_nesting = _no_handle_mark_nesting;
-}
-
-#endif

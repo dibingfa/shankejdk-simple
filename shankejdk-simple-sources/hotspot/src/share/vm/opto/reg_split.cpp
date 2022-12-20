@@ -141,10 +141,6 @@ void PhaseChaitin::insert_proj( Block *b, uint i, Node *spill, uint maxlrg ) {
 // one for Split USES (insert before instruction).  DEF insertion
 // happens inside Split, where the Leaveblock array is updated.
 uint PhaseChaitin::split_DEF( Node *def, Block *b, int loc, uint maxlrg, Node **Reachblock, Node **debug_defs, GrowableArray<uint> splits, int slidx ) {
-#ifdef ASSERT
-  // Increment the counter for this lrg
-  splits.at_put(slidx, splits.at(slidx)+1);
-#endif
   // If we are spilling the memory op for an implicit null check, at the
   // null check location (ie - null check is in HRP block) we need to do
   // the null-check first, then spill-down in the following block.
@@ -181,10 +177,6 @@ uint PhaseChaitin::split_DEF( Node *def, Block *b, int loc, uint maxlrg, Node **
 // Splits at uses can involve redeffing the LRG, so no CISC Spilling there.
 // Debug uses want to know if def is already stack enabled.
 uint PhaseChaitin::split_USE( Node *def, Block *b, Node *use, uint useidx, uint maxlrg, bool def_down, bool cisc_sp, GrowableArray<uint> splits, int slidx ) {
-#ifdef ASSERT
-  // Increment the counter for this lrg
-  splits.at_put(slidx, splits.at(slidx)+1);
-#endif
 
   // Some setup stuff for handling debug node uses
   JVMState* jvms = use->jvms();
@@ -284,14 +276,6 @@ uint PhaseChaitin::split_USE( Node *def, Block *b, Node *use, uint useidx, uint 
 // Clone node with anti dependence check.
 Node* clone_node(Node* def, Block *b, Compile* C) {
   if (def->needs_anti_dependence_check()) {
-#ifdef ASSERT
-    if (Verbose) {
-      tty->print_cr("RA attempts to clone node with anti_dependence:");
-      def->dump(-1); tty->cr();
-      tty->print_cr("into block:");
-      b->dump();
-    }
-#endif
     if (C->subsume_loads() == true && !C->failing()) {
       // Retry with subsume_loads == false
       // If this is the first failure, the sentinel string will "stick"
@@ -381,10 +365,6 @@ Node *PhaseChaitin::split_Rematerialize( Node *def, Block *b, uint insidx, uint 
     set_was_spilled(spill);
 
   insert_proj( b, insidx, spill, maxlrg++ );
-#ifdef ASSERT
-  // Increment the counter for this lrg
-  splits.at_put(slidx, splits.at(slidx)+1);
-#endif
   // See if the cloned def kills any flags, and copy those kills as well
   uint i = insidx+1;
   int found_projs = clone_projs( b, i, def, spill, maxlrg);
@@ -502,10 +482,6 @@ uint PhaseChaitin::Split(uint maxlrg, ResourceArea* split_arena) {
       lrg2reach[bidx] = spill_cnt;
       spill_cnt++;
       lidxs.append(bidx);
-#ifdef ASSERT
-      // Initialize the split counts to zero
-      splits.append(0);
-#endif
 #ifndef PRODUCT
       if( PrintOpto && WizardMode && lrgs(bidx)._was_spilled1 )
         tty->print_cr("Warning, 2nd spill of L%d",bidx);
@@ -1245,17 +1221,6 @@ uint PhaseChaitin::Split(uint maxlrg, ResourceArea* split_arena) {
       uint defidx = lidxs.at(slidx);
       IndexSet *liveout = _live->live(b);
       if( !liveout->member(defidx) ) {
-#ifdef ASSERT
-        // The index defidx is not live.  Check the liveout array to ensure that
-        // it contains no members which compress to defidx.  Finding such an
-        // instance may be a case to add liveout adjustment in compress_uf_map().
-        // See 5063219.
-        uint member;
-        IndexSetIterator isi(liveout);
-        while ((member = isi.next()) != 0) {
-          assert(defidx != _lrg_map.find_const(member), "Live out member has not been compressed");
-        }
-#endif
         Reachblock[slidx] = NULL;
       } else {
         assert(Reachblock[slidx] != NULL,"No reaching definition for liveout value");
@@ -1386,33 +1351,6 @@ uint PhaseChaitin::Split(uint maxlrg, ResourceArea* split_arena) {
     }  // End if two address
   }  // End for all defs
   // DEBUG
-#ifdef ASSERT
-  // Validate all live range index assignments
-  for (bidx = 0; bidx < _cfg.number_of_blocks(); bidx++) {
-    b  = _cfg.get_block(bidx);
-    for (insidx = 0; insidx <= b->end_idx(); insidx++) {
-      Node *n = b->get_node(insidx);
-      uint defidx = _lrg_map.find(n);
-      assert(defidx < _lrg_map.max_lrg_id(), "Bad live range index in Split");
-      assert(defidx < maxlrg,"Bad live range index in Split");
-    }
-  }
-  // Issue a warning if splitting made no progress
-  int noprogress = 0;
-  for (slidx = 0; slidx < spill_cnt; slidx++) {
-    if (PrintOpto && WizardMode && splits.at(slidx) == 0) {
-      tty->print_cr("Failed to split live range %d", lidxs.at(slidx));
-      //BREAKPOINT;
-    }
-    else {
-      noprogress++;
-    }
-  }
-  if(!noprogress) {
-    tty->print_cr("Failed to make progress in Split");
-    //BREAKPOINT;
-  }
-#endif
   // Return updated count of live ranges
   return maxlrg;
 }

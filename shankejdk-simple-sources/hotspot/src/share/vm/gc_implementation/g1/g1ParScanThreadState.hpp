@@ -98,13 +98,6 @@ class G1ParScanThreadState : public StackObj {
 
   ageTable*         age_table()       { return &_age_table;       }
 
-#ifdef ASSERT
-  bool queue_is_empty() const { return _refs->is_empty(); }
-
-  bool verify_ref(narrowOop* ref) const;
-  bool verify_ref(oop* ref) const;
-  bool verify_task(StarTask ref) const;
-#endif // ASSERT
 
   template <class T> void push_on_queue(T* ref) {
     assert(verify_ref(ref), "sanity");

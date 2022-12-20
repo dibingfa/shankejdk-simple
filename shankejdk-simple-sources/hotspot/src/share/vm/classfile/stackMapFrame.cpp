@@ -288,12 +288,6 @@ void StackMapFrame::set_local(int32_t index, VerificationType type, TRAPS) {
   }
   _locals[index] = type;
   if (index >= _locals_size) {
-#ifdef ASSERT
-    for (int i=_locals_size; i<index; i++) {
-      assert(_locals[i] == VerificationType::bogus_type(),
-             "holes must be bogus type");
-    }
-#endif
     _locals_size = index + 1;
   }
 }
@@ -321,12 +315,6 @@ void StackMapFrame::set_local_2(
   _locals[index] = type1;
   _locals[index+1] = type2;
   if (index >= _locals_size - 1) {
-#ifdef ASSERT
-    for (int i=_locals_size; i<index; i++) {
-      assert(_locals[i] == VerificationType::bogus_type(),
-             "holes must be bogus type");
-    }
-#endif
     _locals_size = index + 2;
   }
 }

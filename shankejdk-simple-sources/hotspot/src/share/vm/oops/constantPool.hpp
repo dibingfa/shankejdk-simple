@@ -573,20 +573,6 @@ class ConstantPool : public Metadata {
     return (second_part / 2);
   }
 
-#ifdef ASSERT
-  // operand tuples fit together exactly, end to end
-  static int operand_limit_at(Array<u2>* operands, int bootstrap_specifier_index) {
-    int nextidx = bootstrap_specifier_index + 1;
-    if (nextidx == operand_array_length(operands))
-      return operands->length();
-    else
-      return operand_offset_at(operands, nextidx);
-  }
-  int invoke_dynamic_operand_limit(int which) {
-    int bootstrap_specifier_index = invoke_dynamic_bootstrap_specifier_index(which);
-    return operand_limit_at(operands(), bootstrap_specifier_index);
-  }
-#endif //ASSERT
 
   // layout of InvokeDynamic bootstrap method specifier (in second part of operands array):
   enum {
@@ -774,11 +760,7 @@ class ConstantPool : public Metadata {
   // Debugging
   const char* printable_name_at(int which) PRODUCT_RETURN0;
 
-#ifdef ASSERT
-  enum { CPCACHE_INDEX_TAG = 0x10000 };  // helps keep CP cache indices distinct from CP indices
-#else
   enum { CPCACHE_INDEX_TAG = 0 };        // in product mode, this zero value is a no-op
-#endif //ASSERT
 
   static int decode_cpcache_index(int raw_index, bool invokedynamic_ok = false) {
     if (invokedynamic_ok && is_invokedynamic_index(raw_index))

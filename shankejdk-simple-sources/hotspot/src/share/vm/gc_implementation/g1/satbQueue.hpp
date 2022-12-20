@@ -79,10 +79,6 @@ public:
 class SATBMarkQueueSet: public PtrQueueSet {
   ObjPtrQueue _shared_satb_queue;
 
-#ifdef ASSERT
-  void dump_active_states(bool expected_active);
-  void verify_active_states(bool expected_active);
-#endif // ASSERT
 
 public:
   SATBMarkQueueSet();

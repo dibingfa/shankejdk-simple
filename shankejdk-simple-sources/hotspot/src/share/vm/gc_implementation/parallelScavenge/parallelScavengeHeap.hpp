@@ -141,9 +141,6 @@ class ParallelScavengeHeap : public CollectedHeap {
 
   bool is_in_reserved(const void* p) const;
 
-#ifdef ASSERT
-  virtual bool is_in_partial_collection(const void *p);
-#endif
 
   bool is_in_young(oop p);  // reserved part
   bool is_in_old(oop p);    // reserved part

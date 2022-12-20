@@ -53,21 +53,3 @@ Bytecodes::Code RawBytecodeStream::raw_next_special(Bytecodes::Code code) {
   return code;
 }
 
-#ifdef ASSERT
-void BaseBytecodeStream::assert_raw_index_size(int size) const {
-  if (raw_code() == Bytecodes::_invokedynamic && is_raw()) {
-    // in raw mode, pretend indy is "bJJ__"
-    assert(size == 2, "raw invokedynamic instruction has 2-byte index only");
-  } else {
-    bytecode().assert_index_size(size, raw_code(), is_wide());
-  }
-}
-
-void BaseBytecodeStream::assert_raw_stream(bool want_raw) const {
-  if (want_raw) {
-    assert( is_raw(), "this function only works on raw streams");
-  } else {
-    assert(!is_raw(), "this function only works on non-raw streams");
-  }
-}
-#endif //ASSERT

@@ -58,30 +58,15 @@ int ConstantPoolCacheEntry::make_flags(TosState state,
   int f = ((int)state << tos_state_shift) | option_bits | field_index_or_method_params;
   // Preserve existing flag bit values
   // The low bits are a field offset, or else the method parameter size.
-#ifdef ASSERT
-  TosState old_state = flag_state();
-  assert(old_state == (TosState)0 || old_state == state,
-         "inconsistent cpCache flags state");
-#endif
   return (_flags | f) ;
 }
 
 void ConstantPoolCacheEntry::set_bytecode_1(Bytecodes::Code code) {
-#ifdef ASSERT
-  // Read once.
-  volatile Bytecodes::Code c = bytecode_1();
-  assert(c == 0 || c == code || code == 0, "update must be consistent");
-#endif
   // Need to flush pending stores here before bytecode is written.
   OrderAccess::release_store_ptr(&_indices, _indices | ((u_char)code << bytecode_1_shift));
 }
 
 void ConstantPoolCacheEntry::set_bytecode_2(Bytecodes::Code code) {
-#ifdef ASSERT
-  // Read once.
-  volatile Bytecodes::Code c = bytecode_2();
-  assert(c == 0 || c == code || code == 0, "update must be consistent");
-#endif
   // Need to flush pending stores here before bytecode is written.
   OrderAccess::release_store_ptr(&_indices, _indices | ((u_char)code << bytecode_2_shift));
 }
@@ -588,14 +573,6 @@ void ConstantPoolCache::initialize(const intArray& inverse_index_map,
   for (int ref = 0; ref < invokedynamic_references_map.length(); ref++) {
     const int cpci = invokedynamic_references_map[ref];
     if (cpci >= 0) {
-#ifdef ASSERT
-      // invokedynamic and invokehandle have more entries; check if they
-      // all point to the same constant pool cache entry.
-      for (int entry = 1; entry < ConstantPoolCacheEntry::_indy_resolved_references_entries; entry++) {
-        const int cpci_next = invokedynamic_references_map[ref + entry];
-        assert(cpci == cpci_next, err_msg_res("%d == %d", cpci, cpci_next));
-      }
-#endif
       entry_at(cpci)->initialize_resolved_reference_index(ref);
       ref += ConstantPoolCacheEntry::_indy_resolved_references_entries - 1;  // skip extra entries
     }

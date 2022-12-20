@@ -426,10 +426,6 @@ public:
   }
 
   virtual void eval_constant(Compile* C) {
-#ifdef ASSERT
-    tty->print("missing MachConstantNode eval_constant function: ");
-    dump();
-#endif
     ShouldNotCallThis();
   }
 

@@ -996,21 +996,7 @@ void GenerateOopMap::init_basic_blocks() {
     BasicBlock *bb = _basic_blocks + blockNum;
     bb->_state = basicBlockState + blockNum * _state_len;
 
-#ifdef ASSERT
-    if (blockNum + 1 < bbNo) {
-      address bcp = _method->bcp_from(bb->_end_bci);
-      int bc_len = Bytecodes::java_length_at(_method(), bcp);
-      assert(bb->_end_bci + bc_len == bb[1]._bci, "unmatched bci info in basicblock");
-    }
-#endif
   }
-#ifdef ASSERT
-  { BasicBlock *bb = &_basic_blocks[bbNo-1];
-    address bcp = _method->bcp_from(bb->_end_bci);
-    int bc_len = Bytecodes::java_length_at(_method(), bcp);
-    assert(bb->_end_bci + bc_len == _method->code_size(), "wrong end bci");
-  }
-#endif
 
   // Mark all alive blocks
   mark_reachable_code();
@@ -2020,10 +2006,6 @@ void GenerateOopMap::ret_jump_targets_do(BytecodeStream *bcs, jmpFct_t jmpFct, i
 // Debug method
 //
 char* GenerateOopMap::state_vec_to_string(CellTypeState* vec, int len) {
-#ifdef ASSERT
-  int checklen = MAX3(_max_locals, _max_stack, _max_monitors) + 1;
-  assert(len < checklen, "state_vec_buf overflow");
-#endif
   for (int i = 0; i < len; i++) _state_vec_buf[i] = vec[i].to_char();
   _state_vec_buf[len] = 0;
   return _state_vec_buf;

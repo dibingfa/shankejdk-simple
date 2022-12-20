@@ -127,12 +127,6 @@ VM_Operation* VMOperationQueue::queue_drain(int prio) {
   _queue[prio]->set_next(_queue[prio]);
   _queue[prio]->set_prev(_queue[prio]);
   assert(queue_empty(prio), "drain corrupted queue");
-#ifdef ASSERT
-  int len = 0;
-  VM_Operation* cur;
-  for(cur = r; cur != NULL; cur=cur->next()) len++;
-  assert(len == length, "drain lost some ops");
-#endif
   return r;
 }
 
@@ -469,9 +463,6 @@ void VMThread::loop() {
           // the clean-up processing that needs to be done regularly at a
           // safepoint
           SafepointSynchronize::begin();
-          #ifdef ASSERT
-            if (GCALotAtAllSafepoints) InterfaceSupport::check_gc_alot();
-          #endif
           SafepointSynchronize::end();
         }
         _cur_vm_operation = _vm_queue->remove_next();

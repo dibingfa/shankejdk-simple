@@ -76,9 +76,6 @@ public:
     Bound(int lower, Value lower_instr, int upper, Value upper_instr);
     ~Bound();
 
-#ifdef ASSERT
-    void add_assertion(Instruction *instruction, Instruction *position, int i, Value instr, Instruction::Condition cond);
-#endif
     int upper();
     Value upper_instr();
     int lower();
@@ -167,14 +164,8 @@ public:
     void do_RuntimeCall    (RuntimeCall*     x) { /* nothing to do */ };
     void do_MemBar         (MemBar*          x) { /* nothing to do */ };
     void do_RangeCheckPredicate(RangeCheckPredicate* x) { /* nothing to do */ };
-#ifdef ASSERT
-    void do_Assert         (Assert*          x) { /* nothing to do */ };
-#endif
   };
 
-#ifdef ASSERT
-  void add_assertions(Bound *bound, Instruction *instruction, Instruction *position);
-#endif
 
   define_array(BoundArray, Bound *)
   define_stack(BoundStack, BoundArray)

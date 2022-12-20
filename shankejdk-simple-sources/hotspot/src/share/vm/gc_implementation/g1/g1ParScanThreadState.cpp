@@ -106,40 +106,6 @@ G1ParScanThreadState::print_termination_stats(int i,
                undo_waste * HeapWordSize / K);
 }
 
-#ifdef ASSERT
-bool G1ParScanThreadState::verify_ref(narrowOop* ref) const {
-  assert(ref != NULL, "invariant");
-  assert(UseCompressedOops, "sanity");
-  assert(!has_partial_array_mask(ref), err_msg("ref=" PTR_FORMAT, p2i(ref)));
-  oop p = oopDesc::load_decode_heap_oop(ref);
-  assert(_g1h->is_in_g1_reserved(p),
-         err_msg("ref=" PTR_FORMAT " p=" PTR_FORMAT, p2i(ref), p2i(p)));
-  return true;
-}
-
-bool G1ParScanThreadState::verify_ref(oop* ref) const {
-  assert(ref != NULL, "invariant");
-  if (has_partial_array_mask(ref)) {
-    // Must be in the collection set--it's already been copied.
-    oop p = clear_partial_array_mask(ref);
-    assert(_g1h->obj_in_cs(p),
-           err_msg("ref=" PTR_FORMAT " p=" PTR_FORMAT, p2i(ref), p2i(p)));
-  } else {
-    oop p = oopDesc::load_decode_heap_oop(ref);
-    assert(_g1h->is_in_g1_reserved(p),
-           err_msg("ref=" PTR_FORMAT " p=" PTR_FORMAT, p2i(ref), p2i(p)));
-  }
-  return true;
-}
-
-bool G1ParScanThreadState::verify_task(StarTask ref) const {
-  if (ref.is_narrow()) {
-    return verify_ref((narrowOop*) ref);
-  } else {
-    return verify_ref((oop*) ref);
-  }
-}
-#endif // ASSERT
 
 void G1ParScanThreadState::trim_queue() {
   assert(_evac_failure_cl != NULL, "not set");

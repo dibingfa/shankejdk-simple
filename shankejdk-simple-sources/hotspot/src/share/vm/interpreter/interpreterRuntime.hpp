@@ -189,9 +189,6 @@ class InterpreterRuntime: AllStatic {
   static jint    bcp_to_di(Method* method, address cur_bcp);
   static void    profile_method(JavaThread* thread);
   static void    update_mdp_for_ret(JavaThread* thread, int bci);
-#ifdef ASSERT
-  static void    verify_mdp(Method* method, address bcp, address mdp);
-#endif // ASSERT
   static MethodCounters* build_method_counters(JavaThread* thread, Method* m);
 };
 

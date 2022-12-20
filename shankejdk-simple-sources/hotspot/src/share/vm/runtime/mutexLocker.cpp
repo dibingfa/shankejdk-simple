@@ -147,28 +147,6 @@ Mutex*   UnsafeJlong_lock             = NULL;
 static Monitor * _mutex_array[MAX_NUM_MUTEX];
 static int _num_mutex;
 
-#ifdef ASSERT
-void assert_locked_or_safepoint(const Monitor * lock) {
-  // check if this thread owns the lock (common case)
-  if (IgnoreLockingAssertions) return;
-  assert(lock != NULL, "Need non-NULL lock");
-  if (lock->owned_by_self()) return;
-  if (SafepointSynchronize::is_at_safepoint()) return;
-  if (!Universe::is_fully_initialized()) return;
-  // see if invoker of VM operation owns it
-  VM_Operation* op = VMThread::vm_operation();
-  if (op != NULL && op->calling_thread() == lock->owner()) return;
-  fatal(err_msg("must own lock %s", lock->name()));
-}
-
-// a stronger assertion than the above
-void assert_lock_strong(const Monitor * lock) {
-  if (IgnoreLockingAssertions) return;
-  assert(lock != NULL, "Need non-NULL lock");
-  if (lock->owned_by_self()) return;
-  fatal(err_msg("must own lock %s", lock->name()));
-}
-#endif
 
 #define def(var, type, pri, vm_block) {                           \
   var = new type(Mutex::pri, #var, vm_block);                     \

@@ -58,73 +58,6 @@
 // b) change all WordSize's to ByteSize's where desired and fix the compilation errors
 
 
-#ifdef ASSERT
-
-class ByteSize VALUE_OBJ_CLASS_SPEC {
- private:
-  int _size;
-
-  // Note: This constructor must be private to avoid implicit conversions!
-  ByteSize(int size)                                  { _size = size; }
-
- public:
-  // constructors
-  inline friend ByteSize in_ByteSize(int size);
-
-  // accessors
-  inline friend int in_bytes(ByteSize x);
-
-  // operators
-  friend ByteSize operator + (ByteSize x, ByteSize y) { return ByteSize(in_bytes(x) + in_bytes(y)); }
-  friend ByteSize operator - (ByteSize x, ByteSize y) { return ByteSize(in_bytes(x) - in_bytes(y)); }
-  friend ByteSize operator * (ByteSize x, int      y) { return ByteSize(in_bytes(x) * y          ); }
-
-  // comparison
-  friend bool operator == (ByteSize x, ByteSize y)    { return in_bytes(x) == in_bytes(y); }
-  friend bool operator != (ByteSize x, ByteSize y)    { return in_bytes(x) != in_bytes(y); }
-  friend bool operator <  (ByteSize x, ByteSize y)    { return in_bytes(x) <  in_bytes(y); }
-  friend bool operator <= (ByteSize x, ByteSize y)    { return in_bytes(x) <= in_bytes(y); }
-  friend bool operator >  (ByteSize x, ByteSize y)    { return in_bytes(x) >  in_bytes(y); }
-  friend bool operator >= (ByteSize x, ByteSize y)    { return in_bytes(x) >= in_bytes(y); }
-};
-
-inline ByteSize in_ByteSize(int size) { return ByteSize(size); }
-inline int      in_bytes(ByteSize x)  { return x._size; }
-
-
-class WordSize VALUE_OBJ_CLASS_SPEC {
- private:
-  int _size;
-
-  // Note: This constructor must be private to avoid implicit conversions!
-  WordSize(int size)                                  { _size = size; }
-
- public:
-  // constructors
-  inline friend WordSize in_WordSize(int size);
-
-  // accessors
-  inline friend int in_words(WordSize x);
-
-  // operators
-  friend WordSize operator + (WordSize x, WordSize y) { return WordSize(in_words(x) + in_words(y)); }
-  friend WordSize operator - (WordSize x, WordSize y) { return WordSize(in_words(x) - in_words(y)); }
-  friend WordSize operator * (WordSize x, int      y) { return WordSize(in_words(x) * y          ); }
-
-  // comparison
-  friend bool operator == (WordSize x, WordSize y)    { return in_words(x) == in_words(y); }
-  friend bool operator != (WordSize x, WordSize y)    { return in_words(x) != in_words(y); }
-  friend bool operator <  (WordSize x, WordSize y)    { return in_words(x) <  in_words(y); }
-  friend bool operator <= (WordSize x, WordSize y)    { return in_words(x) <= in_words(y); }
-  friend bool operator >  (WordSize x, WordSize y)    { return in_words(x) >  in_words(y); }
-  friend bool operator >= (WordSize x, WordSize y)    { return in_words(x) >= in_words(y); }
-};
-
-inline WordSize in_WordSize(int size) { return WordSize(size); }
-inline int      in_words(WordSize x)  { return x._size; }
-
-
-#else // ASSERT
 
 // The following definitions must match the corresponding friend declarations
 // in the Byte/WordSize classes if they are typedef'ed to be int. This will
@@ -142,7 +75,6 @@ typedef int WordSize;
 inline WordSize in_WordSize(int size)                 { return size; }
 inline int      in_words   (WordSize x)               { return x; }
 
-#endif // ASSERT
 
 
 // Use the following #define to get C++ field member offsets

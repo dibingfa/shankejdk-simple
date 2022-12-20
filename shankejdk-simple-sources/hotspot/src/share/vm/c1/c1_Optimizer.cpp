@@ -351,26 +351,6 @@ class BlockMerger: public BlockClosure {
       if (sux->number_of_preds() == 1 && !sux->is_entry_block() && !end->is_safepoint()) {
         // merge the two blocks
 
-#ifdef ASSERT
-        // verify that state at the end of block and at the beginning of sux are equal
-        // no phi functions must be present at beginning of sux
-        ValueStack* sux_state = sux->state();
-        ValueStack* end_state = end->state();
-
-        assert(end_state->scope() == sux_state->scope(), "scopes must match");
-        assert(end_state->stack_size() == sux_state->stack_size(), "stack not equal");
-        assert(end_state->locals_size() == sux_state->locals_size(), "locals not equal");
-
-        int index;
-        Value sux_value;
-        for_each_stack_value(sux_state, index, sux_value) {
-          assert(sux_value == end_state->stack_at(index), "stack not equal");
-        }
-        for_each_local_value(sux_state, index, sux_value) {
-          assert(sux_value == end_state->local_at(index), "locals not equal");
-        }
-        assert(sux_state->caller_state() == end_state->caller_state(), "caller not equal");
-#endif
 
         // find instruction before end & append first instruction of sux block
         Instruction* prev = end->prev();
@@ -542,9 +522,6 @@ public:
   void do_RuntimeCall    (RuntimeCall*     x);
   void do_MemBar         (MemBar*          x);
   void do_RangeCheckPredicate(RangeCheckPredicate* x);
-#ifdef ASSERT
-  void do_Assert         (Assert*          x);
-#endif
 };
 
 
@@ -731,9 +708,6 @@ void NullCheckVisitor::do_ProfileInvoke  (ProfileInvoke*   x) {}
 void NullCheckVisitor::do_RuntimeCall    (RuntimeCall*     x) {}
 void NullCheckVisitor::do_MemBar         (MemBar*          x) {}
 void NullCheckVisitor::do_RangeCheckPredicate(RangeCheckPredicate* x) {}
-#ifdef ASSERT
-void NullCheckVisitor::do_Assert         (Assert*          x) {}
-#endif
 
 void NullCheckEliminator::visit(Value* p) {
   assert(*p != NULL, "should not find NULL instructions");

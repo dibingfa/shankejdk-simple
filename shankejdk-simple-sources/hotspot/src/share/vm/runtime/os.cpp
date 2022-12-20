@@ -32,9 +32,6 @@
 #include "gc_implementation/shared/vmGCOperations.hpp"
 #include "interpreter/interpreter.hpp"
 #include "memory/allocation.inline.hpp"
-#ifdef ASSERT
-#include "memory/guardedMemory.hpp"
-#endif
 #include "oops/oop.inline.hpp"
 #include "prims/jvm.h"
 #include "prims/jvm_misc.hpp"
@@ -207,15 +204,6 @@ char* os::iso8601_time(char* buffer, size_t buffer_length) {
 }
 
 OSReturn os::set_priority(Thread* thread, ThreadPriority p) {
-#ifdef ASSERT
-  if (!(!thread->is_Java_thread() ||
-         Thread::current() == thread  ||
-         Threads_lock->owned_by_self()
-         || thread->is_Compiler_thread()
-        )) {
-    assert(false, "possibility of dangling Thread pointer");
-  }
-#endif
 
   if (p >= MinPriority && p <= MaxPriority) {
     int priority = java_to_os_priority[p];
@@ -555,17 +543,6 @@ char *os::strdup(const char *str, MEMFLAGS flags) {
 
 #define paranoid                 0  /* only set to 1 if you suspect checking code has bug */
 
-#ifdef ASSERT
-static void verify_memory(void* ptr) {
-  GuardedMemory guarded(ptr);
-  if (!guarded.verify_guards()) {
-    tty->print_cr("## nof_mallocs = " UINT64_FORMAT ", nof_frees = " UINT64_FORMAT, os::num_mallocs, os::num_frees);
-    tty->print_cr("## memory stomp:");
-    guarded.print_on(tty);
-    fatal("memory stomping error");
-  }
-}
-#endif
 
 //
 // This function supports testing of the malloc out of memory
@@ -610,14 +587,7 @@ void* os::malloc(size_t size, MEMFLAGS memflags, const NativeCallStack& stack) {
   NMT_TrackingLevel level = MemTracker::tracking_level();
   size_t            nmt_header_size = MemTracker::malloc_header_size(level);
 
-#ifndef ASSERT
   const size_t alloc_size = size + nmt_header_size;
-#else
-  const size_t alloc_size = GuardedMemory::get_total_size(size + nmt_header_size);
-  if (size + nmt_header_size > alloc_size) { // Check for rollover.
-    return NULL;
-  }
-#endif
 
   NOT_PRODUCT(if (MallocVerifyInterval > 0) check_heap());
 
@@ -628,14 +598,6 @@ void* os::malloc(size_t size, MEMFLAGS memflags, const NativeCallStack& stack) {
     ptr = (u_char*)::malloc(alloc_size);
   }
 
-#ifdef ASSERT
-  if (ptr == NULL) {
-    return NULL;
-  }
-  // Wrap memory with guard
-  GuardedMemory guarded(ptr, size + nmt_header_size);
-  ptr = guarded.get_user_ptr();
-#endif
   if ((intptr_t)ptr == (intptr_t)MallocCatchPtr) {
     tty->print_cr("os::malloc caught, " SIZE_FORMAT " bytes --> " PTR_FORMAT, size, ptr);
     breakpoint();
@@ -655,7 +617,6 @@ void* os::realloc(void *memblock, size_t size, MEMFLAGS flags) {
 
 void* os::realloc(void *memblock, size_t size, MEMFLAGS memflags, const NativeCallStack& stack) {
 
-#ifndef ASSERT
   NOT_PRODUCT(inc_stat_counter(&num_mallocs, 1));
   NOT_PRODUCT(inc_stat_counter(&alloc_bytes, size));
    // NMT support
@@ -664,68 +625,13 @@ void* os::realloc(void *memblock, size_t size, MEMFLAGS memflags, const NativeCa
   size_t  nmt_header_size = MemTracker::malloc_header_size(level);
   void* ptr = ::realloc(membase, size + nmt_header_size);
   return MemTracker::record_malloc(ptr, size, memflags, stack, level);
-#else
-  if (memblock == NULL) {
-    return os::malloc(size, memflags, stack);
-  }
-  if ((intptr_t)memblock == (intptr_t)MallocCatchPtr) {
-    tty->print_cr("os::realloc caught " PTR_FORMAT, memblock);
-    breakpoint();
-  }
-  // NMT support
-  void* membase = MemTracker::malloc_base(memblock);
-  verify_memory(membase);
-  NOT_PRODUCT(if (MallocVerifyInterval > 0) check_heap());
-  if (size == 0) {
-    return NULL;
-  }
-  // always move the block
-  void* ptr = os::malloc(size, memflags, stack);
-  if (PrintMalloc) {
-    tty->print_cr("os::remalloc " SIZE_FORMAT " bytes, " PTR_FORMAT " --> " PTR_FORMAT, size, memblock, ptr);
-  }
-  // Copy to new memory if malloc didn't fail
-  if ( ptr != NULL ) {
-    GuardedMemory guarded(MemTracker::malloc_base(memblock));
-    // Guard's user data contains NMT header
-    size_t memblock_size = guarded.get_user_size() - MemTracker::malloc_header_size(memblock);
-    memcpy(ptr, memblock, MIN2(size, memblock_size));
-    if (paranoid) verify_memory(MemTracker::malloc_base(ptr));
-    if ((intptr_t)ptr == (intptr_t)MallocCatchPtr) {
-      tty->print_cr("os::realloc caught, " SIZE_FORMAT " bytes --> " PTR_FORMAT, size, ptr);
-      breakpoint();
-    }
-    os::free(memblock);
-  }
-  return ptr;
-#endif
 }
 
 
 void  os::free(void *memblock, MEMFLAGS memflags) {
   NOT_PRODUCT(inc_stat_counter(&num_frees, 1));
-#ifdef ASSERT
-  if (memblock == NULL) return;
-  if ((intptr_t)memblock == (intptr_t)MallocCatchPtr) {
-    if (tty != NULL) tty->print_cr("os::free caught " PTR_FORMAT, memblock);
-    breakpoint();
-  }
-  void* membase = MemTracker::record_free(memblock);
-  verify_memory(membase);
-  NOT_PRODUCT(if (MallocVerifyInterval > 0) check_heap());
-
-  GuardedMemory guarded(membase);
-  size_t size = guarded.get_user_size();
-  inc_stat_counter(&free_bytes, size);
-  membase = guarded.release_for_freeing();
-  if (PrintMalloc && tty != NULL) {
-      fprintf(stderr, "os::free " SIZE_FORMAT " bytes --> " PTR_FORMAT "\n", size, (uintptr_t)membase);
-  }
-  ::free(membase);
-#else
   void* membase = MemTracker::record_free(memblock);
   ::free(membase);
-#endif
 }
 
 void os::init_random(long initval) {
@@ -1102,38 +1008,6 @@ bool os::is_first_C_frame(frame* fr) {
 #endif
 }
 
-#ifdef ASSERT
-extern "C" void test_random() {
-  const double m = 2147483647;
-  double mean = 0.0, variance = 0.0, t;
-  long reps = 10000;
-  unsigned long seed = 1;
-
-  tty->print_cr("seed %ld for %ld repeats...", seed, reps);
-  os::init_random(seed);
-  long num;
-  for (int k = 0; k < reps; k++) {
-    num = os::random();
-    double u = (double)num / m;
-    assert(u >= 0.0 && u <= 1.0, "bad random number!");
-
-    // calculate mean and variance of the random sequence
-    mean += u;
-    variance += (u*u);
-  }
-  mean /= reps;
-  variance /= (reps - 1);
-
-  assert(num == 1043618065, "bad seed");
-  tty->print_cr("mean of the 1st 10000 numbers: %f", mean);
-  tty->print_cr("variance of the 1st 10000 numbers: %f", variance);
-  const double eps = 0.0001;
-  t = fabsd(mean - 0.5018);
-  assert(t < eps, "bad mean");
-  t = (variance - 0.3355) < 0.0 ? -(variance - 0.3355) : variance - 0.3355;
-  assert(t < eps, "bad variance");
-}
-#endif
 
 
 // Set up the boot classpath.

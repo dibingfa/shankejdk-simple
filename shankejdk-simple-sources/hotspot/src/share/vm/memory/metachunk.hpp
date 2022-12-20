@@ -64,11 +64,6 @@ class Metabase VALUE_OBJ_CLASS_SPEC {
   bool cantCoalesce() const     { return false; }
 
   // Debug support
-#ifdef ASSERT
-  void* prev_addr() const { return (void*)&_prev; }
-  void* next_addr() const { return (void*)&_next; }
-  void* size_addr() const { return (void*)&_word_size; }
-#endif
   bool verify_chunk_in_free_list(T* tc) const { return true; }
   bool verify_par_locked() { return true; }
 
@@ -138,10 +133,6 @@ class Metachunk : public Metabase<Metachunk> {
   size_t used_word_size() const;
   size_t free_word_size() const;
 
-#ifdef ASSERT
-  bool is_tagged_free() { return _is_tagged_free; }
-  void set_is_tagged_free(bool v) { _is_tagged_free = v; }
-#endif
 
   bool contains(const void* ptr) { return bottom() <= ptr && ptr < _top; }
 

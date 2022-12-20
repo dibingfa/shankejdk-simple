@@ -126,20 +126,6 @@ void PhaseIdealLoop::do_unswitching (IdealLoopTree *loop, Node_List &old_new) {
 
   ProjNode* proj_true = create_slow_version_of_loop(loop, old_new);
 
-#ifdef ASSERT
-  Node* uniqc = proj_true->unique_ctrl_out();
-  Node* entry = head->in(LoopNode::EntryControl);
-  Node* predicate = find_predicate(entry);
-  if (predicate != NULL && LoopLimitCheck && UseLoopPredicate) {
-    // We may have two predicates, find first.
-    entry = find_predicate(entry->in(0)->in(0));
-    if (entry != NULL) predicate = entry;
-  }
-  if (predicate != NULL) predicate = predicate->in(0);
-  assert(proj_true->is_IfTrue() &&
-         (predicate == NULL && uniqc == head ||
-          predicate != NULL && uniqc == predicate), "by construction");
-#endif
   // Increment unswitch count
   LoopNode* head_clone = old_new[head->_idx]->as_Loop();
   int nct = head->unswitch_count() + 1;

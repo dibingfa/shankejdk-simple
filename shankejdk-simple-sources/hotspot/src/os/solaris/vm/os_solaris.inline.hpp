@@ -103,21 +103,11 @@ do { \
 
 // Interruptible io support + restarting of interrupted system calls
 
-#ifndef ASSERT
 
 #define INTERRUPTIBLE(_cmd, _result, _clear) do { \
   _INTERRUPTIBLE( JavaThread* _thread = (JavaThread*)ThreadLocalStorage::thread(),_result = _cmd, _result, _thread, _clear, , , UseVMInterruptibleIO); \
 } while((_result == OS_ERR) && (errno == EINTR))
 
-#else
-
-// This adds an assertion that it is only called from thread_in_native
-// The call overhead is skipped for performance in product mode
-#define INTERRUPTIBLE(_cmd, _result, _clear) do { \
-  _INTERRUPTIBLE(JavaThread* _thread = os::Solaris::setup_interruptible_native(), _result = _cmd, _result, _thread, _clear, , os::Solaris::cleanup_interruptible_native(_thread), UseVMInterruptibleIO ); \
-} while((_result == OS_ERR) && (errno == EINTR))
-
-#endif
 
 // Used for calls from _thread_in_vm, not from _thread_in_native
 #define INTERRUPTIBLE_VM(_cmd, _result, _clear) do { \
@@ -128,19 +118,10 @@ do { \
    than a system call is being invoked, or when the caller must do EINTR
    handling. */
 
-#ifndef ASSERT
 
 #define INTERRUPTIBLE_NORESTART(_cmd, _result, _clear) \
   _INTERRUPTIBLE( JavaThread* _thread = (JavaThread*)ThreadLocalStorage::thread(),_result = _cmd, _result, _thread, _clear, , , UseVMInterruptibleIO)
 
-#else
-
-// This adds an assertion that it is only called from thread_in_native
-// The call overhead is skipped for performance in product mode
-#define INTERRUPTIBLE_NORESTART(_cmd, _result, _clear) \
-  _INTERRUPTIBLE(JavaThread* _thread = os::Solaris::setup_interruptible_native(), _result = _cmd, _result, _thread, _clear, , os::Solaris::cleanup_interruptible_native(_thread), UseVMInterruptibleIO )
-
-#endif
 
 // Don't attend to UseVMInterruptibleIO. Always allow interruption.
 // Also assumes that it is called from the _thread_blocked state.

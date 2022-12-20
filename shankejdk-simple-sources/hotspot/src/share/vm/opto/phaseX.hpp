@@ -63,10 +63,6 @@ public:
   NodeHash(uint est_max_size);
   NodeHash(Arena *arena, uint est_max_size);
   NodeHash(NodeHash *use_this_state);
-#ifdef ASSERT
-  ~NodeHash();                  // Unlock all nodes upon destruction of table.
-  void operator=(const NodeHash&); // Unlock all nodes upon replacement of table.
-#endif
   Node  *hash_find(const Node*);// Find an equivalent version in hash table
   Node  *hash_find_insert(Node*);// If not in table insert else return found node
   void   hash_insert(Node*);    // Insert into hash table

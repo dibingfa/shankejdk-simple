@@ -678,15 +678,6 @@ ParKeepAliveClosure::ParKeepAliveClosure(ParScanWeakRefClosure* cl) :
 
 template <class T>
 void /*ParNewGeneration::*/ParKeepAliveClosure::do_oop_work(T* p) {
-#ifdef ASSERT
-  {
-    assert(!oopDesc::is_null(*p), "expected non-null ref");
-    oop obj = oopDesc::load_decode_heap_oop_not_null(p);
-    // We never expect to see a null reference being processed
-    // as a weak reference.
-    assert(obj->is_oop(), "expected an oop while scanning weak refs");
-  }
-#endif // ASSERT
 
   _par_cl->do_oop_nv(p);
 
@@ -705,15 +696,6 @@ KeepAliveClosure::KeepAliveClosure(ScanWeakRefClosure* cl) :
 
 template <class T>
 void /*ParNewGeneration::*/KeepAliveClosure::do_oop_work(T* p) {
-#ifdef ASSERT
-  {
-    assert(!oopDesc::is_null(*p), "expected non-null ref");
-    oop obj = oopDesc::load_decode_heap_oop_not_null(p);
-    // We never expect to see a null reference being processed
-    // as a weak reference.
-    assert(obj->is_oop(), "expected an oop while scanning weak refs");
-  }
-#endif // ASSERT
 
   _cl->do_oop_nv(p);
 
@@ -1120,13 +1102,6 @@ oop ParNewGeneration::real_forwardee_slow(oop obj) {
   return forward_ptr;
 }
 
-#ifdef ASSERT
-bool ParNewGeneration::is_legal_forward_ptr(oop p) {
-  return
-    (_avoid_promotion_undo && p == ClaimedForwardPtr)
-    || Universe::heap()->is_in_reserved(p);
-}
-#endif
 
 void ParNewGeneration::preserve_mark_if_necessary(oop obj, markOop m) {
   if (m->must_be_preserved_for_promotion_failure(obj)) {

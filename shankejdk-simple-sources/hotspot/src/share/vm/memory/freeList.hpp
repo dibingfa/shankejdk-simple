@@ -54,17 +54,10 @@ class FreeList VALUE_OBJ_CLASS_SPEC {
 
  protected:
 
-#ifdef ASSERT
-  Mutex*        _protecting_lock;
-#endif
 
   // Asserts false if the protecting lock (if any) is not held.
   void assert_proper_lock_protection_work() const PRODUCT_RETURN;
   void assert_proper_lock_protection() const {
-#ifdef ASSERT
-    if (_protecting_lock != NULL)
-      assert_proper_lock_protection_work();
-#endif
   }
 
   void increment_count()    {
@@ -88,12 +81,6 @@ class FreeList VALUE_OBJ_CLASS_SPEC {
   void reset();
 
   // Declare the current free list to be protected by the given lock.
-#ifdef ASSERT
-  Mutex* protecting_lock() const { return _protecting_lock; }
-  void set_protecting_lock(Mutex* v) {
-    _protecting_lock = v;
-  }
-#endif
 
   // Accessors.
   Chunk_t* head() const {

@@ -817,9 +817,6 @@ public:
   // Build and verify the loop tree without modifying the graph.  This
   // is useful to verify that all inputs properly dominate their uses.
   static void verify(PhaseIterGVN& igvn) {
-#ifdef ASSERT
-    PhaseIdealLoop v(igvn);
-#endif
   }
 
   // True if the method has at least 1 irreducible loop
@@ -981,14 +978,6 @@ public:
                                           VectorSet& not_peel, Node_List& sink_list, Node_List& worklist );
   // Insert phi(lp_entry_val, back_edge_val) at use->in(idx) for loop lp if phi does not already exist
   void insert_phi_for_loop( Node* use, uint idx, Node* lp_entry_val, Node* back_edge_val, LoopNode* lp );
-#ifdef ASSERT
-  // Validate the loop partition sets: peel and not_peel
-  bool is_valid_loop_partition( IdealLoopTree *loop, VectorSet& peel, Node_List& peel_list, VectorSet& not_peel );
-  // Ensure that uses outside of loop are of the right form
-  bool is_valid_clone_loop_form( IdealLoopTree *loop, Node_List& peel_list,
-                                 uint orig_exit_idx, uint clone_exit_idx);
-  bool is_valid_clone_loop_exit_use( IdealLoopTree *loop, Node* use, uint exit_idx);
-#endif
 
   // Returns nonzero constant stride if-node is a possible iv test (otherwise returns zero.)
   int stride_of_possible_iv( Node* iff );
@@ -1076,9 +1065,6 @@ public:
   bool created_loop_node()     { return _created_loop_node; }
   void register_new_node( Node *n, Node *blk );
 
-#ifdef ASSERT
-  void dump_bad_graph(const char* msg, Node* n, Node* early, Node* LCA);
-#endif
 
 #ifndef PRODUCT
   void dump( ) const;

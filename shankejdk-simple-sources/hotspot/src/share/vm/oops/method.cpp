@@ -219,34 +219,12 @@ void Method::mask_for(int bci, InterpreterOopMap* mask) {
 
   Thread* myThread    = Thread::current();
   methodHandle h_this(myThread, this);
-#ifdef ASSERT
-  bool has_capability = myThread->is_VM_thread() ||
-                        myThread->is_ConcurrentGC_thread() ||
-                        myThread->is_GC_task_thread();
-
-  if (!has_capability) {
-    if (!VerifyStack && !VerifyLastFrame) {
-      // verify stack calls this outside VM thread
-      warning("oopmap should only be accessed by the "
-              "VM, GC task or CMS threads (or during debugging)");
-      InterpreterOopMap local_mask;
-      method_holder()->mask_for(h_this, bci, &local_mask);
-      local_mask.print();
-    }
-  }
-#endif
   method_holder()->mask_for(h_this, bci, mask);
   return;
 }
 
 
 int Method::bci_from(address bcp) const {
-#ifdef ASSERT
-  { ResourceMark rm;
-  assert(is_native() && bcp == code_base() || contains(bcp) || is_error_reported(),
-         err_msg("bcp doesn't belong to this method: bcp: " INTPTR_FORMAT ", method: %s", bcp, name_and_sig_as_C_string()));
-  }
-#endif
   return bcp - code_base();
 }
 
@@ -555,13 +533,6 @@ bool Method::is_default_method() const {
 
 bool Method::can_be_statically_bound(AccessFlags class_access_flags) const {
   if (is_final_method(class_access_flags))  return true;
-#ifdef ASSERT
-  ResourceMark rm;
-  bool is_nonv = (vtable_index() == nonvirtual_vtable_index);
-  if (class_access_flags.is_interface()) {
-      assert(is_nonv == is_static(), err_msg("is_nonv=%s", name_and_sig_as_C_string()));
-  }
-#endif
   assert(valid_vtable_index() || valid_itable_index(), "method must be linked before we ask this question");
   return vtable_index() == nonvirtual_vtable_index;
 }
@@ -1153,11 +1124,6 @@ methodHandle Method::make_method_handle_intrinsic(vmIntrinsics::ID iid,
   m->compute_size_of_parameters(THREAD);
   m->init_intrinsic_id();
   assert(m->is_method_handle_intrinsic(), "");
-#ifdef ASSERT
-  if (!MethodHandles::is_signature_polymorphic(m->intrinsic_id()))  m->print();
-  assert(MethodHandles::is_signature_polymorphic(m->intrinsic_id()), "must be an invoker");
-  assert(m->intrinsic_id() == iid, "correctly predicted iid");
-#endif //ASSERT
 
   // Finally, set up its entry points.
   assert(m->can_be_statically_bound(), "");
@@ -1703,14 +1669,6 @@ BreakpointInfo::BreakpointInfo(Method* m, int bci) {
 }
 
 void BreakpointInfo::set(Method* method) {
-#ifdef ASSERT
-  {
-    Bytecodes::Code code = (Bytecodes::Code) *method->bcp_from(_bci);
-    if (code == Bytecodes::_breakpoint)
-      code = method->orig_bytecode_at(_bci);
-    assert(orig_bytecode() == code, "original bytecode must be the same");
-  }
-#endif
   Thread *thread = Thread::current();
   *method->bcp_from(_bci) = Bytecodes::_breakpoint;
   method->incr_number_of_breakpoints(thread);
@@ -1794,9 +1752,6 @@ class JNIMethodBlock : public CHeapObj<mtClass> {
 
   // Doesn't really destroy it, just marks it as free so it can be reused.
   void destroy_method(Method** m) {
-#ifdef ASSERT
-    assert(contains(m), "should be a methodID");
-#endif // ASSERT
     *m = _free_method;
   }
   void clear_method(Method* m) {

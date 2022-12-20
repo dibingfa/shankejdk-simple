@@ -378,15 +378,6 @@ void DebugInformationRecorder::end_scopes(int pc_offset, bool is_safepoint) {
   }
 }
 
-#ifdef ASSERT
-bool DebugInformationRecorder::recorders_frozen() {
-  return _oop_recorder->is_complete() || _oop_recorder->is_complete();
-}
-
-void DebugInformationRecorder::mark_recorders_frozen() {
-  _oop_recorder->freeze();
-}
-#endif // PRODUCT
 
 DebugToken* DebugInformationRecorder::create_scope_values(GrowableArray<ScopeValue*>* values) {
   assert(!recorders_frozen(), "not frozen yet");

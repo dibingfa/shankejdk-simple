@@ -172,11 +172,6 @@ private:
 
 protected:
 
-#ifdef ASSERT
-  int               _lookup_count;
-  int               _lookup_length;
-  void verify_lookup_length(double load);
-#endif
 
   void initialize(int table_size, int entry_size, int number_of_entries);
 

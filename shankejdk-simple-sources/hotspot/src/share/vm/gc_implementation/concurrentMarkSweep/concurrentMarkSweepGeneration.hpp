@@ -1530,14 +1530,6 @@ class UpwardsObjectClosure: public BoolObjectClosure {
 // reads the bit_map and because it is idempotent, is immune to
 // reading stale values.
 class ScanMarkedObjectsAgainClosure: public UpwardsObjectClosure {
-  #ifdef ASSERT
-    CMSCollector*          _collector;
-    MemRegion              _span;
-    union {
-      CMSMarkStack*        _mark_stack;
-      OopTaskQueue*        _work_queue;
-    };
-  #endif // ASSERT
   bool                       _parallel;
   CMSBitMap*                 _bit_map;
   union {
@@ -1552,11 +1544,6 @@ class ScanMarkedObjectsAgainClosure: public UpwardsObjectClosure {
                                 CMSBitMap* bit_map,
                                 CMSMarkStack*  mark_stack,
                                 MarkRefsIntoAndScanClosure* cl):
-    #ifdef ASSERT
-      _collector(collector),
-      _span(span),
-      _mark_stack(mark_stack),
-    #endif // ASSERT
     _parallel(false),
     _bit_map(bit_map),
     _scan_closure(cl) { }
@@ -1567,11 +1554,6 @@ class ScanMarkedObjectsAgainClosure: public UpwardsObjectClosure {
                                 CMSBitMap* bit_map,
                                 OopTaskQueue* work_queue,
                                 Par_MarkRefsIntoAndScanClosure* cl):
-    #ifdef ASSERT
-      _collector(collector),
-      _span(span),
-      _work_queue(work_queue),
-    #endif // ASSERT
     _parallel(true),
     _bit_map(bit_map),
     _par_scan_closure(cl) { }

@@ -187,14 +187,6 @@ void JfrTypeManager::write_thread_checkpoint(JavaThread* jt) {
   }
 }
 
-#ifdef ASSERT
-static void assert_not_registered_twice(JfrTypeId id, List& list) {
-  const Iterator iter(list);
-  while (iter.has_next()) {
-    assert(iter.next()->id() != id, "invariant");
-  }
-}
-#endif
 
 static bool register_type(JfrTypeId id, bool require_safepoint, bool permit_cache, JfrSerializer* serializer) {
   assert(serializer != NULL, "invariant");

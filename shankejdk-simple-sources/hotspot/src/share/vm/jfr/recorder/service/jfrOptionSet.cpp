@@ -136,11 +136,6 @@ bool JfrOptionSet::sample_protection() {
   return _sample_protection == JNI_TRUE;
 }
 
-#ifdef ASSERT
-void JfrOptionSet::set_sample_protection(jboolean protection) {
-  _sample_protection = protection;
-}
-#endif
 
 bool JfrOptionSet::compressed_integers() {
   // Set this to false for debugging purposes.
@@ -229,14 +224,6 @@ static DCmdArgument<bool> _dcmd_sample_threads(
   false,
   default_sample_threads);
 
-#ifdef ASSERT
-static DCmdArgument<bool> _dcmd_sample_protection(
-  "sampleprotection",
-  "Safeguard for stackwalking while sampling threads (false by default)",
-  "BOOLEAN",
-  false,
-  default_sample_protection);
-#endif
 
 static DCmdArgument<jlong> _dcmd_stackdepth(
   "stackdepth",
@@ -306,11 +293,7 @@ jlong JfrOptionSet::_old_object_queue_size = 0;
 u4 JfrOptionSet::_stack_depth = STACK_DEPTH_DEFAULT;
 jboolean JfrOptionSet::_sample_threads = JNI_TRUE;
 jboolean JfrOptionSet::_retransform = JNI_TRUE;
-#ifdef ASSERT
-jboolean JfrOptionSet::_sample_protection = JNI_FALSE;
-#else
 jboolean JfrOptionSet::_sample_protection = JNI_TRUE;
-#endif
 
 bool JfrOptionSet::initialize(Thread* thread) {
   register_parser_options();

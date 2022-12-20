@@ -356,9 +356,6 @@ class Bytecodes: AllStatic {
   static Code        pd_base_code_for(Code code);  // platform specific base_code_for implementation
 
   // Verify that bcp points into method
-#ifdef ASSERT
-  static bool        check_method(const Method* method, address bcp);
-#endif
   static bool check_must_rewrite(Bytecodes::Code bc);
 
  public:

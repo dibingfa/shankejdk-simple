@@ -318,16 +318,6 @@ void LIR_Assembler::osr_entry() {
     // the oop.
     for (int i = 0; i < number_of_locks; i++) {
       int slot_offset = monitor_offset - ((i * 2) * BytesPerWord);
-#ifdef ASSERT
-      // verify the interpreter's monitor has a non-null object
-      {
-        Label L;
-        __ cmpptr(Address(OSR_buf, slot_offset + 1*BytesPerWord), (int32_t)NULL_WORD);
-        __ jcc(Assembler::notZero, L);
-        __ stop("locked object is NULL");
-        __ bind(L);
-      }
-#endif
       __ movptr(rbx, Address(OSR_buf, slot_offset + 0));
       __ movptr(frame_map()->address_for_monitor_lock(i), rbx);
       __ movptr(rbx, Address(OSR_buf, slot_offset + 1*BytesPerWord));
@@ -1473,11 +1463,6 @@ void LIR_Assembler::emit_op3(LIR_Op3* op) {
 }
 
 void LIR_Assembler::emit_opBranch(LIR_OpBranch* op) {
-#ifdef ASSERT
-  assert(op->block() == NULL || op->block()->label() == op->label(), "wrong label");
-  if (op->block() != NULL)  _branch_target_blocks.append(op->block());
-  if (op->ublock() != NULL) _branch_target_blocks.append(op->ublock());
-#endif
 
   if (op->cond() == lir_cond_always) {
     if (op->info() != NULL) add_debug_info_for_branch(op->info());
@@ -3478,43 +3463,6 @@ void LIR_Assembler::emit_arraycopy(LIR_OpArrayCopy* op) {
     }
   }
 
-#ifdef ASSERT
-  if (basic_type != T_OBJECT || !(flags & LIR_OpArrayCopy::type_check)) {
-    // Sanity check the known type with the incoming class.  For the
-    // primitive case the types must match exactly with src.klass and
-    // dst.klass each exactly matching the default type.  For the
-    // object array case, if no type check is needed then either the
-    // dst type is exactly the expected type and the src type is a
-    // subtype which we can't check or src is the same array as dst
-    // but not necessarily exactly of type default_type.
-    Label known_ok, halt;
-    __ mov_metadata(tmp, default_type->constant_encoding());
-#ifdef _LP64
-    if (UseCompressedClassPointers) {
-      __ encode_klass_not_null(tmp);
-    }
-#endif
-
-    if (basic_type != T_OBJECT) {
-
-      if (UseCompressedClassPointers)          __ cmpl(tmp, dst_klass_addr);
-      else                   __ cmpptr(tmp, dst_klass_addr);
-      __ jcc(Assembler::notEqual, halt);
-      if (UseCompressedClassPointers)          __ cmpl(tmp, src_klass_addr);
-      else                   __ cmpptr(tmp, src_klass_addr);
-      __ jcc(Assembler::equal, known_ok);
-    } else {
-      if (UseCompressedClassPointers)          __ cmpl(tmp, dst_klass_addr);
-      else                   __ cmpptr(tmp, dst_klass_addr);
-      __ jcc(Assembler::equal, known_ok);
-      __ cmpptr(src, dst);
-      __ jcc(Assembler::equal, known_ok);
-    }
-    __ bind(halt);
-    __ stop("incorrect type information in arraycopy");
-    __ bind(known_ok);
-  }
-#endif
 
 #ifndef PRODUCT
   if (PrintC1Statistics) {
@@ -3696,35 +3644,13 @@ void LIR_Assembler::emit_profile_type(LIR_OpProfileType* op) {
       __ orptr(mdo_addr, TypeEntries::null_seen);
     }
     if (do_update) {
-#ifndef ASSERT
       __ jmpb(next);
     }
-#else
-      __ jmp(next);
-    }
-  } else {
-    __ testptr(tmp, tmp);
-    __ jccb(Assembler::notZero, update);
-    __ stop("unexpect null obj");
-#endif
   }
 
   __ bind(update);
 
   if (do_update) {
-#ifdef ASSERT
-    if (exact_klass != NULL) {
-      Label ok;
-      __ load_klass(tmp, tmp);
-      __ push(tmp);
-      __ mov_metadata(tmp, exact_klass->constant_encoding());
-      __ cmpptr(tmp, Address(rsp, 0));
-      __ jccb(Assembler::equal, ok);
-      __ stop("exact klass and actual klass differ");
-      __ bind(ok);
-      __ pop(tmp);
-    }
-#endif
     if (!no_conflict) {
       if (exact_klass == NULL || TypeEntries::is_type_none(current_klass)) {
         if (exact_klass != NULL) {
@@ -3780,29 +3706,7 @@ void LIR_Assembler::emit_profile_type(LIR_OpProfileType* op) {
         __ mov_metadata(tmp, exact_klass->constant_encoding());
         __ xorptr(tmp, mdo_addr);
         __ testptr(tmp, TypeEntries::type_klass_mask);
-#ifdef ASSERT
-        __ jcc(Assembler::zero, next);
-
-        {
-          Label ok;
-          __ push(tmp);
-          __ cmpptr(mdo_addr, 0);
-          __ jcc(Assembler::equal, ok);
-          __ cmpptr(mdo_addr, TypeEntries::null_seen);
-          __ jcc(Assembler::equal, ok);
-          // may have been set by another thread
-          __ mov_metadata(tmp, exact_klass->constant_encoding());
-          __ xorptr(tmp, mdo_addr);
-          __ testptr(tmp, TypeEntries::type_mask);
-          __ jcc(Assembler::zero, ok);
-
-          __ stop("unexpected profiling mismatch");
-          __ bind(ok);
-          __ pop(tmp);
-        }
-#else
         __ jccb(Assembler::zero, next);
-#endif
         // first time here. Set profile type.
         __ movptr(mdo_addr, tmp);
       } else {
@@ -3960,44 +3864,6 @@ void LIR_Assembler::volatile_move_op(LIR_Opr src, LIR_Opr dest, BasicType type, 
   }
 }
 
-#ifdef ASSERT
-// emit run-time assertion
-void LIR_Assembler::emit_assert(LIR_OpAssert* op) {
-  assert(op->code() == lir_assert, "must be");
-
-  if (op->in_opr1()->is_valid()) {
-    assert(op->in_opr2()->is_valid(), "both operands must be valid");
-    comp_op(op->condition(), op->in_opr1(), op->in_opr2(), op);
-  } else {
-    assert(op->in_opr2()->is_illegal(), "both operands must be illegal");
-    assert(op->condition() == lir_cond_always, "no other conditions allowed");
-  }
-
-  Label ok;
-  if (op->condition() != lir_cond_always) {
-    Assembler::Condition acond = Assembler::zero;
-    switch (op->condition()) {
-      case lir_cond_equal:        acond = Assembler::equal;       break;
-      case lir_cond_notEqual:     acond = Assembler::notEqual;    break;
-      case lir_cond_less:         acond = Assembler::less;        break;
-      case lir_cond_lessEqual:    acond = Assembler::lessEqual;   break;
-      case lir_cond_greaterEqual: acond = Assembler::greaterEqual;break;
-      case lir_cond_greater:      acond = Assembler::greater;     break;
-      case lir_cond_belowEqual:   acond = Assembler::belowEqual;  break;
-      case lir_cond_aboveEqual:   acond = Assembler::aboveEqual;  break;
-      default:                    ShouldNotReachHere();
-    }
-    __ jcc(acond, ok);
-  }
-  if (op->halt()) {
-    const char* str = __ code_string(op->msg());
-    __ stop(str);
-  } else {
-    breakpoint();
-  }
-  __ bind(ok);
-}
-#endif
 
 void LIR_Assembler::membar() {
   // QQQ sparc TSO uses this,

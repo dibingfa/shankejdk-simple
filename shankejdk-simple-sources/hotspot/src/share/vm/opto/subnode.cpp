@@ -144,14 +144,6 @@ Node *SubINode::Ideal(PhaseGVN *phase, bool can_reshape){
   uint op1 = in1->Opcode();
   uint op2 = in2->Opcode();
 
-#ifdef ASSERT
-  // Check for dead loop
-  if( phase->eqv( in1, this ) || phase->eqv( in2, this ) ||
-      ( op1 == Op_AddI || op1 == Op_SubI ) &&
-      ( phase->eqv( in1->in(1), this ) || phase->eqv( in1->in(2), this ) ||
-        phase->eqv( in1->in(1), in1  ) || phase->eqv( in1->in(2), in1 ) ) )
-    assert(false, "dead loop in SubINode::Ideal");
-#endif
 
   const Type *t2 = phase->type( in2 );
   if( t2 == Type::TOP ) return NULL;
@@ -190,13 +182,6 @@ Node *SubINode::Ideal(PhaseGVN *phase, bool can_reshape){
   const Type *t1 = phase->type( in1 );
   if( t1 == Type::TOP ) return NULL;
 
-#ifdef ASSERT
-  // Check for dead loop
-  if( ( op2 == Op_AddI || op2 == Op_SubI ) &&
-      ( phase->eqv( in2->in(1), this ) || phase->eqv( in2->in(2), this ) ||
-        phase->eqv( in2->in(1), in2  ) || phase->eqv( in2->in(2), in2  ) ) )
-    assert(false, "dead loop in SubINode::Ideal");
-#endif
 
   // Convert "x - (x+y)" into "-y"
   if( op2 == Op_AddI &&
@@ -274,14 +259,6 @@ Node *SubLNode::Ideal(PhaseGVN *phase, bool can_reshape) {
   uint op1 = in1->Opcode();
   uint op2 = in2->Opcode();
 
-#ifdef ASSERT
-  // Check for dead loop
-  if( phase->eqv( in1, this ) || phase->eqv( in2, this ) ||
-      ( op1 == Op_AddL || op1 == Op_SubL ) &&
-      ( phase->eqv( in1->in(1), this ) || phase->eqv( in1->in(2), this ) ||
-        phase->eqv( in1->in(1), in1  ) || phase->eqv( in1->in(2), in1  ) ) )
-    assert(false, "dead loop in SubLNode::Ideal");
-#endif
 
   if( phase->type( in2 ) == Type::TOP ) return NULL;
   const TypeLong *i = phase->type( in2 )->isa_long();
@@ -318,13 +295,6 @@ Node *SubLNode::Ideal(PhaseGVN *phase, bool can_reshape) {
   const Type *t1 = phase->type( in1 );
   if( t1 == Type::TOP ) return NULL;
 
-#ifdef ASSERT
-  // Check for dead loop
-  if( ( op2 == Op_AddL || op2 == Op_SubL ) &&
-      ( phase->eqv( in2->in(1), this ) || phase->eqv( in2->in(2), this ) ||
-        phase->eqv( in2->in(1), in2  ) || phase->eqv( in2->in(2), in2  ) ) )
-    assert(false, "dead loop in SubLNode::Ideal");
-#endif
 
   // Convert "x - (x+y)" into "-y"
   if( op2 == Op_AddL &&

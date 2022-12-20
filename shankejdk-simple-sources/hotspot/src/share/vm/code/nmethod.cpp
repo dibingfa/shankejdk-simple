@@ -484,9 +484,6 @@ void nmethod::init_defaults() {
   _stack_traversal_mark       = 0;
   _unload_reported            = false;           // jvmti state
 
-#ifdef ASSERT
-  _oops_are_stale             = false;
-#endif
 
   _oops_do_mark_link       = NULL;
   _jmethod_id              = NULL;
@@ -1536,11 +1533,6 @@ bool nmethod::make_not_entrant_or_zombie(unsigned int state) {
     // we no longer go to a safepoint here.
     post_compiled_method_unload();
 
-#ifdef ASSERT
-    // It's no longer safe to access the oops section since zombie
-    // nmethods aren't scanned for GC.
-    _oops_are_stale = true;
-#endif
      // the Method may be reclaimed by class unloading now that the
      // nmethod is in zombie state
     set_method(NULL);
@@ -2077,37 +2069,6 @@ void nmethod::do_unloading_parallel_postponed(BoolObjectClosure* is_alive, bool 
   }
 }
 
-#ifdef ASSERT
-
-class CheckClass : AllStatic {
-  static BoolObjectClosure* _is_alive;
-
-  // Check class_loader is alive for this bit of metadata.
-  static void check_class(Metadata* md) {
-    Klass* klass = NULL;
-    if (md->is_klass()) {
-      klass = ((Klass*)md);
-    } else if (md->is_method()) {
-      klass = ((Method*)md)->method_holder();
-    } else if (md->is_methodData()) {
-      klass = ((MethodData*)md)->method()->method_holder();
-    } else {
-      md->print();
-      ShouldNotReachHere();
-    }
-    assert(klass->is_loader_alive(_is_alive), "must be alive");
-  }
- public:
-  static void do_check_class(BoolObjectClosure* is_alive, nmethod* nm) {
-    assert(SafepointSynchronize::is_at_safepoint(), "this is only ok at safepoint");
-    _is_alive = is_alive;
-    nm->metadata_do(check_class);
-  }
-};
-
-// This is called during a safepoint so can use static data
-BoolObjectClosure* CheckClass::_is_alive = NULL;
-#endif // ASSERT
 
 
 // Processing of oop references should have been sufficient to keep
@@ -2115,37 +2076,6 @@ BoolObjectClosure* CheckClass::_is_alive = NULL;
 // cleared as well.  Visit all the metadata and ensure that it's
 // really alive.
 void nmethod::verify_metadata_loaders(address low_boundary, BoolObjectClosure* is_alive) {
-#ifdef ASSERT
-    RelocIterator iter(this, low_boundary);
-    while (iter.next()) {
-    // static_stub_Relocations may have dangling references to
-    // Method*s so trim them out here.  Otherwise it looks like
-    // compiled code is maintaining a link to dead metadata.
-    address static_call_addr = NULL;
-    if (iter.type() == relocInfo::opt_virtual_call_type) {
-      CompiledIC* cic = CompiledIC_at(&iter);
-      if (!cic->is_call_to_interpreted()) {
-        static_call_addr = iter.addr();
-      }
-    } else if (iter.type() == relocInfo::static_call_type) {
-      CompiledStaticCall* csc = compiledStaticCall_at(iter.reloc());
-      if (!csc->is_call_to_interpreted()) {
-        static_call_addr = iter.addr();
-      }
-    }
-    if (static_call_addr != NULL) {
-      RelocIterator sciter(this, low_boundary);
-      while (sciter.next()) {
-        if (sciter.type() == relocInfo::static_stub_type &&
-            sciter.static_stub_reloc()->static_call() == static_call_addr) {
-          sciter.static_stub_reloc()->clear_inline_cache();
-        }
-      }
-    }
-  }
-  // Check that the metadata embedded in the nmethod is alive
-  CheckClass::do_check_class(is_alive, this);
-#endif
 }
 
 
@@ -2372,19 +2302,6 @@ inline bool includes(void* p, void* from, void* to) {
 void nmethod::copy_scopes_pcs(PcDesc* pcs, int count) {
   assert(count >= 2, "must be sentinel values, at least");
 
-#ifdef ASSERT
-  // must be sorted and unique; we do a binary search in find_pc_desc()
-  int prev_offset = pcs[0].pc_offset();
-  assert(prev_offset == PcDesc::lower_offset_limit,
-         "must start with a sentinel");
-  for (int i = 1; i < count; i++) {
-    int this_offset = pcs[i].pc_offset();
-    assert(this_offset > prev_offset, "offsets must be sorted");
-    prev_offset = this_offset;
-  }
-  assert(prev_offset == PcDesc::upper_offset_limit,
-         "must end with a sentinel");
-#endif //ASSERT
 
   // Search for MethodHandle invokes and tag the nmethod.
   for (int i = 0; i < count; i++) {
@@ -2420,24 +2337,6 @@ void nmethod::copy_scopes_data(u_char* buffer, int size) {
 }
 
 
-#ifdef ASSERT
-static PcDesc* linear_search(nmethod* nm, int pc_offset, bool approximate) {
-  PcDesc* lower = nm->scopes_pcs_begin();
-  PcDesc* upper = nm->scopes_pcs_end();
-  lower += 1; // exclude initial sentinel
-  PcDesc* res = NULL;
-  for (PcDesc* p = lower; p < upper; p++) {
-    NOT_PRODUCT(--nmethod_stats.pc_desc_tests);  // don't count this call to match_desc
-    if (match_desc(p, pc_offset, approximate)) {
-      if (res == NULL)
-        res = p;
-      else
-        res = (PcDesc*) badAddress;
-    }
-  }
-  return res;
-}
-#endif
 
 
 // Finds a PcDesc with real-pc equal to "pc"
@@ -2604,22 +2503,6 @@ address nmethod::continuation_for_implicit_exception(address pc) {
   // an active nmethod => use cpc to determine a return address
   int exception_offset = pc - code_begin();
   int cont_offset = ImplicitExceptionTable(this).at( exception_offset );
-#ifdef ASSERT
-  if (cont_offset == 0) {
-    Thread* thread = ThreadLocalStorage::get_thread_slow();
-    ResetNoHandleMark rnm; // Might be called from LEAF/QUICK ENTRY
-    HandleMark hm(thread);
-    ResourceMark rm(thread);
-    CodeBlob* cb = CodeCache::find_blob(pc);
-    assert(cb != NULL && cb == this, "");
-    ttyLocker ttyl;
-    tty->print_cr("implicit exception happened at " INTPTR_FORMAT, pc);
-    print();
-    method()->print_codes();
-    print_code();
-    print_pcs();
-  }
-#endif
   if (cont_offset == 0) {
     // Let the normal error handling report the exception
     return NULL;

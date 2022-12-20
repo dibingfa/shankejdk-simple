@@ -44,11 +44,6 @@
 #include "runtime/vframeArray.hpp"
 #endif
 
-#ifdef ASSERT
-void RegisterMap::check_location_valid() {
-  ShouldNotCallThis();
-}
-#endif
 
 bool frame::is_interpreted_frame() const {
   return zeroframe()->is_interpreter_frame();

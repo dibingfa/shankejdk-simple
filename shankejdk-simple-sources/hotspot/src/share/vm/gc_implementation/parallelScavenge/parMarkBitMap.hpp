@@ -160,11 +160,6 @@ public:
     _end_bits.print_on_error(st, " End Bits:   ");
   }
 
-#ifdef  ASSERT
-  void verify_clear() const;
-  inline void verify_bit(idx_t bit) const;
-  inline void verify_addr(HeapWord* addr) const;
-#endif  // #ifdef ASSERT
 
 private:
   // Each bit in the bitmap represents one unit of 'object granularity.' Objects
@@ -381,19 +376,5 @@ ParMarkBitMap::find_obj_end(HeapWord* beg, HeapWord* end) const
   return bit_to_addr(res_bit);
 }
 
-#ifdef  ASSERT
-inline void ParMarkBitMap::verify_bit(idx_t bit) const {
-  // Allow one past the last valid bit; useful for loop bounds.
-  assert(bit <= _beg_bits.size(), "bit out of range");
-}
-
-inline void ParMarkBitMap::verify_addr(HeapWord* addr) const {
-  // Allow one past the last valid address; useful for loop bounds.
-  assert(addr >= region_start(),
-      err_msg("addr too small, addr: " PTR_FORMAT " region start: " PTR_FORMAT, p2i(addr), p2i(region_start())));
-  assert(addr <= region_end(),
-      err_msg("addr too big, addr: " PTR_FORMAT " region end: " PTR_FORMAT, p2i(addr), p2i(region_end())));
-}
-#endif  // #ifdef ASSERT
 
 #endif // SHARE_VM_GC_IMPLEMENTATION_PARALLELSCAVENGE_PARMARKBITMAP_HPP

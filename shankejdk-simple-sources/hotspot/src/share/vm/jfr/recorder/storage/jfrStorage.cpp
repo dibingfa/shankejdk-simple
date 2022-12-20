@@ -359,11 +359,6 @@ void JfrStorage::unlock() {
   JfrBuffer_lock->unlock();
 }
 
-#ifdef ASSERT
-bool JfrStorage::is_locked() const {
-  return JfrBuffer_lock->owned_by_self();
-}
-#endif
 
 // don't use buffer on return, it is gone
 void JfrStorage::release(BufferPtr buffer, Thread* thread) {
@@ -434,43 +429,6 @@ void JfrStorage::discard_oldest(Thread* thread) {
   }
 }
 
-#ifdef ASSERT
-typedef const BufferPtr ConstBufferPtr;
-
-static void assert_flush_precondition(ConstBufferPtr cur, size_t used, bool native, const Thread* t) {
-  assert(t != NULL, "invariant");
-  assert(cur != NULL, "invariant");
-  assert(cur->pos() + used <= cur->end(), "invariant");
-  assert(native ? t->jfr_thread_local()->native_buffer() == cur : t->jfr_thread_local()->java_buffer() == cur, "invariant");
-}
-
-static void assert_flush_regular_precondition(ConstBufferPtr cur, const u1* const cur_pos, size_t used, size_t req, const Thread* t) {
-  assert(t != NULL, "invariant");
-  assert(t->jfr_thread_local()->shelved_buffer() == NULL, "invariant");
-  assert(cur != NULL, "invariant");
-  assert(!cur->lease(), "invariant");
-  assert(cur_pos != NULL, "invariant");
-  assert(req >= used, "invariant");
-}
-
-static void assert_provision_large_precondition(ConstBufferPtr cur, size_t used, size_t req, const Thread* t) {
-  assert(cur != NULL, "invariant");
-  assert(t != NULL, "invariant");
-  assert(t->jfr_thread_local()->shelved_buffer() != NULL, "invariant");
-  assert(req >= used, "invariant");
-}
-
-static void assert_flush_large_precondition(ConstBufferPtr cur, const u1* const cur_pos, size_t used, size_t req, bool native, Thread* t) {
-  assert(t != NULL, "invariant");
-  assert(cur != NULL, "invariant");
-  assert(cur->lease(), "invariant");
-  assert(cur_pos != NULL, "invariant");
-  assert(native ? t->jfr_thread_local()->native_buffer() == cur : t->jfr_thread_local()->java_buffer() == cur, "invariant");
-  assert(t->jfr_thread_local()->shelved_buffer() != NULL, "invariant");
-  assert(req >= used, "invariant");
-  assert(cur != t->jfr_thread_local()->shelved_buffer(), "invariant");
-}
-#endif // ASSERT
 
 BufferPtr JfrStorage::flush(BufferPtr cur, size_t used, size_t req, bool native, Thread* t) {
   debug_only(assert_flush_precondition(cur, used, native, t);)

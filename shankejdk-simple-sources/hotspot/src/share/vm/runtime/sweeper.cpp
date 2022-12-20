@@ -45,91 +45,7 @@
 
 PRAGMA_FORMAT_MUTE_WARNINGS_FOR_GCC
 
-#ifdef ASSERT
-
-#define SWEEP(nm) record_sweep(nm, __LINE__)
-// Sweeper logging code
-class SweeperRecord {
- public:
-  int traversal;
-  int invocation;
-  int compile_id;
-  long traversal_mark;
-  int state;
-  const char* kind;
-  address vep;
-  address uep;
-  int line;
-
-  void print() {
-      tty->print_cr("traversal = %d invocation = %d compile_id = %d %s uep = " PTR_FORMAT " vep = "
-                    PTR_FORMAT " state = %d traversal_mark %d line = %d",
-                    traversal,
-                    invocation,
-                    compile_id,
-                    kind == NULL ? "" : kind,
-                    uep,
-                    vep,
-                    state,
-                    traversal_mark,
-                    line);
-  }
-};
-
-static int _sweep_index = 0;
-static SweeperRecord* _records = NULL;
-
-void NMethodSweeper::report_events(int id, address entry) {
-  if (_records != NULL) {
-    for (int i = _sweep_index; i < SweeperLogEntries; i++) {
-      if (_records[i].uep == entry ||
-          _records[i].vep == entry ||
-          _records[i].compile_id == id) {
-        _records[i].print();
-      }
-    }
-    for (int i = 0; i < _sweep_index; i++) {
-      if (_records[i].uep == entry ||
-          _records[i].vep == entry ||
-          _records[i].compile_id == id) {
-        _records[i].print();
-      }
-    }
-  }
-}
-
-void NMethodSweeper::report_events() {
-  if (_records != NULL) {
-    for (int i = _sweep_index; i < SweeperLogEntries; i++) {
-      // skip empty records
-      if (_records[i].vep == NULL) continue;
-      _records[i].print();
-    }
-    for (int i = 0; i < _sweep_index; i++) {
-      // skip empty records
-      if (_records[i].vep == NULL) continue;
-      _records[i].print();
-    }
-  }
-}
-
-void NMethodSweeper::record_sweep(nmethod* nm, int line) {
-  if (_records != NULL) {
-    _records[_sweep_index].traversal = _traversals;
-    _records[_sweep_index].traversal_mark = nm->_stack_traversal_mark;
-    _records[_sweep_index].invocation = _sweep_fractions_left;
-    _records[_sweep_index].compile_id = nm->compile_id();
-    _records[_sweep_index].kind = nm->compile_kind();
-    _records[_sweep_index].state = nm->_state;
-    _records[_sweep_index].vep = nm->verified_entry_point();
-    _records[_sweep_index].uep = nm->entry_point();
-    _records[_sweep_index].line = line;
-    _sweep_index = (_sweep_index + 1) % SweeperLogEntries;
-  }
-}
-#else
 #define SWEEP(nm)
-#endif
 
 nmethod* NMethodSweeper::_current                      = NULL; // Current nmethod
 long     NMethodSweeper::_traversals                   = 0;    // Stack scan count, also sweep ID.
@@ -285,13 +201,6 @@ void NMethodSweeper::possibly_sweep() {
     if (old != 0) {
       return;
     }
-#ifdef ASSERT
-    if (LogSweeper && _records == NULL) {
-      // Create the ring buffer for the logging code
-      _records = NEW_C_HEAP_ARRAY(SweeperRecord, SweeperLogEntries, mtGC);
-      memset(_records, 0, sizeof(SweeperRecord) * SweeperLogEntries);
-    }
-#endif
 
     if (_sweep_fractions_left > 0) {
       sweep_code_cache();
@@ -415,12 +324,6 @@ void NMethodSweeper::sweep_code_cache() {
     post_sweep_event(&event, sweep_start_counter, sweep_end_counter, (s4)_traversals, swept_count, _flushed_count, _zombified_count);
   }
 
-#ifdef ASSERT
-  if(PrintMethodFlushing) {
-    tty->print_cr("### sweeper:      sweep time(%d): "
-      INT64_FORMAT, _sweep_fractions_left, (jlong)sweep_time.value());
-  }
-#endif
 
   if (_sweep_fractions_left == 1) {
     _peak_sweep_time = MAX2(_peak_sweep_time, _total_time_this_sweep);

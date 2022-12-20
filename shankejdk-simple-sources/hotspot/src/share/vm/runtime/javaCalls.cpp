@@ -336,14 +336,6 @@ void JavaCalls::call_helper(JavaValue* result, methodHandle* m, JavaCallArgument
   }
 
 
-#ifdef ASSERT
-  { InstanceKlass* holder = method->method_holder();
-    // A klass might not be initialized since JavaCall's might be used during the executing of
-    // the <clinit>. For example, a Thread.start might start executing on an object that is
-    // not fully initialized! (bad Java programming style)
-    assert(holder->is_linked(), "rewritting must have taken place");
-  }
-#endif
 
 
   assert(!thread->is_Compiler_thread(), "cannot compile from the compiler");

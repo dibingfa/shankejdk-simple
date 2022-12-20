@@ -307,33 +307,13 @@ void PatchingStub::emit_code(LIR_Assembler* ce) {
   }
   if (_id == load_klass_id) {
     // produce a copy of the load klass instruction for use by the being initialized case
-#ifdef ASSERT
-    address start = __ pc();
-#endif
     Metadata* o = NULL;
     __ mov_metadata(_obj, o);
-#ifdef ASSERT
-    for (int i = 0; i < _bytes_to_copy; i++) {
-      address ptr = (address)(_pc_start + i);
-      int a_byte = (*ptr) & 0xFF;
-      assert(a_byte == *start++, "should be the same code");
-    }
-#endif
   } else if (_id == load_mirror_id) {
     // produce a copy of the load mirror instruction for use by the being
     // initialized case
-#ifdef ASSERT
-    address start = __ pc();
-#endif
     jobject o = NULL;
     __ movoop(_obj, o);
-#ifdef ASSERT
-    for (int i = 0; i < _bytes_to_copy; i++) {
-      address ptr = (address)(_pc_start + i);
-      int a_byte = (*ptr) & 0xFF;
-      assert(a_byte == *start++, "should be the same code");
-    }
-#endif
   } else {
     // make a copy the code which is going to be patched.
     for (int i = 0; i < _bytes_to_copy; i++) {

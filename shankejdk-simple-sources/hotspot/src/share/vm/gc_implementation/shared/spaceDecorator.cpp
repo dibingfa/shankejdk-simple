@@ -84,15 +84,6 @@ void SpaceMangler::mangle_unused_area_complete() {
 // Simply mangle the MemRegion mr.
 void SpaceMangler::mangle_region(MemRegion mr) {
   assert(ZapUnusedHeapArea, "Mangling should not be in use");
-#ifdef ASSERT
-  if(TraceZapUnusedHeapArea) {
-    gclog_or_tty->print("Mangling [0x%x to 0x%x)", mr.start(), mr.end());
-  }
-  Copy::fill_to_words(mr.start(), mr.word_size(), badHeapWord);
-  if(TraceZapUnusedHeapArea) {
-    gclog_or_tty->print_cr(" done");
-  }
-#endif
 }
 
 // Check that top, top_for_allocations and the last
