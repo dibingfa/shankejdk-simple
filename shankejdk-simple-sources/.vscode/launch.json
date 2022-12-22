@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "jdk8",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/linux-x86_64-normal-server-slowdebug/images/j2sdk-image/bin/java", //要运行的目标程序
+            "args": [
+                "Hello"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "externalConsole": false,
+            "MIMode": "gdb"
+        }
+    ]
+}

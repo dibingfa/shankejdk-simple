@@ -1,0 +1,2376 @@
+make all --print-data-base --no-builtin-variables --no-builtin-rules --question
+# GNU Make 3.82
+# Built for x86_64-redhat-linux-gnu
+# Copyright (C) 2010  Free Software Foundation, Inc.
+# License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+# This is free software: you are free to change and redistribute it.
+# There is NO WARRANTY, to the extent permitted by law.
+ 
+
+# Make data base, printed on Sun Oct  9 10:41:17 2022
+
+# Variables
+
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 125)
+ 
+define CheckIfMakeAtEnd
+        # Check if the current target is the last goal
+	$(if $(filter $@,$(call LastGoal)),$(call AtMakeEnd))
+        # If the target is 'foo-only', check if our goal was stated as 'foo'
+	$(if $(filter $@,$(call LastGoal)-only),$(call AtMakeEnd))
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 299)
+ENABLE_SJAVAC := no
+# automatic
+<D = $(patsubst %/,%,$(dir $<))
+# automatic
+?F = $(notdir $?)
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 231)
+SUPPORT_HEADFUL := yes
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 155)
+PRODUCT_NAME := OpenJDK
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 508)
+NEW_JAVAC = $(BOOTSTRAP_JAVAC_ARGS) com.sun.tools.javac.Main
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 332)
+define SetupLogging
+  ifeq ($$(LOG_LEVEL),trace)
+    # Shell redefinition trick inspired by http://www.cmcrossroads.com/ask-mr-make/6535-tracing-rule-execution-in-gnu-make
+    # For each target executed, will print
+    # Building <TARGET> (from <FIRST PREREQUISITE>) (<ALL NEWER PREREQUISITES> newer)
+    # but with a limit of 20 on <ALL NEWER PREREQUISITES>, to avoid cluttering logs too much
+    # (and causing a crash on Cygwin).
+    # Default shell seems to always be /bin/sh. Must override with bash to get this to work on Solaris.
+    # Only use time if it's GNU time which supports format and output file.
+    WRAPPER_SHELL:=/bin/bash $$(SRC_ROOT)/common/bin/shell-tracer.sh $$(if $$(findstring yes,$$(IS_GNU_TIME)),$$(TIME),-) $$(OUTPUT_ROOT)/build-trace-time.log /bin/bash
+    SHELL=$$(warning $$(if $$@,Building $$@,Running shell command) $$(if $$<, (from $$<))$$(if $$?, ($$(wordlist 1, 20, $$?) $$(if $$(wordlist 21, 22, $$?), ... [in total $$(words $$?) files]) newer)))$$(WRAPPER_SHELL)
+  endif
+  # Never remove warning messages; this is just for completeness
+  LOG_WARN=
+  ifneq ($$(findstring $$(LOG_LEVEL),info debug trace),)
+    LOG_INFO=
+  else
+    LOG_INFO=> /dev/null
+  endif
+  ifneq ($$(findstring $$(LOG_LEVEL),debug trace),)
+    LOG_DEBUG=
+  else
+    LOG_DEBUG=> /dev/null
+  endif
+  ifneq ($$(findstring $$(LOG_LEVEL),trace),)
+    LOG_TRACE=
+  else
+    LOG_TRACE=> /dev/null
+  endif
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 501)
+NATIVE2ASCII = $(BOOT_JDK)/bin/native2ascii $(addprefix -J, $(JAVA_FLAGS_SMALL))
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 509)
+NEW_JAVADOC = $(BOOTSTRAP_JAVAC_ARGS) com.sun.tools.javadoc.Main
+# default
+.SHELLFLAGS := -c
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 434)
+SHARED_LIBRARY_FLAGS := -shared
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 302)
+HGTIP_FILENAME = .hgtip
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 429)
+GNM := /usr/bin/nm
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 247)
+JVM_VARIANT_CORE := false
+# environment
+VSCODE_AGENT_FOLDER = /root/.vscode-server
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 268)
+LANGTOOLS_OUTPUTDIR = $(BUILD_OUTPUT)/langtools
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 344)
+C_O_FLAG_HI := -O0
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 76)
+CONF_NAME := linux-x86_64-normal-server-slowdebug
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 277)
+LANGTOOLS_DIST = $(LANGTOOLS_OUTPUTDIR)/dist
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 481)
+POST_MCS_CMD := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Jprt.gmk', line 35)
+JPRT_ARCHIVE_INSTALL_BUNDLE = /tmp/jprt_bundles/product-install.zip
+# automatic
+?D = $(patsubst %/,%,$(dir $?))
+# environment
+GRADLE_HOME = /root/gradle-4.8
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 705)
+OS_VERSION_MICRO := 0
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 107)
+OPENJDK_BUILD_CPU_ARCH := x86
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 133)
+define TargetEnter
+	$(BUILD_LOG_WRAPPER) $(PRINTF) "## Starting $(patsubst %-only,%,$@)\n"
+	$(call RecordStartTime,$(patsubst %-only,%,$@))
+endef
+# automatic
+@D = $(patsubst %/,%,$(dir $@))
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 663)
+INSTALL_DOCDIR = ${datarootdir}/doc/${PACKAGE_TARNAME}
+# automatic
+@F = $(notdir $@)
+# default
+MAKE_VERSION := 3.82
+# makefile
+CURDIR := /root/openjdk-sources/openjdk-8u312-b07-sources-debug
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 699)
+SALIB_NAME = libsaproc.so
+# makefile
+SHELL = /bin/sh
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 428)
+NM := /usr/bin/nm
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 170)
+JDK_MINOR_VERSION := 8
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 373)
+define MakeDir
+  ifneq ($$(wildcard $1 $2 $3 $4 $5 $6 $7 $8 $9),$$(strip $1 $2 $3 $4 $5 $6 $7 $8 $9))
+    $$(shell $(MKDIR) -p $1 $2 $3 $4 $5 $6 $7 $8 $9)
+  endif
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 419)
+BUILD_CC := /usr/bin/gcc
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 604)
+ENABLE_INTREE_EC = yes
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 240)
+JVM_VARIANTS := ,server,
+# environment
+VSCODE_NLS_CONFIG = {"locale":"zh-cn","availableLanguages":{"*":"zh-cn"},"_languagePackId":"bbca1a7059cee8a1b93da8947fee1c4f.zh-cn","_translationsConfigFile":"/root/.vscode-server/data/clp/bbca1a7059cee8a1b93da8947fee1c4f.zh-cn/tcf.json","_cacheRoot":"/root/.vscode-server/data/clp/bbca1a7059cee8a1b93da8947fee1c4f.zh-cn","_resolvedLanguagePackCoreLocation":"/root/.vscode-server/data/clp/bbca1a7059cee8a1b93da8947fee1c4f.zh-cn/64bbfbf67ada9953918d72e1df2f4d8e537d340e","_corruptedFile":"/root/.vscode-server/data/clp/bbca1a7059cee8a1b93da8947fee1c4f.zh-cn/corrupted.info","_languagePackSupport":true}
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 36)
+X := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Jprt.gmk', line 55)
+SRC_JRE_BUNDLE_DIR := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/images/j2re-bundle/jre1.8.0.jre/Contents
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 473)
+STATIC_LIBRARY = lib$1.a
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 570)
+UNZIP := /usr/bin/unzip
+# environment
+_ = /usr/bin/make
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 147)
+define AtMakeStart
+	$(if $(findstring --jobserver,$(MAKEFLAGS)),$(error make -j is not supported, use make JOBS=n))
+	$(call CheckEnvironment)
+	@$(PRINTF) $(LOG_INFO) "Running make as '$(MAKE) $(MFLAGS) $(MAKE_ARGS)'\n"
+	@$(PRINTF) "Building $(PRODUCT_NAME) for target '$(call GetRealTarget)' in configuration '$(CONF_NAME)'\n\n"
+	$(call StartGlobalTimer)
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 133)
+SYSROOT_LDFLAGS := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 475)
+SHARED_LIBRARY_SUFFIX := .so
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 310)
+define GetSourceTips
+	$(CD) $(SRC_ROOT) ; for i in $(REPO_LIST) IGNORE ; do if [ "$${i}" = "IGNORE" ] ; then continue; elif [ -d $${i}/$(HG_DIRECTORY) -a "$(HG_VERSION)" != "" ] ; then $(PRINTF) " %s:%s" "$${i}" `$(HG) id -i --repository $${i}` ; elif [ -f $${i}/$(HGTIP_FILENAME) ] ; then $(PRINTF) " %s:%s" "$${i}" `$(CAT) $${i}/$(HGTIP_FILENAME)` ; fi; done >> $@
+	$(PRINTF) "\n" >> $@
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 91)
+OPENJDK_TARGET_CPU_ISADIR := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 721)
+JDK_BUNDLE_DIR = $(IMAGES_OUTPUTDIR)/$(JDK_BUNDLE_SUBDIR)
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 485)
+JAVA_FLAGS_SMALL := -XX:+UseSerialGC -Xms32M -Xmx512M
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 300)
+HG_VERSION = $(shell $(HG) version 2> /dev/null)
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 241)
+JVM_VARIANT_SERVER := true
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 68)
+define ListPathsSafely
+ 
+	$(if $(word 16001,$($1)),$(error Cannot list safely more than 16000 paths. $1 has $(words $($1)) paths!))
+	$(ECHO) $(LOG_DEBUG) Writing $(words $($1)) paths to '$3'
+	$(call ListPathsSafely_If,$1,$2,1,250)
+	$(call ListPathsSafely_If,$1,$2,251,500)
+	$(call ListPathsSafely_If,$1,$2,501,750)
+	$(call ListPathsSafely_If,$1,$2,751,1000)
+
+	$(call ListPathsSafely_If,$1,$2,1001,1250)
+	$(call ListPathsSafely_If,$1,$2,1251,1500)
+	$(call ListPathsSafely_If,$1,$2,1501,1750)
+	$(call ListPathsSafely_If,$1,$2,1751,2000)
+
+	$(call ListPathsSafely_If,$1,$2,2001,2250)
+	$(call ListPathsSafely_If,$1,$2,2251,2500)
+	$(call ListPathsSafely_If,$1,$2,2501,2750)
+	$(call ListPathsSafely_If,$1,$2,2751,3000)
+
+	$(call ListPathsSafely_If,$1,$2,3001,3250)
+	$(call ListPathsSafely_If,$1,$2,3251,3500)
+	$(call ListPathsSafely_If,$1,$2,3501,3750)
+	$(call ListPathsSafely_If,$1,$2,3751,4000)
+
+	$(call ListPathsSafely_If,$1,$2,4001,4250)
+	$(call ListPathsSafely_If,$1,$2,4251,4500)
+	$(call ListPathsSafely_If,$1,$2,4501,4750)
+	$(call ListPathsSafely_If,$1,$2,4751,5000)
+
+	$(call ListPathsSafely_If,$1,$2,5001,5250)
+	$(call ListPathsSafely_If,$1,$2,5251,5500)
+	$(call ListPathsSafely_If,$1,$2,5501,5750)
+	$(call ListPathsSafely_If,$1,$2,5751,6000)
+
+	$(call ListPathsSafely_If,$1,$2,6001,6250)
+	$(call ListPathsSafely_If,$1,$2,6251,6500)
+	$(call ListPathsSafely_If,$1,$2,6501,6750)
+	$(call ListPathsSafely_If,$1,$2,6751,7000)
+
+	$(call ListPathsSafely_If,$1,$2,7001,7250)
+	$(call ListPathsSafely_If,$1,$2,7251,7500)
+	$(call ListPathsSafely_If,$1,$2,7501,7750)
+	$(call ListPathsSafely_If,$1,$2,7751,8000)
+
+	$(call ListPathsSafely_If,$1,$2,8001,8250)
+	$(call ListPathsSafely_If,$1,$2,8251,8500)
+	$(call ListPathsSafely_If,$1,$2,8501,8750)
+	$(call ListPathsSafely_If,$1,$2,8751,9000)
+
+	$(call ListPathsSafely_If,$1,$2,9001,9250)
+	$(call ListPathsSafely_If,$1,$2,9251,9500)
+	$(call ListPathsSafely_If,$1,$2,9501,9750)
+	$(call ListPathsSafely_If,$1,$2,9751,10000)
+
+	$(call ListPathsSafely_If,$1,$2,10001,10250)
+	$(call ListPathsSafely_If,$1,$2,10251,10500)
+	$(call ListPathsSafely_If,$1,$2,10501,10750)
+	$(call ListPathsSafely_If,$1,$2,10751,11000)
+
+	$(call ListPathsSafely_If,$1,$2,11001,11250)
+	$(call ListPathsSafely_If,$1,$2,11251,11500)
+	$(call ListPathsSafely_If,$1,$2,11501,11750)
+	$(call ListPathsSafely_If,$1,$2,11751,12000)
+
+	$(call ListPathsSafely_If,$1,$2,12001,12250)
+	$(call ListPathsSafely_If,$1,$2,12251,12500)
+	$(call ListPathsSafely_If,$1,$2,12501,12750)
+	$(call ListPathsSafely_If,$1,$2,12751,13000)
+
+	$(call ListPathsSafely_If,$1,$2,13001,13250)
+	$(call ListPathsSafely_If,$1,$2,13251,13500)
+	$(call ListPathsSafely_If,$1,$2,13501,13750)
+	$(call ListPathsSafely_If,$1,$2,13751,14000)
+
+	$(call ListPathsSafely_If,$1,$2,14001,14250)
+	$(call ListPathsSafely_If,$1,$2,14251,14500)
+	$(call ListPathsSafely_If,$1,$2,14501,14750)
+	$(call ListPathsSafely_If,$1,$2,14751,15000)
+
+	$(call ListPathsSafely_If,$1,$2,15001,15250)
+	$(call ListPathsSafely_If,$1,$2,15251,15500)
+	$(call ListPathsSafely_If,$1,$2,15501,15750)
+	$(call ListPathsSafely_If,$1,$2,15751,16000)
+
+	$(call ListPathsSafely_Printf,$1,$2,$3,1)
+	$(call ListPathsSafely_Printf,$1,$2,$3,251)
+	$(call ListPathsSafely_Printf,$1,$2,$3,501)
+	$(call ListPathsSafely_Printf,$1,$2,$3,751)
+
+	$(call ListPathsSafely_Printf,$1,$2,$3,1001)
+	$(call ListPathsSafely_Printf,$1,$2,$3,1251)
+	$(call ListPathsSafely_Printf,$1,$2,$3,1501)
+	$(call ListPathsSafely_Printf,$1,$2,$3,1751)
+
+	$(call ListPathsSafely_Printf,$1,$2,$3,2001)
+	$(call ListPathsSafely_Printf,$1,$2,$3,2251)
+	$(call ListPathsSafely_Printf,$1,$2,$3,2501)
+	$(call ListPathsSafely_Printf,$1,$2,$3,2751)
+
+	$(call ListPathsSafely_Printf,$1,$2,$3,3001)
+	$(call ListPathsSafely_Printf,$1,$2,$3,3251)
+	$(call ListPathsSafely_Printf,$1,$2,$3,3501)
+	$(call ListPathsSafely_Printf,$1,$2,$3,3751)
+
+	$(call ListPathsSafely_Printf,$1,$2,$3,4001)
+	$(call ListPathsSafely_Printf,$1,$2,$3,4251)
+	$(call ListPathsSafely_Printf,$1,$2,$3,4501)
+	$(call ListPathsSafely_Printf,$1,$2,$3,4751)
+
+	$(call ListPathsSafely_Printf,$1,$2,$3,5001)
+	$(call ListPathsSafely_Printf,$1,$2,$3,5251)
+	$(call ListPathsSafely_Printf,$1,$2,$3,5501)
+	$(call ListPathsSafely_Printf,$1,$2,$3,5751)
+
+	$(call ListPathsSafely_Printf,$1,$2,$3,6001)
+	$(call ListPathsSafely_Printf,$1,$2,$3,6251)
+	$(call ListPathsSafely_Printf,$1,$2,$3,6501)
+	$(call ListPathsSafely_Printf,$1,$2,$3,6751)
+
+	$(call ListPathsSafely_Printf,$1,$2,$3,7001)
+	$(call ListPathsSafely_Printf,$1,$2,$3,7251)
+	$(call ListPathsSafely_Printf,$1,$2,$3,7501)
+	$(call ListPathsSafely_Printf,$1,$2,$3,7751)
+
+	$(call ListPathsSafely_Printf,$1,$2,$3,8001)
+	$(call ListPathsSafely_Printf,$1,$2,$3,8251)
+	$(call ListPathsSafely_Printf,$1,$2,$3,8501)
+	$(call ListPathsSafely_Printf,$1,$2,$3,8751)
+
+	$(call ListPathsSafely_Printf,$1,$2,$3,9001)
+	$(call ListPathsSafely_Printf,$1,$2,$3,9251)
+	$(call ListPathsSafely_Printf,$1,$2,$3,9501)
+	$(call ListPathsSafely_Printf,$1,$2,$3,9751)
+
+	$(call ListPathsSafely_Printf,$1,$2,$3,10001)
+	$(call ListPathsSafely_Printf,$1,$2,$3,10251)
+	$(call ListPathsSafely_Printf,$1,$2,$3,10501)
+	$(call ListPathsSafely_Printf,$1,$2,$3,10751)
+
+	$(call ListPathsSafely_Printf,$1,$2,$3,11001)
+	$(call ListPathsSafely_Printf,$1,$2,$3,11251)
+	$(call ListPathsSafely_Printf,$1,$2,$3,11501)
+	$(call ListPathsSafely_Printf,$1,$2,$3,11751)
+
+	$(call ListPathsSafely_Printf,$1,$2,$3,12001)
+	$(call ListPathsSafely_Printf,$1,$2,$3,12251)
+	$(call ListPathsSafely_Printf,$1,$2,$3,12501)
+	$(call ListPathsSafely_Printf,$1,$2,$3,12751)
+
+	$(call ListPathsSafely_Printf,$1,$2,$3,13001)
+	$(call ListPathsSafely_Printf,$1,$2,$3,13251)
+	$(call ListPathsSafely_Printf,$1,$2,$3,13501)
+	$(call ListPathsSafely_Printf,$1,$2,$3,13751)
+
+	$(call ListPathsSafely_Printf,$1,$2,$3,14001)
+	$(call ListPathsSafely_Printf,$1,$2,$3,14251)
+	$(call ListPathsSafely_Printf,$1,$2,$3,14501)
+	$(call ListPathsSafely_Printf,$1,$2,$3,14751)
+
+	$(call ListPathsSafely_Printf,$1,$2,$3,15001)
+	$(call ListPathsSafely_Printf,$1,$2,$3,15251)
+	$(call ListPathsSafely_Printf,$1,$2,$3,15501)
+	$(call ListPathsSafely_Printf,$1,$2,$3,15751)
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 368)
+NO_LIFETIME_DSE_CFLAG = 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 592)
+BUILD_LOG_PREVIOUS := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/build.log.old
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 80)
+OPENJDK_TARGET_OS_API := posix
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 331)
+TOOLCHAIN_TYPE := gcc
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 404)
+LDFLAGS_JDKEXE_SUFFIX := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Jprt.gmk', line 1)
+MAKEFILE_LIST :=  Makefile /root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk /root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk /root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk /root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk /root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Jprt.gmk
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 587)
+XCODEBUILD = 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 499)
+RMIC = $(BOOT_JDK)/bin/rmic
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 232)
+SUPPORT_HEADLESS := yes
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 654)
+INSTALL_BINDIR = ${exec_prefix}/bin
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 269)
+CORBA_OUTPUTDIR = $(BUILD_OUTPUT)/corba
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 533)
+CP := /usr/bin/cp
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 441)
+CacheFind =   $(if $(filter-out $(addsuffix %,- $(FIND_CACHE_DIR)),$1), $(shell $(FIND) $1 -type f -o -type l), $(filter $(addsuffix %,$1),$(FIND_CACHE)))
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 537)
+DIFF := /usr/bin/diff
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 660)
+INSTALL_DATAROOTDIR = ${prefix}/share
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 569)
+ZIP := /usr/bin/zip
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 346)
+C_O_FLAG_NONE := -O0
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 282)
+NASHORN_DIST = $(NASHORN_OUTPUTDIR)/dist
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 579)
+FILE := /usr/bin/file
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 465)
+SET_SHARED_LIBRARY_ORIGIN = -Xlinker -z -Xlinker origin -Xlinker -rpath -Xlinker \$$$$ORIGIN$1
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 651)
+INSTALL_EXECPREFIX = ${prefix}
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 401)
+define install-file
+	$(MKDIR) -p $(@D)
+	$(CP) -fP '$<' '$@'
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 92)
+OPENJDK_TARGET_CPU_LIBDIR := /amd64
+# makefile (from `Makefile', line 45)
+makefile_path := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/Makefile
+ 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 151)
+COPYRIGHT_YEAR := 2022
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 356)
+CC := /usr/bin/gcc
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 53)
+SPEC := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/spec.gmk
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 41)
+compress_pre := $$(subst com,X01,$$(subst org,X02,$$(subst sun,X03,$$(subst java,X04,$$(subst javax,X05,$$(subst sun/io,X06,$$(subst com/sun,X07,$$(subst java/io,X08,$$(subst org/omg,X09,$$(subst org/w3c,X10,$$(subst org/xml,X11,$$(subst sun/awt,X12,$$(subst sun/net,X13,$$(subst sun/nio,X14,$$(subst sun/rmi,X15,$$(subst java/awt,X16,$$(subst java/net,X17,$$(subst java/nio,X18,$$(subst java/rmi,X19,$$(subst META-INF,X20,$$(subst sun/font,X21,$$(subst sun/misc,X22,$$(subst sun/text,X23,$$(subst sun/util,X24,$$(subst java/lang,X25,$$(subst java/math,X26,$$(subst java/text,X27,$$(subst java/util,X28,$$(subst javax/jws,X29,$$(subst javax/net,X30,$$(subst javax/rmi,X31,$$(subst javax/xml,X32,$$(subst sun/corba,X33,$$(subst sun/print,X34,$$(subst sun/swing,X35,$$(subst java/beans,X36,$$(subst javax/lang,X37,$$(subst sun/applet,X38,$$(subst sun/java2d,X39,$$(subst java/applet,X40,$$(subst javax/print,X41,$$(subst javax/sound,X42,$$(subst javax/swing,X43,$$(subst javax/tools,X44,$$(subst jdk/classes,X45,$$(subst org/relaxng,X46,$$(subst sun/reflect,X47,$$(subst javax/crypto,X48,$$(subst javax/naming,X49,$$(subst jaxp/classes,X50,$$(subst sun/security,X51,$$(subst corba/classes,X52,$$(subst java/security,X53,$$(subst javax/imageio,X54,$$(subst jdk/btclasses,X55,$$(subst javax/activity,X56,$$(subst javax/security,X57,$$(subst jdk/newclasses,X58,$$(subst sun/instrument,X59,$$(subst sun/management,X60,$$(subst corba/btclasses,X61,$$(subst jdk/democlasses,X62,$$(subst javax/activation,X63,$$(subst javax/annotation,X64,$$(subst javax/management,X65,$$(subst javax/transaction,X66,$$(subst jaxws/jaf_classes,X67,$$(subst langtools/classes,X68,$$(subst META-INF/services,X69,$$(subst jdk/newdemoclasses,X70,$$(subst javax/accessibility,X71,$$(subst jaxws/jaxws_classes,X72,
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 278)
+CORBA_DIST = $(CORBA_OUTPUTDIR)/dist
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 243)
+JVM_VARIANT_MINIMAL1 := false
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 588)
+FIXPATH := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 523)
+AWK := gawk
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 338)
+EXE_OUT_OPTION := -o 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 431)
+MCS := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 580)
+HG := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 442)
+C_FLAG_REORDER := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 38)
+COMMA := ,
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 708)
+JDK_IMAGE_SUBDIR := j2sdk-image
+# environment
+LESSOPEN = ||/usr/bin/lesspipe.sh %s
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 555)
+SED := /usr/bin/sed
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 359)
+FDLIBM_CFLAGS := -ffp-contract=off
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 139)
+define TargetExit
+	$(call RecordEndTime,$(patsubst %-only,%,$@))
+	$(BUILD_LOG_WRAPPER) $(PRINTF) "## Finished $(patsubst %-only,%,$@) (build time %s)\n\n" "`$(CAT) $(BUILDTIMESDIR)/build_time_diff_$(patsubst %-only,%,$@) | $(CUT) -f 1 -d ' '`"
+	$(call CheckIfMakeAtEnd)
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 703)
+OS_VERSION_MAJOR := 3
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 377)
+CPP := /usr/bin/gcc -E
+ 
+# environment
+VSCODE_CWD = /root
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 529)
+CD := cd
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 526)
+CAT := /usr/bin/cat
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 527)
+CCACHE := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 327)
+CreateHgTip = 	$(HG) id -i --repository $1' > $1/$(HGTIP_FILENAME); $(ECHO) $1/$(HGTIP_FILENAME)
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Jprt.gmk', line 32)
+JPRT_ARCHIVE_BUNDLE = /tmp/jprt_bundles/j2sdk-image.zip
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 145)
+LANGTOOLS_TOPDIR := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/langtools
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 54)
+ListPathsSafely_If = 	$(if $(word $3,$($1)),$(eval $1_LPS$3:=$(call compress_paths,$(wordlist $3,$4,$($1)))))
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 716)
+JRE_OVERLAY_IMAGE_DIR = $(IMAGES_OUTPUTDIR)/$(JRE_OVERLAY_IMAGE_SUBDIR)
+# environment
+SSH_CONNECTION = 103.37.140.38 27378 10.0.24.11 22
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 99)
+ResetAllTimers =   $$(shell $(MKDIR) -p $(BUILDTIMESDIR) && $(RM) $(BUILDTIMESDIR)/build_time_*)
+# environment
+PATH = /root/.vscode-server/bin/64bbfbf67ada9953918d72e1df2f4d8e537d340e/bin/remote-cli:/root/gradle-4.8/bin:/root/apache-ant-1.9.16/bin:/root/.sdkman/candidates/java/current/bin:/root/gradle-4.8/bin:/root/apache-ant-1.9.16/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin:/root/bin
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 106)
+OPENJDK_BUILD_CPU := x86_64
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 657)
+INSTALL_DATADIR = ${datarootdir}
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 232)
+define ListPathsSafelyNow_IfPrintf
+  ifneq (,$$(word $4,$$($1)))
+    $$(eval $1_LPS$4:=$$(call compress_paths,$$(wordlist $4,$5,$$($1))))
+    $$(shell printf -- "$$(strip $$($1_LPS$4))\n" | $(decompress_paths) $3)
+  endif
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 148)
+JAXWS_TOPDIR := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/jaxws
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 381)
+LD := /usr/bin/gcc
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 457)
+COMPRESS_JARS = false
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 361)
+ 
+CXXFLAGS_JDKLIB := -Wall -Wno-parentheses -Wextra -Wno-unused -Wno-unused-parameter -Wformat=2         -pipe -fstack-protector -D_GNU_SOURCE -D_REENTRANT -D_LARGEFILE64_SOURCE -fno-omit-frame-pointer -D_LP64=1 -D_LITTLE_ENDIAN -DLINUX -DARCH='"amd64"' -Damd64 -DDEBUG -DRELEASE='"1.8.0-internal-debug"'       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/jdk/include       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/jdk/include/linux       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/jdk/src/share/javavm/export       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/jdk/src/solaris/javavm/export       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/jdk/src/share/native/common       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/jdk/src/solaris/native/common  -std=gnu++98  -g -fPIC  
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 246)
+JVM_VARIANT_ZEROSHARK := false
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 203)
+JDK_VERSION := 1.8.0
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 607)
+USE_EXTERNAL_LIBZ := false
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 254)
+BUILD_VARIANT_RELEASE := -debug
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 159)
+MACOSX_BUNDLE_NAME_BASE = OpenJDK
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 609)
+MSVCR_DLL := 
+# environment
+XDG_RUNTIME_DIR = /run/user/0
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 540)
+FIND := /usr/bin/find
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 426)
+ARFLAGS := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 530)
+CHMOD := /usr/bin/chmod
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 408)
+containing = $(foreach v,$2,$(if $(findstring $1,$v),$v))
+# environment
+SDKMAN_DIR = /root/.sdkman
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 216)
+FULL_VERSION = $(RELEASE)-$(USER_RELEASE_SUFFIX)-$(JDK_BUILD_NUMBER)
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 364)
+LOG_TRACE = > /dev/null
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 309)
+FREETYPE_BUNDLE_LIB_PATH = 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 449)
+ASFLAGS_DEBUG_SYMBOLS := -g
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 576)
+OTOOL := true
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 567)
+XARGS := /usr/bin/xargs
+# environment
+SDKMAN_CANDIDATES_API = https://api.sdkman.io/2
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 301)
+HG_DIRECTORY = .hg
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 611)
+UCRT_DLL_DIR := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 575)
+LDD := /usr/bin/ldd
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 318)
+CACERTS_FILE = 
+# `override' directive (from `Makefile', line 54)
+LOG_LEVEL = warn
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 364)
+LOG_INFO = > /dev/null
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 96)
+OPENJDK_TARGET_CPU_JLI_CFLAGS := -DLIBARCHNAME='"amd64"'
+ 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 144)
+JDK_TOPDIR := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/jdk
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 425)
+AR := /usr/bin/ar
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 280)
+JAXWS_DIST = $(JAXWS_OUTPUTDIR)/dist
+# environment
+SDKMAN_PLATFORM = linuxx64
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 488)
+JAVA_SMALL = $(BOOT_JDK)/bin/java $(JAVA_FLAGS_SMALL) $(JAVA_FLAGS)
+# environment
+ELECTRON_RUN_AS_NODE = 1
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 353)
+CXX_FLAG_DEPS := -MMD -MF
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 349)
+CXX_O_FLAG_NORM := -O0
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 720)
+JRE_BUNDLE_SUBDIR = j2re-bundle/jre$(JDK_VERSION).jre/Contents
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 71)
+define RecordStartTime
+	$(MKDIR) -p $(BUILDTIMESDIR)
+	$(DATE) '+%Y %m %d %H %M %S' | $(NAWK) '{ print $$1,$$2,$$3,$$4,$$5,$$6,($$4*3600+$$5*60+$$6) }' > $(BUILDTIMESDIR)/build_time_start_$1
+	$(DATE) '+%Y-%m-%d %H:%M:%S' > $(BUILDTIMESDIR)/build_time_start_$1_human_readable
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 547)
+LS := /usr/bin/ls
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 551)
+NAWK := /usr/bin/gawk
+# default
+.FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell archives jobserver check-symlink
+# makefile (from `Makefile', line 55)
+all_spec_files = $(wildcard $(output_dir)/*/spec.gmk)
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 477)
+EXE_SUFFIX := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 116)
+LIBM := -lm
+# makefile (from `Makefile', line 54)
+VERBOSE = -s
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 160)
+MACOSX_BUNDLE_ID_BASE = net.java.openjdk
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 476)
+STATIC_LIBRARY_SUFFIX := .a
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 480)
+POST_STRIP_CMD := /usr/bin/strip -g
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 288)
+BOOT_RTJAR := /usr/lib/jvm/java-openjdk/jre/lib/rt.jar
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 542)
+ 
+ECHO := /usr/bin/echo
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 675)
+INSTALL_LIBEXECDIR = ${exec_prefix}/libexec
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 171)
+define ParseLogLevel
+  ifeq ($$(origin VERBOSE),undefined)
+    # Setup logging according to LOG (but only if VERBOSE is not given)
+
+    # If the "nofile" argument is given, act on it and strip it away
+    ifneq ($$(findstring nofile,$$(LOG)),)
+      # Reset the build log wrapper, regardless of other values
+      override BUILD_LOG_WRAPPER=
+      # COMMA is defined in spec.gmk, but that is not included yet
+      COMMA=,
+      # First try to remove ",nofile" if it exists
+      LOG_STRIPPED1=$$(subst $$(COMMA)nofile,,$$(LOG))
+      # Otherwise just remove "nofile"
+      LOG_STRIPPED2=$$(subst nofile,,$$(LOG_STRIPPED1))
+      # We might have ended up with a leading comma. Remove it
+      LOG_STRIPPED3=$$(strip $$(patsubst $$(COMMA)%,%,$$(LOG_STRIPPED2)))
+      LOG_LEVEL:=$$(LOG_STRIPPED3)
+    else
+      LOG_LEVEL:=$$(LOG)
+    endif
+
+    ifeq ($$(LOG_LEVEL),)
+      # Set LOG to "warn" as default if not set (and no VERBOSE given)
+      override LOG_LEVEL=warn
+    endif
+    ifeq ($$(LOG_LEVEL),warn)
+      VERBOSE=-s
+    else ifeq ($$(LOG_LEVEL),info)
+      VERBOSE=-s
+    else ifeq ($$(LOG_LEVEL),debug)
+      VERBOSE=
+    else ifeq ($$(LOG_LEVEL),trace)
+      VERBOSE=
+    else
+      $$(info Error: LOG must be one of: warn, info, debug or trace.)
+      $$(eval $$(call FatalError))
+    endif
+  else
+    # Provide resonable interpretations of LOG_LEVEL if VERBOSE is given.
+    ifeq ($(VERBOSE),)
+      LOG_LEVEL:=debug
+    else
+      LOG_LEVEL:=warn
+    endif
+    ifneq ($$(LOG),)
+      # We have both a VERBOSE and a LOG argument. This is OK only if this is a repeated call by ourselves,
+      # but complain if this is the top-level make call.
+      ifeq ($$(MAKELEVEL),0)
+        $$(info Cannot use LOG=$$(LOG) and VERBOSE=$$(VERBOSE) at the same time. Choose one.)
+        $$(eval $$(call FatalError))
+      endif
+    endif
+  endif
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 584)
+JT_HOME := /root/jtreg
+# automatic
+%F = $(notdir $%)
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 369)
+CXXSTD_CXXFLAG = -std=gnu++98
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 113)
+REQUIRED_OS_VERSION := 2.6
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 339)
+LD_OUT_OPTION := -o 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 619)
+ADD_SRCS = $1
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 84)
+OPENJDK_TARGET_CPU_ARCH := x86
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 577)
+READELF := /usr/bin/readelf
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 561)
+TIME := /usr/bin/time
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 143)
+OUTPUT_ROOT := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 166)
+CUSTOM_MAKE_DIR := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 104)
+OPENJDK_BUILD_OS_ENV := linux
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 114)
+GetRealTarget = $(strip $(if $(MAKECMDGOALS),$(MAKECMDGOALS),default))
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 466)
+SET_EXECUTABLE_ORIGIN = -Xlinker -rpath -Xlinker \$$$$ORIGIN$1
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 701)
+INCLUDE_SA = true
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 103)
+StartGlobalTimer = 	$(call RecordStartTime,TOTAL)
+ 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 108)
+OPENJDK_BUILD_CPU_BITS := 64
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 572)
+RC := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Jprt.gmk', line 53)
+SRC_JRE_IMAGE_DIR := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/images/j2re-image
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 275)
+IMAGES_OUTPUTDIR = $(BUILD_OUTPUT)/images
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 49)
+BUILDTIMESDIR = $(OUTPUT_ROOT)/tmp/buildtimes
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 274)
+NASHORN_OUTPUTDIR = $(BUILD_OUTPUT)/nashorn
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 552)
+PRINTF := /usr/bin/printf
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 553)
+PWD := @THEPWDCMD@
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 35)
+_MAKEHELPERS_GMK := 1
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 173)
+JDK_BUILD_NUMBER := b00
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 175)
+USER_RELEASE_SUFFIX = root_2022_06_09_16_41
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 474)
+LIBRARY_PREFIX := lib
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 487)
+JAVA = $(BOOT_JDK)/bin/java $(JAVA_FLAGS_BIG) $(JAVA_FLAGS)
+# environment
+VSCODE_IPC_HOOK_CLI = /run/user/0/vscode-ipc-ca6fff9f-e35a-46e2-8309-3d8bf9b9df39.sock
+# environment
+ANT_HOME = /root/apache-ant-1.9.16
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 506)
+BOOTSTRAP_JAVAC_JAR := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/langtools/dist/bootstrap/lib/javac.jar
+# automatic
+*D = $(patsubst %/,%,$(dir $*))
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 91)
+ReportBuildTimes = 	$(BUILD_LOG_WRAPPER) $(PRINTF) -- "----- Build times -------\nStart %s\nEnd   %s\n%s\n%s\n-------------------------\n" "`$(CAT) $(BUILDTIMESDIR)/build_time_start_TOTAL_human_readable`" "`$(CAT) $(BUILDTIMESDIR)/build_time_end_TOTAL_human_readable`" "`$(LS) $(BUILDTIMESDIR)/build_time_diff_* | $(GREP) -v _TOTAL | $(XARGS) $(CAT) | $(SORT) -k 2`" "`$(CAT) $(BUILDTIMESDIR)/build_time_diff_TOTAL`"
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 605)
+USE_EXTERNAL_LIBJPEG := true
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 503)
+JARSIGNER = $(BOOT_JDK)/bin/jarsigner
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 711)
+JRE_OVERLAY_IMAGE_SUBDIR := j2re-overlay-image
+ 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 340)
+AR_OUT_OPTION := rcs 
+# environment
+HISTTIMEFORMAT = %F %T 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 525)
+BASH := /usr/bin/bash
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 271)
+JAXWS_OUTPUTDIR = $(BUILD_OUTPUT)/jaxws
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 50)
+decompress_paths = $(SED) -f $(SRC_ROOT)/make/common/support/ListPathsSafely-uncompress.sed -e 's|X99|\\n|g' -e 's|X98|$(OUTPUT_ROOT)|g' -e 's|X97|$(SRC_ROOT)|g' -e 's|X00|X|g' | tr '\n' '$2'
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 573)
+DUMPBIN := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 307)
+FREETYPE_LIBS := -lfreetype
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 287)
+BOOT_JDK := /usr/lib/jvm/java-openjdk
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 350)
+CXX_O_FLAG_NONE := -O0
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 546)
+HEAD := /usr/bin/head
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 39)
+HASH := #
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 244)
+JVM_VARIANT_KERNEL := false
+# environment
+VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 136)
+ADD_SRC_ROOT := 
+# environment
+HOME = /root
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 80)
+define RecordEndTime
+	$(DATE) '+%Y %m %d %H %M %S' | $(NAWK) '{ print $$1,$$2,$$3,$$4,$$5,$$6,($$4*3600+$$5*60+$$6) }' > $(BUILDTIMESDIR)/build_time_end_$1
+	$(DATE) '+%Y-%m-%d %H:%M:%S' > $(BUILDTIMESDIR)/build_time_end_$1_human_readable
+	$(ECHO) `$(CAT) $(BUILDTIMESDIR)/build_time_start_$1` `$(CAT) $(BUILDTIMESDIR)/build_time_end_$1` $1 | $(NAWK) '{ F=$$7; T=$$14; if (F > T) { T+=3600*24 }; D=T-F; H=int(D/3600); M=int((D-H*3600)/60); S=D-H*3600-M*60; printf("%02d:%02d:%02d %s\n",H,M,S,$$15); }' > $(BUILDTIMESDIR)/build_time_diff_$1
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 497)
+JAR = $(BOOT_JDK)/bin/jar
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 409)
+not-containing = $(foreach v,$2,$(if $(findstring $1,$v),,$v))
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 156)
+define AtMakeEnd
+	[ -f $(SJAVAC_SERVER_DIR)/server.port ] && echo Stopping sjavac server && $(TOUCH) $(SJAVAC_SERVER_DIR)/server.port.stop; true
+	$(call StopGlobalTimer)
+	$(call ReportBuildTimes)
+	@$(PRINTF) "Finished building $(PRODUCT_NAME) for target '$(call GetRealTarget)'\n"
+	$(call CheckEnvironment)
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 606)
+USE_EXTERNAL_LIBGIF := false
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 515)
+RC_FLAGS := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 315)
+PACKAGE_PATH = /opt/local
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 308)
+ 
+FREETYPE_CFLAGS := -I/usr/include/freetype2 -I/usr/include/libpng15  
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 558)
+TAR := /usr/bin/tar
+# environment
+LOGNAME = root
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 364)
+LOG_WARN = 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 535)
+CUT := /usr/bin/cut
+# environment
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 367)
+define LogSetupMacroEntry
+  $(if $(27),$(error Internal makefile error: Too many arguments to LogSetupMacroEntry, please update MakeBase.gmk))
+  $(if $(findstring $(LOG_LEVEL),debug trace), $(info $1 $(foreach i,2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26,$(if $($i),$(NEWLINE) $(strip [$i] $($i))))))
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 220)
+JRE_RELEASE_VERSION := 1.8.0-internal-root_2022_06_09_16_41-b00
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 364)
+LOG_DEBUG = > /dev/null
+# automatic
++F = $(notdir $+)
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 166)
+define FatalError
+  # If the user specificed a "global" target (e.g. 'help'), do not exit but continue running
+  $$(if $$(filter-out $(global_targets),$$(call GetRealTarget)),$$(error Cannot continue))
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 240)
+define ListPathsSafelyNow
+  ifneq (,$$(word 10001,$$($1)))
+    $$(error Cannot list safely more than 10000 paths. $1 has $$(words $$($1)) paths!)
+  endif
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,1,250)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,251,500)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,501,750)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,751,1000)
+
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,1001,1250)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,1251,1500)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,1501,1750)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,1751,2000)
+
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,2001,2250)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,2251,2500)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,2501,2750)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,2751,3000)
+
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,3001,3250)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,3251,3500)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,3501,3750)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,3751,4000)
+
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,4001,4250)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,4251,4500)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,4501,4750)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,4751,5000)
+
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,5001,5250)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,5251,5500)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,5501,5750)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,5751,6000)
+
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,6001,6250)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,6251,6500)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,6501,6750)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,6751,7000)
+
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,7001,7250)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,7251,7500)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,7501,7750)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,7751,8000)
+
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,8001,8250)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,8251,8500)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,8501,8750)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,8751,9000)
+
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,9001,9250)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,9251,9500)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,9501,9750)
+  $(call ListPathsSafelyNow_IfPrintf,$1,$2,$3,9751,10000)
+
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 360)
+CFLAGS_JDKLIB := -Wall -Wno-parentheses -Wextra -Wno-unused -Wno-unused-parameter -Wformat=2         -pipe -fstack-protector -D_GNU_SOURCE -D_REENTRANT -D_LARGEFILE64_SOURCE -fno-omit-frame-pointer -D_LP64=1 -D_LITTLE_ENDIAN -DLINUX -DARCH='"amd64"' -Damd64 -DDEBUG -DRELEASE='"1.8.0-internal-debug"'       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/jdk/include       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/jdk/include/linux       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/jdk/src/share/javavm/export       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/jdk/src/solaris/javavm/export       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/jdk/src/share/native/common       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/jdk/src/solaris/native/common   -fno-strict-aliasing -g -fPIC 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 119)
+LastGoal = $(strip $(lastword $(call GetRealTarget)))
+# makefile (from `Makefile', line 55)
+all_confs = $(patsubst %/spec.gmk,%,$(patsubst $(output_dir)/%,%,$(all_spec_files)))
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 223)
+DEBUG_LEVEL := slowdebug
+ 
+# environment
+VSCODE_HANDLES_UNCAUGHT_ERRORS = true
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 345)
+C_O_FLAG_NORM := -O0
+# automatic
+^D = $(patsubst %/,%,$(dir $^))
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 719)
+JDK_BUNDLE_SUBDIR = j2sdk-bundle/jdk$(JDK_VERSION).jdk/Contents
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 549)
+MKDIR := /usr/bin/mkdir
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 266)
+BUILD_OUTPUT := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug
+# environment
+HOSTNAME = VM-24-11-centos
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 273)
+JDK_OUTPUTDIR = $(BUILD_OUTPUT)/jdk
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 715)
+JDK_OVERLAY_IMAGE_DIR = $(IMAGES_OUTPUTDIR)/$(JDK_OVERLAY_IMAGE_SUBDIR)
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 98)
+OPENJDK_TARGET_OS_EXPORT_DIR := solaris
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 250)
+MACOSX_UNIVERSAL = 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 43)
+compress_paths = $(compress_pre) $(subst $(SRC_ROOT),X97, $(subst $(OUTPUT_ROOT),X98, $(subst X,X00, $(subst $(SPACE),\n,$(strip $1))))) $(compress_post)
+# environment
+MAKELEVEL := 0
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 102)
+OPENJDK_BUILD_OS := linux
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 410)
+LDCXX := /usr/bin/g++
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 45)
+list_alt_overrides_with_origins = $(filter ALT_%=environment ALT_%=command,$(foreach var,$(.VARIABLES),$(var)=$(firstword $(origin $(var)))))
+# environment
+SDKMAN_VERSION = 5.15.0
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 212)
+RELEASE = $(JDK_VERSION)-$(MILESTONE)$(BUILD_VARIANT_RELEASE)
+# environment
+NSS_STRICT_NOFORK = DISABLED
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 562)
+IS_GNU_TIME := yes
+# default
+MAKECMDGOALS := all
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Jprt.gmk', line 54)
+SRC_JDK_BUNDLE_DIR := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/images/j2sdk-bundle/jdk1.8.0.jdk/Contents
+ 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 44)
+define NEWLINE
+
+
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 109)
+OPENJDK_BUILD_CPU_ENDIAN := little
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 571)
+MT := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 83)
+OPENJDK_TARGET_CPU := x86_64
+# environment
+SHLVL = 5
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 400)
+LDEXE := /usr/bin/gcc
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 304)
+REPO_LIST = $(patsubst ./%,%,$(patsubst %/,%,$(sort $(dir $(shell $(CD) $(SRC_ROOT) ; ( $(LS) -d $(HG_SEARCH:%/REPO=%/$(HG_DIRECTORY)) ; $(LS) $(HG_SEARCH:%/REPO=%/$(HGTIP_FILENAME)) ) 2> /dev/null)))))
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 163)
+VENDOR_URL_VM_BUG := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 364)
+CFLAGS_JDKEXE := -Wall -Wno-parentheses -Wextra -Wno-unused -Wno-unused-parameter -Wformat=2         -pipe -fstack-protector -D_GNU_SOURCE -D_REENTRANT -D_LARGEFILE64_SOURCE -fno-omit-frame-pointer -D_LP64=1 -D_LITTLE_ENDIAN -DLINUX -DARCH='"amd64"' -Damd64 -DDEBUG -DRELEASE='"1.8.0-internal-debug"'       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/jdk/include       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/jdk/include/linux       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/jdk/src/share/javavm/export       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/jdk/src/solaris/javavm/export       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/jdk/src/share/native/common       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/jdk/src/solaris/native/common   -fno-strict-aliasing -g -fPIE
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 335)
+COMPILER_SUPPORTS_TARGET_BITS_FLAG = true
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 638)
+OVR_SRCS := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 88)
+COMPILE_TYPE := native
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 161)
+VENDOR_URL := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 42)
+DQUOTE := "
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 132)
+SYSROOT_CFLAGS := 
+ 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 352)
+C_FLAG_DEPS := -MMD -MF
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 313)
+ALSA_CFLAGS := -I/usr/include/alsa  
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 672)
+INSTALL_INCLUDEDIR = ${exec_prefix}/lib
+# environment
+JAVA_HOME = /root/.sdkman/candidates/java/current
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 171)
+JDK_MICRO_VERSION := 0
+# environment
+XDG_SESSION_ID = 497271
+# environment
+USER = root
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 157)
+JDK_RC_PLATFORM_NAME := Platform
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 543)
+EGREP := /usr/bin/grep -E
+# makefile
+.DEFAULT_GOAL := default
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 334)
+COMPILER_TARGET_BITS_FLAG := -m
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 40)
+SQUOTE := '
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 46)
+list_alt_overrides = $(subst =command,,$(subst =environment,,$(list_alt_overrides_with_origins)))
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 107)
+StopGlobalTimer = 	$(call RecordEndTime,TOTAL)
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 72)
+MAKE := /usr/bin/gmake -s VERBOSE="-s" LOG_LEVEL="warn" -R -I /root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 713)
+JDK_IMAGE_DIR = $(IMAGES_OUTPUTDIR)/$(JDK_IMAGE_SUBDIR)
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 666)
+INSTALL_HTMLDIR = ${docdir}
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 583)
+XATTR := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 328)
+MACOSX_VERSION_MIN = 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 312)
+ALSA_LIBS := -lasound  
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 568)
+ZIPEXE := /usr/bin/zip
+ 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 281)
+HOTSPOT_DIST = /root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/hotspot/dist
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 311)
+CUPS_CFLAGS := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 162)
+VENDOR_URL_BUG := 
+# automatic
+%D = $(patsubst %/,%,$(dir $%))
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 365)
+CXXFLAGS_JDKEXE := -Wall -Wno-parentheses -Wextra -Wno-unused -Wno-unused-parameter -Wformat=2         -pipe -fstack-protector -D_GNU_SOURCE -D_REENTRANT -D_LARGEFILE64_SOURCE -fno-omit-frame-pointer -D_LP64=1 -D_LITTLE_ENDIAN -DLINUX -DARCH='"amd64"' -Damd64 -DDEBUG -DRELEASE='"1.8.0-internal-debug"'       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/jdk/include       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/jdk/include/linux       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/jdk/src/share/javavm/export       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/jdk/src/solaris/javavm/export       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/jdk/src/share/native/common       -I/root/openjdk-sources/openjdk-8u312-b07-sources-debug/jdk/src/solaris/native/common  -std=gnu++98  -g -fPIE
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 582)
+SETFILE := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 141)
+SRC_ROOT := /root/openjdk-sources/openjdk-8u312-b07-sources-debug
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 120)
+PATH_SEP := :
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 206)
+COOKED_BUILD_NUMBER := 0
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 59)
+define CheckEnvironment
+        # Find all environment or command line variables that begin with ALT.
+	$(if $(list_alt_overrides),
+	  @$(PRINTF) "\nWARNING: You have the following ALT_ variables set:\n"
+	  @$(PRINTF) "$(foreach var,$(list_alt_overrides),$(var)=$$$(var))\n"
+	  @$(PRINTF) "ALT_ variables are deprecated and will be ignored. Please clean your environment.\n\n"
+	)
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 147)
+JAXP_TOPDIR := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/jaxp
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 174)
+MILESTONE := internal
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 483)
+JAVA_FLAGS := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 42)
+ 
+compress_post := ))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 245)
+JVM_VARIANT_ZERO := false
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 520)
+SJAVAC_SERVER_JAVA := /usr/lib/jvm/java-openjdk/bin/java  -verbosegc -d64 -Xms1G -Xmx3G
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 478)
+OBJ_SUFFIX := .o
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 242)
+JVM_VARIANT_CLIENT := false
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 296)
+NUM_CORES := 4
+# default
+MAKE_COMMAND := make
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 678)
+INSTALL_LOCALEDIR = ${datarootdir}/locale
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 687)
+INSTALL_SHAREDSTATEDIR = ${prefix}/com
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 531)
+CODESIGN := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 154)
+LAUNCHER_NAME := openjdk
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 648)
+INSTALL_PREFIX = /usr/local
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 415)
+LDEXECXX := /usr/bin/g++
+# default
+.VARIABLES := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 272)
+HOTSPOT_OUTPUTDIR = $(BUILD_OUTPUT)/hotspot
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 140)
+TOPDIR := /root/openjdk-sources/openjdk-8u312-b07-sources-debug
+# automatic
+*F = $(notdir $*)
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 591)
+BUILD_LOG := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/build.log
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 495)
+JAVAH = $(BOOT_JDK)/bin/javah
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 722)
+JRE_BUNDLE_DIR = $(IMAGES_OUTPUTDIR)/$(JRE_BUNDLE_SUBDIR)
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 484)
+ 
+JAVA_FLAGS_BIG := -Xms64M -Xmx1600M -XX:ThreadStackSize=1536
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 343)
+C_O_FLAG_HIGHEST := -O3
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 554)
+RM := /usr/bin/rm -f
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 310)
+FONTCONFIG_CFLAGS := 
+# makefile
+MAKEFLAGS = Rrqp
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 557)
+SORT := /usr/bin/sort
+# environment
+MFLAGS = -Rrqp
+# environment
+SSH_CLIENT = 103.37.140.38 27378 22
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 93)
+OPENJDK_TARGET_CPU_LEGACY := amd64
+# environment
+MAIL = /var/spool/mail/root
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 532)
+COMM := /usr/bin/comm
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 169)
+JDK_MAJOR_VERSION := 1
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 81)
+OPENJDK_TARGET_OS_ENV := linux
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 578)
+EXPR := /usr/bin/expr
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 50)
+CONFIGURE_COMMAND_LINE := --with-debug-level=slowdebug
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 548)
+LN := /usr/bin/ln
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 462)
+define SetupCopyFiles
+  # param 1 is for example COPY_MYFILES
+  # param 2,3,4,5 are named args.
+  #   SRC     : Source root dir (defaults to dir of first file)
+  #   DEST    : Dest root dir
+  #   FILES   : List of files to copy with absolute paths, or path relative to SRC.
+  #             Must be in SRC.
+  #   FLATTEN : Set to flatten the directory structure in the DEST dir.
+  #   MACRO   : Optionally override the default macro used for making the copy.
+  #             Default is 'install-file'
+  $(foreach i,2 3 4 5 6, $(if $($i),$1_$(strip $($i)))$(NEWLINE))
+  $(call LogSetupMacroEntry,SetupCopyFiles($1),$2,$3,$4,$5,$6)
+  $(if $(7),$(error Internal makefile error: Too many arguments to SetupCopyFiles))
+
+  ifeq ($$($1_MACRO), )
+    $1_MACRO := install-file
+  endif
+
+  # Default SRC to the dir of the first file.
+  ifeq ($$($1_SRC), )
+    $1_SRC := $$(dir $$(firstword $$($1_FILES)))
+  endif
+
+  # Remove any trailing slash from SRC
+  $1_SRC := $$(patsubst %/,%,$$($1_SRC))
+
+  $$(foreach f, $$(patsubst $$($1_SRC)/%,%,$$($1_FILES)), $$(eval $$(call AddFileToCopy, $$($1_SRC)/$$f, $$($1_DEST)/$$(if $$($1_FLATTEN),$$(notdir $$f),$$f), $1, $$($1_MACRO))))
+
+endef
+ 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 392)
+USING_BROKEN_SUSE_LD := no
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 544)
+FGREP := /usr/bin/grep -F
+# automatic
++D = $(patsubst %/,%,$(dir $+))
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 85)
+OPENJDK_TARGET_CPU_BITS := 64
+# makefile (from `Makefile', line 49)
+root_dir := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 714)
+JRE_IMAGE_DIR = $(IMAGES_OUTPUTDIR)/$(JRE_IMAGE_SUBDIR)
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 156)
+PRODUCT_SUFFIX := Runtime Environment
+# makefile (from `Makefile', line 55)
+output_dir = $(root_dir)/build
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 566)
+WC := /usr/bin/wc
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 608)
+LIBZIP_CAN_USE_MMAP := true
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 559)
+TAIL := /usr/bin/tail
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 347)
+CXX_O_FLAG_HIGHEST := -O3
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 610)
+MSVCP_DLL := 
+# environment
+BROWSER = /root/.vscode-server/bin/64bbfbf67ada9953918d72e1df2f4d8e537d340e/bin/helpers/browser.sh
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 710)
+JDK_OVERLAY_IMAGE_SUBDIR := j2sdk-overlay-image
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 603)
+ENABLE_JFR = true
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 453)
+DEBUG_BINARIES := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 321)
+UNLIMITED_CRYPTO = false
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 205)
+COOKED_JDK_UPDATE_VERSION := 0
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 422)
+AS := /usr/bin/gcc -c
+ 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 395)
+LDFLAGS_JDKLIB := -Wl,-z,relro  -Xlinker --hash-style=both  -Xlinker -z -Xlinker defs -Xlinker -z -Xlinker noexecstack -shared         -L/root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/jdk/lib/amd64 -L/root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/jdk/lib/amd64/server
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 430)
+STRIP := /usr/bin/strip
+# environment
+VSCODE_HANDLES_SIGPIPE = true
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 53)
+global_targets = help
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 348)
+CXX_O_FLAG_HI := -O0
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 461)
+SET_SHARED_LIBRARY_NAME = -Xlinker -soname=$1
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 284)
+BUILD_HOTSPOT = true
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 289)
+BOOT_TOOLSJAR = $(BOOT_JDK)/lib/tools.jar
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 103)
+OPENJDK_BUILD_OS_API := posix
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 293)
+BOOT_JDK_SOURCETARGET := -source 7 -target 7
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 550)
+MV := /usr/bin/mv
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 420)
+BUILD_LD := /usr/bin/gcc
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 234)
+BUILD_HEADLESS := true
+# default
+MAKEFILES := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 684)
+INSTALL_MANDIR = ${datarootdir}/man
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 115)
+OPENJDK = true
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 300)
+define CleanComponent
+	@$(PRINTF) "Cleaning $1 build artifacts ..."
+	@($(CD) $(OUTPUT_ROOT) && $(RM) -r $1)
+	@$(PRINTF) " done\n"
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 438)
+ 
+SET_SHARED_LIBRARY_MAPFILE = -Xlinker -version-script=$1
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 204)
+RUNTIME_NAME = $(PRODUCT_NAME) $(PRODUCT_SUFFIX)
+# environment
+PROMPT_COMMAND = history -a; history -a; 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 563)
+TR := /usr/bin/tr
+# automatic
+<F = $(notdir $<)
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 61)
+MAKE_ARGS := "SPEC=/root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/spec.gmk" -j4
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 556)
+SH := /usr/bin/sh
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 412)
+LIBCXX := -lstdc++
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 472)
+SHARED_LIBRARY = lib$1.so
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 403)
+LDFLAGS_JDKEXE := -Wl,-z,relro  -Xlinker --hash-style=both  -Xlinker -z -Xlinker defs -Xlinker -z -Xlinker noexecstack -Xlinker --allow-shlib-undefined -pie
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 371)
+CXX := /usr/bin/g++
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 324)
+X_CFLAGS := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 539)
+DSYMUTIL := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 536)
+DATE := /usr/bin/date
+# environment
+SDKMAN_CANDIDATES_DIR = /root/.sdkman/candidates
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 560)
+TEE := /usr/bin/tee
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk', line 226)
+define ParseConfAndSpec
+  ifneq ($$(filter-out $(global_targets),$$(call GetRealTarget)),)
+    # If we only have global targets, no need to bother with SPEC or CONF
+    ifneq ($$(origin SPEC),undefined)
+      # We have been given a SPEC, check that it works out properly
+      ifeq ($$(wildcard $$(SPEC)),)
+        $$(info Cannot locate spec.gmk, given by SPEC=$$(SPEC))
+        $$(eval $$(call FatalError))
+      endif
+      ifneq ($$(origin CONF),undefined)
+        # We also have a CONF argument. This is OK only if this is a repeated call by ourselves,
+        # but complain if this is the top-level make call.
+        ifeq ($$(MAKELEVEL),0)
+          $$(info Cannot use CONF=$$(CONF) and SPEC=$$(SPEC) at the same time. Choose one.)
+          $$(eval $$(call FatalError))
+        endif
+      endif
+      # ... OK, we're satisfied, we'll use this SPEC later on
+    else
+      # Find all spec.gmk files in the build output directory
+      output_dir=$$(root_dir)/build
+      all_spec_files=$$(wildcard $$(output_dir)/*/spec.gmk)
+      ifeq ($$(all_spec_files),)
+        $$(info No configurations found for $$(root_dir)! Please run configure to create a configuration.)
+        $$(eval $$(call FatalError))
+      endif
+      # Extract the configuration names from the path
+      all_confs=$$(patsubst %/spec.gmk,%,$$(patsubst $$(output_dir)/%,%,$$(all_spec_files)))
+
+      ifneq ($$(origin CONF),undefined)
+        # User have given a CONF= argument.
+        ifeq ($$(CONF),)
+          # If given CONF=, match all configurations
+          matching_confs=$$(strip $$(all_confs))
+        else
+          # Otherwise select those that contain the given CONF string
+          matching_confs=$$(strip $$(foreach var,$$(all_confs),$$(if $$(findstring $$(CONF),$$(var)),$$(var))))
+        endif
+        ifeq ($$(matching_confs),)
+          $$(info No configurations found matching CONF=$$(CONF))
+          $$(info Available configurations:)
+          $$(foreach var,$$(all_confs),$$(info * $$(var)))
+          $$(eval $$(call FatalError))
+        else
+          ifeq ($$(words $$(matching_confs)),1)
+            $$(info Building '$$(matching_confs)' (matching CONF=$$(CONF)))
+          else
+            $$(info Building target '$(call GetRealTarget)' in the following configurations (matching CONF=$$(CONF)):)
+            $$(foreach var,$$(matching_confs),$$(info * $$(var)))
+          endif
+        endif
+
+        # Create a SPEC definition. This will contain the path to one or more spec.gmk files.
+        SPEC=$$(addsuffix /spec.gmk,$$(addprefix $$(output_dir)/,$$(matching_confs)))
+      else
+        # No CONF or SPEC given, check the available configurations
+        ifneq ($$(words $$(all_spec_files)),1)
+          $$(info No CONF given, but more than one configuration found in $$(output_dir).)
+          $$(info Available configurations:)
+          $$(foreach var,$$(all_confs),$$(info * $$(var)))
+          $$(info Please retry building with CONF=<config pattern> (or SPEC=<specfile>))
+          $$(eval $$(call FatalError))
+        endif
+
+        # We found exactly one configuration, use it
+        SPEC=$$(strip $$(all_spec_files))
+      endif
+    endif
+  endif
+endef
+# environment
+ 
+LC_ALL = C
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 524)
+BASENAME := /usr/bin/basename
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 158)
+COMPANY_NAME := N/A
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 431)
+FillCacheFind = 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 450)
+CXXFLAGS_DEBUG_SYMBOLS := -g
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 449)
+define AddFileToCopy
+  # Helper macro for SetupCopyFiles
+  # 1 : Source file
+  # 2 : Dest file
+  # 3 : Variable to add targets to
+  # 4 : Macro to call for copy operation
+  $2: $1
+	$(ECHO) $(LOG_INFO) Copying $$(patsubst $(OUTPUT_ROOT)/%,%,$$@)
+	$$($$(strip $4))
+
+  $3 += $2
+endef
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 704)
+OS_VERSION_MINOR := 10
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 270)
+JAXP_OUTPUTDIR = $(BUILD_OUTPUT)/jaxp
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 448)
+CFLAGS_DEBUG_SYMBOLS := -g
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 337)
+CC_OUT_OPTION := -o 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 137)
+OVERRIDE_SRC_ROOT := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 79)
+OPENJDK_TARGET_OS := linux
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 325)
+X_LIBS := 
+# automatic
+^F = $(notdir $^)
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 581)
+OBJCOPY := /usr/bin/objcopy
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 150)
+NASHORN_TOPDIR := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/nashorn
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 86)
+OPENJDK_TARGET_CPU_ENDIAN := little
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 112)
+REQUIRED_OS_NAME := Linux
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 97)
+OPENJDK_TARGET_OS_API_DIR := solaris
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 149)
+HOTSPOT_TOPDIR := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/hotspot
+# default
+SUFFIXES := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 447)
+ENABLE_DEBUG_SYMBOLS := true
+# environment
+HISTSIZE = 3000
+ 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 305)
+JOBS = 4
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 37)
+SPACE := $(subst ,, )
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 565)
+UNIQ := /usr/bin/uniq
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 709)
+JRE_IMAGE_SUBDIR := j2re-image
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 538)
+DIRNAME := /usr/bin/dirname
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 443)
+CXX_FLAG_REORDER := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 279)
+JAXP_DIST = $(JAXP_OUTPUTDIR)/dist
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 302)
+SJAVAC_SERVER_DIR := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 493)
+JAVAC_FLAGS = -g
+# default
+.INCLUDE_DIRS = /usr/include /usr/local/include /usr/include
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 146)
+CORBA_TOPDIR := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/corba
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 574)
+CYGPATH := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 303)
+HG_SEARCH = ./REPO ./*/REPO ./*/*/REPO ./*/*/*/REPO
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 172)
+JDK_UPDATE_VERSION := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 34)
+_MAKEBASE_GMK := 1
+# default
+.RECIPEPREFIX := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 451)
+ZIP_DEBUGINFO_FILES := true
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 452)
+STRIP_POLICY := min_strip
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 507)
+BOOTSTRAP_JAVAC_ARGS := "-Xbootclasspath/p:/root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/langtools/dist/bootstrap/lib/javac.jar" -cp /root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/langtools/dist/bootstrap/lib/javac.jar
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 490)
+JAVAC = $(BOOT_JDK)/bin/javac
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 374)
+OBJC := 
+ 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 564)
+TOUCH := /usr/bin/touch
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 681)
+INSTALL_LOCALSTATEDIR = ${prefix}/var
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 585)
+JTREGEXE := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 227)
+JDK_VARIANT := normal
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Jprt.gmk', line 52)
+SRC_JDK_IMAGE_DIR := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/images/j2sdk-image
+# environment
+LANG = C
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 367)
+NO_DELETE_NULL_POINTER_CHECKS_CFLAG = 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 541)
+FIND_DELETE := -delete
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 95)
+OPENJDK_TARGET_CPU_OSARCH := amd64
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 545)
+GREP := /usr/bin/grep
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 94)
+OPENJDK_TARGET_CPU_LEGACY_LIB := amd64
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 407)
+LDFLAGS_CXX_JDK := 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 690)
+INSTALL_SYSCONFDIR = ${prefix}/etc
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 599)
+BUILD_LOG_WRAPPER := /usr/bin/bash /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/bin/logger.sh /root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/build.log
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 534)
+CPIO := /usr/bin/cpio
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 117)
+LIBDL := -ldl 
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk', line 396)
+LDFLAGS_JDKLIB_SUFFIX := -ljava -ljvm
+# makefile (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk', line 58)
+ListPathsSafely_Printf = 	$(if $(strip $($1_LPS$4)),$(if $(findstring $(LOG_LEVEL),trace),,@)printf -- "$(strip $($1_LPS$4))\n" | $(decompress_paths) $3)
+# variable set hash-table stats:
+ 
+# Load=468/1024=46%, Rehash=0, Collisions=251/746=34%
+
+# Pattern-specific Variable Values
+
+# No pattern-specific variable values.
+
+# Directories
+
+# . (device 64769, inode 2110376): 25 files, no impossibilities.
+# /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf (device 64769, inode 2110394): 31 files, no impossibilities.
+# /root/openjdk-sources/openjdk-8u312-b07-sources-debug//build (device 64769, inode 2113932): 3 files, no impossibilities.
+
+# 59 files, no impossibilities in 3 directories.
+
+# Implicit Rules
+
+# No implicit rules.
+
+# Files
+
+install-only: start-make
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 154):
+	@$(call TargetEnter)
+	@($(CD) $(JDK_TOPDIR)/make && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJdk.gmk install)
+	@$(call TargetExit)
+
+clean-docs:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+ 
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 248):
+	$(call CleanComponent,docs)
+	$(call CleanComponent,docstemp)
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/source-dirs.m4:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+bundles: all bundles-only
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+bundles-only: start-make
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Jprt.gmk', line 60):
+	@$(call TargetEnter)
+	$(MKDIR) -p $(BUILD_OUTPUT)/bundles
+	$(CD) $(SRC_JDK_IMAGE_DIR) && $(ZIP) -y -q -r $(BUILD_OUTPUT)/bundles/$(JDK_IMAGE_SUBDIR).zip .
+	$(CD) $(SRC_JRE_IMAGE_DIR) && $(ZIP) -y -q -r $(BUILD_OUTPUT)/bundles/$(JRE_IMAGE_SUBDIR).zip .
+	if [ -d $(BUILD_OUTPUT)/install/bundles ] ; then \
+	  $(CD) $(BUILD_OUTPUT)/install/bundles && $(ZIP) -y -q -r $(JPRT_ARCHIVE_INSTALL_BUNDLE) . ; \
+	fi
+	@$(call TargetExit)
+
+clean-jaxws:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 234):
+	$(call CleanComponent,jaxws)
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/make/common/MakeBase.gmk:
+ 
+#  Implicit rule search has been done.
+#  Last modified 2021-10-15 17:34:52
+#  File has been updated.
+#  Successfully updated.
+
+clean-corba:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 230):
+	$(call CleanComponent,corba)
+
+clean-langtools:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 228):
+	$(call CleanComponent,langtools)
+
+demos: jdk demos-only
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+all: images docs
+#  Phony target (prerequisite of .PHONY).
+#  Command line target.
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has been updated.
+#  Needs to be updated (-q is set).
+# variable set hash-table stats:
+ 
+# Load=0/32=0%, Rehash=0, Collisions=0/35=0%
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 69):
+	@$(call CheckIfMakeAtEnd)
+
+demos-only: start-make
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 128):
+	@$(call TargetEnter)
+	@($(CD) $(JDK_TOPDIR)/make && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJdk.gmk demos)
+	@$(call TargetExit)
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/jdk-options.m4:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+clean-docs-zip:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 251):
+	$(call CleanComponent,bundles/jdk-*-docs.zip)
+
+.PHONY: langtools corba jaxp jaxws hotspot jdk nashorn images overlay-images install test docs docs-zip langtools-only corba-only jaxp-only jaxws-only hotspot-only jdk-only nashorn-only images-only overlay-images-only install-only test-only docs-only docs-zip-only default all clean dist-clean bootcycle-images start-make clean-langtools clean-corba clean-jaxp clean-jaxws clean-hotspot clean-jdk clean-nashorn clean-images clean-docs clean-docs-zip clean-test clean-overlay-images clean-bootcycle-build profiles profiles-only jprt_bundle bundles bundles-only final-images final-images-only help
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+ 
+
+corba: langtools corba-only
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+final-images: all final-images-only
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+final-images-only: start-make
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Jprt.gmk', line 72):
+	@$(call TargetEnter)
+	$(RM) -r $(BUILD_OUTPUT)/final-images
+	$(MKDIR) -p $(BUILD_OUTPUT)/final-images/$(JDK_IMAGE_SUBDIR)
+	$(MKDIR) -p $(BUILD_OUTPUT)/final-images/$(JRE_IMAGE_SUBDIR)
+	$(CP) -R -P $(SRC_JDK_IMAGE_DIR)/* $(BUILD_OUTPUT)/final-images/$(JDK_IMAGE_SUBDIR)/
+	$(CP) -R -P $(SRC_JRE_IMAGE_DIR)/* $(BUILD_OUTPUT)/final-images/$(JRE_IMAGE_SUBDIR)/
+	@$(call TargetExit)
+
+corba-only: start-make
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 90):
+	@$(call TargetEnter)
+	@($(CD) $(CORBA_TOPDIR)/make && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildCorba.gmk)
+	@$(call TargetExit)
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/platform.m4:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+sign-jars: jdk sign-jars-only
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+ 
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/libraries.m4:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/build-performance.m4:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/spec.gmk: /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/boot-jdk.m4 /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/spec.sh.in /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/build-aux /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/help.m4 /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/compare.sh.in /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/config.h.in /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/hotspot-spec.gmk.in /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/libraries.m4 /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/autogen.sh /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/configure /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/libraries.m4.orig /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/toolchain_windows.m4 /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/bootcycle-spec.gmk.in /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/basics_windows.m4 /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/builddeps.conf.nfs.example /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/source-dirs.m4 /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/configure.ac /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/toolchain.m4 /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/basics.m4 /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/version-numbers /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/generated-configure.sh /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/build-performance.m4 /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/builddeps.m4 /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/Makefile.in /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/builddeps.conf.example /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/flags.m4 /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/platform.m4 /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/spec.gmk.in /root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/jdk-options.m4
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 74):
+	@$(ECHO) "ERROR: $(SPEC) is not up to date."
+	@$(ECHO) "Please rerun configure! Easiest way to do this is by running"
+	@$(ECHO) "'make reconfigure'."
+	@if test "x$(IGNORE_OLD_CONFIG)" != "xtrue"; then exit 1; fi
+
+sign-jars-only: start-make
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 172):
+	@$(call TargetEnter)
+ 
+	@($(CD) $(JDK_TOPDIR)/make && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJdk.gmk sign-jars)
+	@$(call TargetExit)
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/MakeHelpers.gmk:
+#  Implicit rule search has been done.
+#  Last modified 2021-10-15 17:34:52
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/bootcycle-spec.gmk.in:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/autogen.sh:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+clean-jaxp:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 232):
+	$(call CleanComponent,jaxp)
+
+# Not a target:
+.SUFFIXES:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+nashorn: jdk nashorn-only
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+nashorn-only: start-make
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 122):
+	@$(call TargetEnter)
+	@($(CD) $(NASHORN_TOPDIR)/make && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildNashorn.gmk)
+	@$(call TargetExit)
+
+ 
+# Not a target:
+Makefile:
+#  Implicit rule search has been done.
+#  Last modified 2021-10-15 17:34:52
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/Makefile.in:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+clean-overlay-images:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 244):
+	$(call CleanComponent,overlay-images)
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/boot-jdk.m4:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+test-only: start-make
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 185):
+	@$(call TargetEnter)
+	@($(CD) $(SRC_ROOT)/test && $(BUILD_LOG_WRAPPER) $(MAKE) -j1 -k MAKEFLAGS= JT_HOME=$(JT_HOME) PRODUCT_HOME=$(JDK_IMAGE_DIR) ALT_OUTPUTDIR=$(OUTPUT_ROOT) CONCURRENCY=$(JOBS) $(TEST)) || true
+	@$(call TargetExit)
+	@$(ECHO) Testing for $(OUTPUT_ROOT)/testoutput/$(TEST)_exitcode.txt
+	@(if [ -r $(OUTPUT_ROOT)/testoutput/$(TEST)_exitcode.txt ]; then \
+		EXIT=$$($(CAT) $(OUTPUT_ROOT)/testoutput/$(TEST)_exitcode.txt); \
+		exit $${EXIT}; \
+	  fi)
+	@$(ECHO) Testing for $(OUTPUT_ROOT)/testoutput/$(TEST)/exitcode.txt
+	@(if [ -r $(OUTPUT_ROOT)/testoutput/$(TEST)/exitcode.txt ]; then \
+		EXIT=$$($(CAT) $(OUTPUT_ROOT)/testoutput/$(TEST)/exitcode.txt); \
+		exit $${EXIT}; \
+ 
+	  fi)
+
+clean-jdk:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 238):
+	$(call CleanComponent,jdk)
+
+.NOTPARALLEL:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+/tmp/jprt_bundles/j2sdk-image.zip: bundles
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Jprt.gmk', line 48):
+	$(MKDIR) -p $(@D)
+	$(RM) $@
+	$(CP) $(BUILD_OUTPUT)/bundles/$(JDK_IMAGE_SUBDIR).zip $@
+
+bootcycle-images: images bootcycle-images-only
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+clean-hotspot:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 236):
+	$(call CleanComponent,hotspot)
+
+bootcycle-images-only: start-make
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 178):
+	@$(ECHO) Boot cycle build step 2: Building a new JDK image using previously built image
+	@($(CD) $(SRC_ROOT) && $(BUILD_LOG_WRAPPER) $(MAKE) SPEC=$(dir $(SPEC))bootcycle-spec.gmk images)
+
+ 
+images:: source-tips demos nashorn images-only
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has been updated.
+#  Needs to be updated (-q is set).
+# variable set hash-table stats:
+# Load=0/32=0%, Rehash=0, Collisions=0/35=0%
+
+images-only: start-make
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 136):
+	@$(call TargetEnter)
+	@($(CD) $(JDK_TOPDIR)/make && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJdk.gmk images)
+	@$(call TargetExit)
+
+help:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `Makefile', line 86):
+	$(info )
+	$(info OpenJDK Makefile help)
+	$(info =====================)
+	$(info )
+	$(info Common make targets)
+	$(info .  make [default]         # Compile all product in langtools, hotspot, jaxp, jaxws,)
+	$(info .                         # corba and jdk)
+	$(info .  make all               # Compile everything, all repos and images)
+	$(info .  make images            # Create complete j2sdk and j2re images)
+	$(info .  make docs              # Create javadocs)
+	$(info .  make overlay-images    # Create limited images for sparc 64 bit platforms)
+	$(info .  make profiles          # Create complete j2re compact profile images)
+	$(info .  make bootcycle-images  # Build images twice, second time with newly build JDK)
+	$(info .  make install           # Install the generated images locally)
+	$(info .  make clean             # Remove all files generated by make, but not those)
+	$(info .                         # generated by configure)
+	$(info .  make dist-clean        # Remove all files, including configuration)
+	$(info .  make help              # Give some help on using make)
+	$(info .  make test              # Run tests, default is "jdk_core langtools_jtreg" (see TEST below))
+	$(info )
+	$(info Targets for specific components)
+	$(info (Component is any of langtools, corba, jaxp, jaxws, hotspot, jdk, nashorn, images, overlay-images, docs or test))
+	$(info .  make <component>       # Build <component> and everything it depends on. )
+	$(info .  make <component>-only  # Build <component> only, without dependencies. This)
+	$(info .                         # is faster but can result in incorrect build results!)
+ 
+	$(info .  make clean-<component> # Remove files generated by make for <component>)
+	$(info )
+	$(info Useful make variables)
+	$(info .  make CONF=             # Build all configurations (note, assignment is empty))
+	$(info .  make CONF=<substring>  # Build the configuration(s) with a name matching)
+	$(info .                         # <substring>)
+	$(info )
+	$(info .  make LOG=<loglevel>    # Change the log level from warn to <loglevel>)
+	$(info .                         # Available log levels are:)
+	$(info .                         # 'warn' (default), 'info', 'debug' and 'trace')
+	$(info .                         # To see executed command lines, use LOG=debug)
+	$(info )
+	$(info .  make JOBS=<n>          # Run <n> parallel make jobs)
+	$(info .                         # Note that -jN does not work as expected!)
+	$(info )
+	$(info .  make test TEST=<test>  # Only run the given test or tests, e.g.)
+	$(info .                         # make test TEST="jdk_lang jdk_net")
+	$(info .                         # or)
+	$(info .                         # make test TEST="tier1")
+	$(info )
+
+default: jdk
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 66):
+	@$(call CheckIfMakeAtEnd)
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/builddeps.conf.nfs.example:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+/Main.gmk:
+#  Implicit rule search has been done.
+#  File does not exist.
+#  File has been updated.
+#  Failed to be updated.
+
+langtools: langtools-only
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+ 
+clean-images:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 242):
+	$(call CleanComponent,images)
+
+langtools-only: start-make
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 84):
+	@$(call TargetEnter)
+	@($(CD) $(LANGTOOLS_TOPDIR)/make && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildLangtools.gmk)
+	@$(call TargetExit)
+
+jaxws: langtools jaxp jaxws-only
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/configure.ac:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+TEST_FOR_NON_GNUMAKE:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+# makefile (from `Makefile', line 36)
+# sh = echo You are not using GNU make/gmake, this is a requirement. Check your path. 1>&2 && exit 1
+# variable set hash-table stats:
+# Load=1/32=3%, Rehash=0, Collisions=0/1=0%
+
+# Not a target:
+.DEFAULT:
+#  Implicit rule search has not been done.
+ 
+#  Modification time never checked.
+#  File has not been updated.
+
+clean-test:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 253):
+	$(call CleanComponent,testoutput)
+	
+
+hotspot: hotspot-only
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+hotspot-only: start-make
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 109):
+	@$(call TargetEnter)
+	@($(CD) $(SRC_ROOT)/make && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f HotspotWrapper.gmk)
+	@$(call TargetExit)
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/spec.gmk.in:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Jprt.gmk:
+#  Implicit rule search has been done.
+ 
+#  Last modified 2021-10-15 17:34:52
+#  File has been updated.
+#  Successfully updated.
+
+dist-clean: clean
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 217):
+	@($(CD) $(OUTPUT_ROOT) && $(RM) -r *spec.gmk config.* configure-arguments Makefile compare.sh spec.sh tmp javacservers)
+	@$(if $(filter $(CONF_NAME),$(notdir $(OUTPUT_ROOT))), \
+	  if test "x`$(LS) $(OUTPUT_ROOT)`" != x; then \
+	    $(ECHO) "Warning: Not removing non-empty configuration directory for '$(CONF_NAME)'" ; \
+	  else \
+	    ($(CD) $(SRC_ROOT) && $(ECHO) "Removing configuration directory for '$(CONF_NAME)'" && $(RM) -r $(OUTPUT_ROOT)) \
+	  fi \
+	)
+	@$(ECHO) Cleaned everything, you will have to re-run configure.
+
+test: images test-only
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+profiles: source-tips jdk hotspot profiles-only
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+profiles-only: start-make
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 148):
+	@$(call TargetEnter)
+	@($(CD) $(JDK_TOPDIR)/make && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJdk.gmk profiles)
+	@$(call TargetExit)
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/generated-configure.sh:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+ 
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/toolchain_windows.m4:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+jaxp: langtools jaxp-only
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+overlay-images: source-tips demos overlay-images-only
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+jaxp-only: start-make
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 96):
+	@$(call TargetEnter)
+	@($(CD) $(JAXP_TOPDIR)/make && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJaxp.gmk)
+	@$(call TargetExit)
+
+overlay-images-only: start-make
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 142):
+	@$(call TargetEnter)
+	@($(CD) $(JDK_TOPDIR)/make && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJdk.gmk overlay-images)
+	@$(call TargetExit)
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug//build/linux-x86_64-normal-server-slowdebug/spec.gmk:
+#  Implicit rule search has been done.
+#  Last modified 2022-06-09 16:41:28.36529952
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/configure:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+ 
+#  File has not been updated.
+
+source-tips: /root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/source_tips
+#  Implicit rule search has been done.
+#  File does not exist.
+#  File has been updated.
+#  Needs to be updated (-q is set).
+# variable set hash-table stats:
+# Load=0/32=0%, Rehash=0, Collisions=0/35=0%
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/version-numbers:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+clean-bootcycle-build:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 246):
+	$(call CleanComponent,bootcycle-build)
+
+docs: jdk docs-only
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+docs-only: start-make
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 160):
+	@$(call TargetEnter)
+	@($(CD) $(SRC_ROOT)/make && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f Javadoc.gmk docs)
+	@$(call TargetExit)
+
+jdk: langtools hotspot corba jaxp jaxws jdk-only
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+jdk-only: start-make
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+ 
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 116):
+	@$(call TargetEnter)
+	@($(CD) $(JDK_TOPDIR)/make && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJdk.gmk $(JDK_TARGET))
+	@$(call TargetExit)
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/toolchain.m4:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/libraries.m4.orig:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/builddeps.conf.example:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/flags.m4:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+clean-nashorn:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 240):
+	$(call CleanComponent,nashorn)
+
+start-make: /root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/spec.gmk
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 80):
+	@$(call AtMakeStart)
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/hotspot-spec.gmk.in:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+ 
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/builddeps.m4:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/compare.sh.in:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+docs-zip: docs docs-zip-only
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug//custom-spec.gmk:
+#  Implicit rule search has been done.
+#  File does not exist.
+#  File has been updated.
+#  Failed to be updated.
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/help.m4:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+docs-zip-only: start-make
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 166):
+	@$(call TargetEnter)
+	@($(CD) $(SRC_ROOT)/make && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f Javadoc.gmk docs-zip)
+	@$(call TargetExit)
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/basics_windows.m4:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+reconfigure:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 257):
+	  @$(ECHO) "Re-running configure using arguments '$(CONFIGURE_COMMAND_LINE)'"
+ 
+	@( cd $(OUTPUT_ROOT) && $(BASH) $(TOPDIR)/configure $(CONFIGURE_COMMAND_LINE) )
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/build-aux:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/source_tips: FRC
+#  Implicit rule search has not been done.
+#  Implicit/static pattern stem: `'
+#  Last modified 2022-06-09 16:41:33.337249327
+#  File has been updated.
+#  Needs to be updated (-q is set).
+# automatic
+# @ := /root/openjdk-sources/openjdk-8u312-b07-sources-debug/build/linux-x86_64-normal-server-slowdebug/source_tips
+# automatic
+# % := 
+# automatic
+# * := 
+# automatic
+# + := FRC
+# automatic
+# | := 
+# automatic
+# < := FRC
+# automatic
+# ^ := FRC
+# automatic
+# ? := FRC
+# variable set hash-table stats:
+# Load=8/32=25%, Rehash=0, Collisions=14/47=30%
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 203):
+	@$(MKDIR) -p $(@D)
+ 
+	@$(RM) $@
+	@$(call GetSourceTips)
+
+jaxws-only: start-make
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 102):
+	@$(call TargetEnter)
+	@($(CD) $(JAXWS_TOPDIR)/make && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJaxws.gmk)
+	@$(call TargetExit)
+
+jprt_bundle: /tmp/jprt_bundles/j2sdk-image.zip
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Jprt.gmk', line 44):
+	@$(call CheckIfMakeAtEnd)
+
+clean: clean-langtools clean-corba clean-jaxp clean-jaxws clean-hotspot clean-jdk clean-nashorn clean-images clean-overlay-images clean-bootcycle-build clean-docs clean-test
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from `/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk', line 210):
+	@($(CD) $(OUTPUT_ROOT) && $(RM) -r tmp source_tips build.log* build-trace*.log*)
+	@$(ECHO) Cleaned all build artifacts.
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/config.h.in:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/basics.m4:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+ 
+FRC:
+#  Implicit rule search has been done.
+#  File does not exist.
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug/common/autoconf/spec.sh.in:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+install: images install-only
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+# Not a target:
+/root/openjdk-sources/openjdk-8u312-b07-sources-debug//make/Main.gmk:
+#  Implicit rule search has been done.
+#  Last modified 2021-10-15 17:34:52
+#  File has been updated.
+#  Successfully updated.
+
+# files hash-table stats:
+# Load=106/1024=10%, Rehash=0, Collisions=31/341=9%
+# VPATH Search Paths
+
+# No `vpath' search paths.
+
+# No general (`VPATH' variable) search path.
+
+# # of strings in strcache: 0 / lookups = 401 / hits = 401
+# # of strcache buffers: 1 (* 8176 B/buffer = 8176 B)
+# strcache used: total = 0 (4761) / max = 0 / min = 8176 / avg = 0
+ 
+# strcache free: total = 0 (3415) / max = 0 / min = 8176 / avg = 0
+
+# strcache hash-table stats:
+# Load=155/8192=2%, Rehash=0, Collisions=10/401=2%
+# Finished Make data base on Sun Oct  9 10:41:17 2022
+
+ 
