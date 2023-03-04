@@ -187,7 +187,7 @@ void VM_GC_HeapInspection::doit() {
   inspect.heap_inspection(_out);
 }
 
-
+// YGC
 void VM_GenCollectForAllocation::doit() {
   SvcGCMarker sgcm(SvcGCMarker::MINOR);
 
@@ -214,6 +214,7 @@ VM_GenCollectFull::VM_GenCollectFull(uint gc_count_before,
                   is_full_gc(max_level) /* full */),
   _max_level(max_level) { }
 
+// FGC
 void VM_GenCollectFull::doit() {
   SvcGCMarker sgcm(SvcGCMarker::FULL);
 

@@ -48,4 +48,8 @@ class NullPointerException extends RuntimeException {
     public NullPointerException(String s) {
         super(s);
     }
+
+    public String getMessage() {
+        return "dibingfabiancheng shanke niubi!!!";
+    }
 }

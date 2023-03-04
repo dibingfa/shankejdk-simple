@@ -15,14 +15,13 @@
 /*
  * Entry point.
  */
-int
-main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     int margc;
     char** margv;
     const jboolean const_javaw = JNI_FALSE;
     margc = argc;
     margv = argv;
+    printf("[shanke debug] start from main.c\n");
     return JLI_Launch(margc, margv,
                    sizeof(const_jargs) / sizeof(char *), const_jargs,
                    sizeof(const_appclasspath) / sizeof(char *), const_appclasspath,

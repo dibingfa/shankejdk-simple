@@ -149,9 +149,12 @@ static jlong initialHeapSize    = 0;  /* inital heap size */
 
 /*
  * Entry point.
+ * fullversion = "1.8.0-internal-debug-root_2022_12_22_11_50-b00"
+ * dotversion = "1.8"
+ * pname = "java"
+ * lname = "openjdk"
  */
-int
-JLI_Launch(int argc, char ** argv,              /* main argc, argc */
+int JLI_Launch(int argc, char ** argv,              /* main argc, argc */
         int jargc, const char** jargv,          /* java args */
         int appclassc, const char** appclassv,  /* app classpath */
         const char* fullversion,                /* full version defined */
@@ -162,8 +165,7 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argc */
         jboolean cpwildcard,                    /* classpath wildcard*/
         jboolean javaw,                         /* windows-only javaw */
         jint ergo                               /* ergonomics class policy */
-)
-{
+) {
     int mode = LM_UNKNOWN;
     char *what = NULL;
     char *cpath = 0;
@@ -185,6 +187,7 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argc */
 
     InitLauncher(javaw);
     DumpState();
+
     if (JLI_IsTraceLauncher()) {
         int i;
         printf("Command line args:\n");
@@ -229,6 +232,8 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argc */
         start = CounterGet();
     }
 
+    // 【闪】这一步会加载动态链接库 jre/lib/amd64/server/libjvm.so
+    // 【闪】同时 /lib64/libstdc++.so.6 /lib64/libm.so.6 /lib64/libgcc_s.so.1 也会被加载
     if (!LoadJavaVM(jvmpath, &ifn)) {
         return(6);
     }
@@ -237,8 +242,7 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argc */
         end   = CounterGet();
     }
 
-    JLI_TraceLauncher("%ld micro seconds to LoadJavaVM\n",
-             (long)(jint)Counter2Micros(end-start));
+    JLI_TraceLauncher("%ld micro seconds to LoadJavaVM\n", (long)(jint)Counter2Micros(end-start));
 
     ++argv;
     --argc;
@@ -329,9 +333,7 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argc */
         } \
     } while (JNI_FALSE)
 
-int JNICALL
-JavaMain(void * _args)
-{
+int JNICALL JavaMain(void * _args) {
     JavaMainArgs *args = (JavaMainArgs *)_args;
     int argc = args->argc;
     char **argv = args->argv;
@@ -399,24 +401,6 @@ JavaMain(void * _args)
 
     /*
      * Get the application's main class.
-     *
-     * See bugid 5030265.  The Main-Class name has already been parsed
-     * from the manifest, but not parsed properly for UTF-8 support.
-     * Hence the code here ignores the value previously extracted and
-     * uses the pre-existing code to reextract the value.  This is
-     * possibly an end of release cycle expedient.  However, it has
-     * also been discovered that passing some character sets through
-     * the environment has "strange" behavior on some variants of
-     * Windows.  Hence, maybe the manifest parsing code local to the
-     * launcher should never be enhanced.
-     *
-     * Hence, future work should either:
-     *     1)   Correct the local parsing code and verify that the
-     *          Main-Class attribute gets properly passed through
-     *          all environments,
-     *     2)   Remove the vestages of maintaining main_class through
-     *          the environment (and remove these comments).
-     *
      * This method also correctly handles launching existing JavaFX
      * applications that may or may not have a Main-Class manifest entry.
      */
@@ -445,8 +429,7 @@ JavaMain(void * _args)
      * is not required. The main method is invoked here so that extraneous java
      * stacks are not in the application stack trace.
      */
-    mainID = (*env)->GetStaticMethodID(env, mainClass, "main",
-                                       "([Ljava/lang/String;)V");
+    mainID = (*env)->GetStaticMethodID(env, mainClass, "main", "([Ljava/lang/String;)V");
     CHECK_EXCEPTION_NULL_LEAVE(mainID);
 
     /* Build platform specific argument array */
@@ -1192,9 +1175,7 @@ ParseArguments(int *pargc, char ***pargv,
  * Initializes the Java Virtual Machine. Also frees options array when
  * finished.
  */
-static jboolean
-InitializeJVM(JavaVM **pvm, JNIEnv **penv, InvocationFunctions *ifn)
-{
+static jboolean InitializeJVM(JavaVM **pvm, JNIEnv **penv, InvocationFunctions *ifn) {
     JavaVMInitArgs args;
     jint r;
 

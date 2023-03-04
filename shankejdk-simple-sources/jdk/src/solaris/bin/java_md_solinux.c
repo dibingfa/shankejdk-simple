@@ -816,85 +816,15 @@ GetJREPath(char *path, jint pathsize, const char * arch, jboolean speculative)
     return JNI_FALSE;
 }
 
-jboolean
-LoadJavaVM(const char *jvmpath, InvocationFunctions *ifn)
-{
-    void *libjvm;
+jboolean LoadJavaVM(const char *jvmpath, InvocationFunctions *ifn) {
 
     JLI_TraceLauncher("JVM path is %s\n", jvmpath);
 
-    libjvm = dlopen(jvmpath, RTLD_NOW + RTLD_GLOBAL);
-    if (libjvm == NULL) {
-#if defined(__solaris__) && defined(__sparc) && !defined(_LP64) /* i.e. 32-bit sparc */
-      FILE * fp;
-      Elf32_Ehdr elf_head;
-      int count;
-      int location;
+    void *libjvm = dlopen(jvmpath, RTLD_NOW + RTLD_GLOBAL);
 
-      fp = fopen(jvmpath, "r");
-      if (fp == NULL) {
-        JLI_ReportErrorMessage(DLL_ERROR2, jvmpath, dlerror());
-        return JNI_FALSE;
-      }
-
-      /* read in elf header */
-      count = fread((void*)(&elf_head), sizeof(Elf32_Ehdr), 1, fp);
-      fclose(fp);
-      if (count < 1) {
-        JLI_ReportErrorMessage(DLL_ERROR2, jvmpath, dlerror());
-        return JNI_FALSE;
-      }
-
-      /*
-       * Check for running a server vm (compiled with -xarch=v8plus)
-       * on a stock v8 processor.  In this case, the machine type in
-       * the elf header would not be included the architecture list
-       * provided by the isalist command, which is turn is gotten from
-       * sysinfo.  This case cannot occur on 64-bit hardware and thus
-       * does not have to be checked for in binaries with an LP64 data
-       * model.
-       */
-      if (elf_head.e_machine == EM_SPARC32PLUS) {
-        char buf[257];  /* recommended buffer size from sysinfo man
-                           page */
-        long length;
-        char* location;
-
-        length = sysinfo(SI_ISALIST, buf, 257);
-        if (length > 0) {
-            location = JLI_StrStr(buf, "sparcv8plus ");
-          if (location == NULL) {
-            JLI_ReportErrorMessage(JVM_ERROR3);
-            return JNI_FALSE;
-          }
-        }
-      }
-#endif
-        JLI_ReportErrorMessage(DLL_ERROR1, __LINE__);
-        JLI_ReportErrorMessage(DLL_ERROR2, jvmpath, dlerror());
-        return JNI_FALSE;
-    }
-
-    ifn->CreateJavaVM = (CreateJavaVM_t)
-        dlsym(libjvm, "JNI_CreateJavaVM");
-    if (ifn->CreateJavaVM == NULL) {
-        JLI_ReportErrorMessage(DLL_ERROR2, jvmpath, dlerror());
-        return JNI_FALSE;
-    }
-
-    ifn->GetDefaultJavaVMInitArgs = (GetDefaultJavaVMInitArgs_t)
-        dlsym(libjvm, "JNI_GetDefaultJavaVMInitArgs");
-    if (ifn->GetDefaultJavaVMInitArgs == NULL) {
-        JLI_ReportErrorMessage(DLL_ERROR2, jvmpath, dlerror());
-        return JNI_FALSE;
-    }
-
-    ifn->GetCreatedJavaVMs = (GetCreatedJavaVMs_t)
-        dlsym(libjvm, "JNI_GetCreatedJavaVMs");
-    if (ifn->GetCreatedJavaVMs == NULL) {
-        JLI_ReportErrorMessage(DLL_ERROR2, jvmpath, dlerror());
-        return JNI_FALSE;
-    }
+    ifn->CreateJavaVM = (CreateJavaVM_t) dlsym(libjvm, "JNI_CreateJavaVM");
+    ifn->GetDefaultJavaVMInitArgs = (GetDefaultJavaVMInitArgs_t) dlsym(libjvm, "JNI_GetDefaultJavaVMInitArgs");
+    ifn->GetCreatedJavaVMs = (GetCreatedJavaVMs_t) dlsym(libjvm, "JNI_GetCreatedJavaVMs");
 
     return JNI_TRUE;
 }
